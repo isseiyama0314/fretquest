@@ -29,7 +29,7 @@ function synth(ctx){
  const noise=ctx.createBuffer(1,Math.floor(ctx.sampleRate*.4),ctx.sampleRate),nd=noise.getChannelData(0);for(let i=0;i<nd.length;i++)nd[i]=Math.random()*2-1;
  const env=(g,t,peak,attack,decay)=>{g.gain.setValueAtTime(.0001,t);g.gain.exponentialRampToValueAtTime(peak,t+attack);g.gain.exponentialRampToValueAtTime(.0001,t+attack+decay);};
  const burst=(t,type,freq,peak,decay)=>{const s=ctx.createBufferSource(),f=ctx.createBiquadFilter(),g=ctx.createGain();s.buffer=noise;f.type=type;f.frequency.value=freq;env(g,t,peak,.002,decay);s.connect(f);f.connect(g);g.connect(master);s.start(t);s.stop(t+decay+.05);};
- return {
+ return {master,noise,env,burst,
   click(t,accent){const o=ctx.createOscillator(),g=ctx.createGain();o.type='sine';o.frequency.setValueAtTime(accent?1320:880,t);env(g,t,accent?.32:.2,.002,.06);o.connect(g);g.connect(master);o.start(t);o.stop(t+.1);},
   kick(t){const o=ctx.createOscillator(),g=ctx.createGain();o.frequency.setValueAtTime(130,t);o.frequency.exponentialRampToValueAtTime(42,t+.14);env(g,t,.55,.003,.24);o.connect(g);g.connect(master);o.start(t);o.stop(t+.3);},
   snare(t){burst(t,'bandpass',1900,.22,.13);},
@@ -89,16 +89,22 @@ function strike(r,at){
  if(best){judge(r,best,at);return;}
  if(at>-.2&&at<r.c.length+.3){r.extra++;r.combo=0;popup(r,'EXTRA','extra','');}
 }
+/* Onset detector: the newest ~10 ms must jump well above both the recent quiet level and the previous frame.
+   After a hit the floor jumps to the new level, so one ringing strum is never counted twice. */
+function onsetDetector(){
+ let hist=[1,1,1,1,1,1],prev=1,last=-99;
+ return (buf,at)=>{
+  let e=0;for(let i=buf.length-512;i<buf.length;i++)e+=buf[i]*buf[i];
+  const short=Math.sqrt(e/512),hit=short>.02&&short>Math.min(...hist)*2+.004&&short>prev*1.3&&at-last>.08;
+  prev=short;
+  if(hit){hist=hist.map(()=>short);last=at;}else{hist.push(short);hist.shift();}
+  return hit;
+ };
+}
 function listen(r,now){
  const m=r.mic;m.an.getFloatTimeDomainData(m.buf);const d=window.FQPitch.detect(m.buf,r.ctx.sampleRate),at=now-r.comp;
  r.level=r.level*.6+d.rms*.4;
- /* Onset: the newest ~10 ms must jump well above both the recent quiet level and the previous frame.
-    After a hit the floor jumps to the new level, so one ringing strum is never counted twice. */
- let e=0;for(let i=m.buf.length-512;i<m.buf.length;i++)e+=m.buf[i]*m.buf[i];
- const short=Math.sqrt(e/512),floor=Math.min(...r.hist),onset=short>.02&&short>floor*2+.004&&short>r.prevShort*1.3&&at-r.lastOnset>.08;
- r.prevShort=short;
- if(onset){r.hist=r.hist.map(()=>short);r.lastOnset=at;r.stable=0;if(!r.c.song)strike(r,at);}
- else{r.hist.push(short);r.hist.shift();}
+ if(r.onset(m.buf,at)){r.lastOnset=at;r.stable=0;if(!r.c.song)strike(r,at);}
  if(!r.c.song)return;
  if(!d.frequency){r.stable=0;r.lastMidi=null;r.heard=null;return;}
  const midi=Math.round(window.FQPitch.midi(d.frequency));r.heard=midi;
@@ -148,7 +154,7 @@ function draw(r,t,dt){
   if(c.song&&!hit&&x1-x0>30){g.fillStyle=color;g.globalAlpha=alpha*.32;pill(g,x0,y-5,x1-x0-6,10,5);g.fill();g.globalAlpha=alpha;}
   g.fillStyle=color;g.beginPath();g.arc(cx,y,13*scale,0,Math.PI*2);g.fill();
   g.fillStyle='#211d33';
-  if(c.song){g.font='800 13px "DM Sans",sans-serif';const label=String(it.fret);g.fillText(label,cx-g.measureText(label).width/2,y+4.5);}
+  if(c.song){g.font='900 14px "Noto Sans JP",sans-serif';const label=String(it.fret);g.fillText(label,cx-g.measureText(label).width/2,y+4.5);}
   else{g.beginPath();const d=it.up?-1:1;g.moveTo(cx-6,y-4*d);g.lineTo(cx+6,y-4*d);g.lineTo(cx,y+6*d);g.closePath();g.fill();g.fillRect(cx-1.5,y-(it.up?-3:9),3,6);}
   g.globalAlpha=1;
  }
@@ -236,7 +242,7 @@ async function start(mode){
  const comp=(ctx.outputLatency||ctx.baseLatency||0)+(input==='mic'?.045:.01)+(Number(prefs.latency)||0);
  const r={ctx,c,mic,input,mode,speed,lesson:l,audio:synth(ctx),backing:prefs.backing,guide:input!=='mic',t0:ctx.currentTime+.35+c.meter*c.spb,
   outLat:ctx.outputLatency||ctx.baseLatency||0,comp,counts:{perfect:0,great:0,ok:0,miss:0},offsets:[],points:0,extra:0,combo:0,maxCombo:0,
-  fx:[],hist:[1,1,1,1,1,1],prevShort:1,lastOnset:-99,stable:0,lastMidi:null,firstMatch:0,heard:null,level:0,last:performance.now()};
+  fx:[],onset:onsetDetector(),lastOnset:-99,stable:0,lastMidi:null,firstMatch:0,heard:null,level:0,last:performance.now()};
  r.cv=$('#stage-canvas');r.g=r.cv.getContext('2d');
  schedule(r);run=r;F.setCleanup(stop);
  r.onHide=()=>{if(document.hidden){stop();lobby(session,current.hooks);F.notify('アプリから離れたので、演奏を止めました。');}};
@@ -284,5 +290,25 @@ function finish(r){
  });
 }
 
-window.FQStage={lobby,starsFor,starText,stop};
+/* Silent looping preview of a stage for the home screen. Stops when the canvas leaves the page. */
+let previewToken=0;
+function preview(cv,l){
+ const token=++previewToken,still=window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
+ let r=null,start=0,last=performance.now();
+ const reset=()=>{r={cv,g:cv.getContext('2d'),c:chart(l,1),fx:[],preview:true};start=performance.now()+400;};
+ reset();
+ if(still){draw(r,r.c.spb*2,0);return;}
+ const frame=now=>{
+  if(token!==previewToken||!cv.isConnected)return;
+  const dt=Math.min(.05,(now-last)/1000),t=(now-start)/1000;last=now;
+  if(!document.hidden&&cv.clientWidth){
+   for(const it of r.c.items)if(!it.grade&&t>=it.time){it.grade='perfect';it.hitAt=t;burst(r,it);}
+   draw(r,t,dt);
+  }
+  if(t>Math.min(r.c.length,14)+.8)reset();
+  requestAnimationFrame(frame);
+ };
+ requestAnimationFrame(frame);
+}
+window.FQStage={lobby,preview,starsFor,starText,stop,kit:{synth,openMic,onsetDetector,chordMidis,noteName}};
 })();
