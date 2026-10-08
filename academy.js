@@ -8,11 +8,35 @@ function shuffle(a){const copy=[...a];for(let i=copy.length-1;i>0;i--){const j=M
 const play=l=>l.type==='song'||l.type==='strum',FS=()=>window.FQStage;
 function unlocked(c,l){const i=c.lessons.indexOf(l);return i===0||!!F.getState().courses?.[c.lessons[i-1].id];}
 function nextLesson(c){return c.lessons.find(l=>!F.getState().courses?.[l.id])||c.lessons[0];}
+/* Home hero: the next lesson to play, a silent preview of its stage, and overall progress. */
+let heroStage=null;
+const earnedStars=(state,l)=>{const d=state.courses?.[l.id];return d&&d.method!=='self'?FS().starsFor(d.bestScore):0;};
+function heroPick(state){
+ for(const c of courses){const l=c.lessons.find(x=>!state.courses?.[x.id]);if(l)return {c,l,polish:false};}
+ let best=null;for(const c of courses)for(const l of c.lessons)if(play(l)){const n=earnedStars(state,l);if(!best||n<best.n)best={c,l,n};}
+ return {...best,polish:true};
+}
+function renderHero(state){
+ const {c,l,polish}=heroPick(state),at=c.lessons.indexOf(l),stage=play(l)?l:c.lessons.slice(at).find(play)||c.lessons.find(play),best=state.courses?.[l.id];
+ $('#hero-course').textContent=c.title+' ・ '+(at+1)+' / '+c.lessons.length;
+ $('#welcome-title').textContent=l.title;
+ $('#hero-chips').innerHTML=['<span>'+labels[l.type]+'</span>','<span>約'+l.minutes+'分</span>',play(l)?'<span class="chip-stars">'+(best&&best.method!=='self'?FS().starText(earnedStars(state,l)):'NEW STAGE')+'</span>':'<span>+40 XP</span>'].join('');
+ $('#hero-lead').textContent=polish?'全レッスンをクリア！ ★3を狙って、もう一度ステージへ。':play(l)?l.goal:l.goal+' この先に「'+stage.title+'」のステージが待っています。';
+ $('#hero-screen-label').textContent=play(l)?'PREVIEW':'COMING UP ・ '+stage.title;
+ $('#hero-play').lastElementChild.textContent=play(l)?(polish?'もう一度弾く':'このステージを弾く'):'レッスンを始める';
+ $('#hero-play').onclick=()=>{selected=c;render();open(c,l);};
+ if(heroStage!==stage.id){heroStage=stage.id;FS().preview($('#hero-canvas'),stage);}
+ const done=all.filter(x=>state.courses?.[x.id]).length,stages=all.filter(play);
+ $('#hero-ring').style.setProperty('--p',done/all.length);$('#hero-cleared').textContent=done;$('#hero-cleared-total').textContent='/ '+all.length;
+ $('#hero-stars').textContent=stages.reduce((n,x)=>n+earnedStars(state,x),0);$('#hero-stars-total').textContent='/ '+stages.length*3;
+ $('#hero-streak').textContent=F.streak();
+}
 function render(){
  const state=F.getState(),done=all.filter(l=>state.courses?.[l.id]).length;
+ renderHero(state);
  $('#course-total').textContent=done+' / '+all.length;
  $('#course-overall-fill').style.width=done/all.length*100+'%';
- $('#course-grid').innerHTML=courses.map((c,i)=>{const n=c.lessons.filter(l=>state.courses?.[l.id]).length;return '<button type="button" class="course-book cover-'+c.color+(selected.id===c.id?' selected':'')+'" data-course="'+c.id+'" aria-pressed="'+(selected.id===c.id)+'"><div class="book-meta"><span>COURSE / 0'+(i+1)+'</span><span>'+c.level+'</span></div><div class="book-art">'+F.icon(c.icon)+'<span class="book-orbit"></span><span class="book-star">✦</span></div><h3>'+c.title+'</h3><p>'+c.subtitle+'</p><div class="book-foot"><span>'+n+' / '+c.lessons.length+' レッスン</span><span>'+(n===c.lessons.length?'✓ COMPLETE':'OPEN '+F.icon('arrow'))+'</span></div><div class="book-track"><span style="width:'+n/c.lessons.length*100+'%"></span></div></button>';}).join('');
+ $('#course-grid').innerHTML=courses.map((c,i)=>{const n=c.lessons.filter(l=>state.courses?.[l.id]).length;return '<button type="button" class="course-book cover-'+c.color+(selected.id===c.id?' selected':'')+'" data-course="'+c.id+'" aria-pressed="'+(selected.id===c.id)+'"><div class="book-meta"><span>COURSE / 0'+(i+1)+'</span><span>'+c.level+'</span></div><div class="book-art">'+F.icon(c.icon)+'<span class="book-orbit"></span><span class="book-star">✦</span></div><h3>'+c.title+'</h3><p>'+c.subtitle+'</p><div class="book-foot"><span>'+n+' / '+c.lessons.length+' レッスン<b class="book-stars">★ '+c.lessons.filter(play).reduce((k,x)=>k+earnedStars(state,x),0)+' / '+c.lessons.filter(play).length*3+'</b></span><span>'+(n===c.lessons.length?'✓ COMPLETE':'OPEN '+F.icon('arrow'))+'</span></div><div class="book-track"><span style="width:'+n/c.lessons.length*100+'%"></span></div></button>';}).join('');
  document.querySelectorAll('[data-course]').forEach(b=>b.onclick=()=>{selected=courses.find(c=>c.id===b.dataset.course);render();$('#course-detail-title').focus({preventScroll:true});});
  const c=selected,n=c.lessons.filter(l=>state.courses?.[l.id]).length,next=nextLesson(c);
  $('#course-detail').className='course-detail cover-'+c.color;
