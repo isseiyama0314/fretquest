@@ -25,7 +25,9 @@ Rhythm lessons assess touchscreen or mouse taps, with a maximum tolerance of 150
 
 The existing `fretQuestV1` localStorage key is retained. Course activity counts toward practice days and streaks. JSON export/import merges daily activity and course completions, protecting against duplicate XP. This is manual transfer, not account-based cloud synchronization. Automated account sync requires an authenticated backend; none is configured in this static site.
 
-The "毎日リマインダー" button downloads an `.ics` file with a daily recurring event and alarm at a chosen local time, linking back to the app. The calendar app delivers the notification, so it fires even on days already practiced; conditional reminders would need Web Push and a backend.
+The "毎日リマインダー" button downloads an `.ics` file with a daily recurring event and alarm at a chosen local time, linking back to the app. The calendar app delivers the notification, so it fires even on days already practiced.
+
+Conditional Web Push reminders (only on days not yet practiced, plus a 22:00 streak warning) are implemented in `push.js`, the service worker and the Cloudflare Worker in `push-server/`. They stay disabled until `PUSH_SERVER` and `VAPID_PUBLIC_KEY` in `push.js` are filled in after deployment; see `push-server/README.md`. Only the last practiced date, streak length, reminder time and time zone are sent.
 
 The manifest, PNG icons and a service worker support home-screen installation and cached offline lessons. The service worker is limited to `/fretquest/`, caches only app assets, and never handles microphone audio. This is a PWA, not an App Store native iOS application. iPhone hardware microphone accuracy and Safari installation require device verification.
 

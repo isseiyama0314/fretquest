@@ -1,0 +1,16 @@
+name = "fretquest-push"
+main = "worker.js"
+compatibility_date = "2025-09-01"
+
+# Create with: npx wrangler kv namespace create SUBS  (then paste the id here)
+[[kv_namespaces]]
+binding = "SUBS"
+id = "REPLACE_WITH_KV_NAMESPACE_ID"
+
+[triggers]
+crons = ["*/15 * * * *"]
+
+[vars]
+ALLOWED_ORIGIN = "https://isseiyama0314.github.io"
+VAPID_SUBJECT = "https://isseiyama0314.github.io/fretquest/"
+# VAPID_PUBLIC_KEY and VAPID_PRIVATE_KEY are set with `npx wrangler secret put`.
