@@ -1,0 +1,68 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="theme-color" content="#0b1220">
+  <meta name="description" content="1日5分から続ける、ギターのためのゲーム型練習アプリ。">
+  <title>FRET QUEST | ギター練習をゲームに。</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&family=Noto+Sans+JP:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="./style.css">
+  <script src="./app.js" defer></script>
+</head>
+<body>
+<div class="app-shell">
+  <aside class="sidebar">
+    <a class="brand" href="#home" aria-label="FRET QUEST ホーム"><span class="brand-mark">♬</span><span>FRET<span class="brand-highlight">QUEST</span><small>LEVEL UP YOUR PLAYING</small></span></a>
+    <div class="sidebar-label">YOUR STUDIO</div>
+    <nav class="side-nav" aria-label="メインメニュー">
+      <a href="#home" class="nav-link active"><span>⌂</span> ホーム</a>
+      <a href="#missions" class="nav-link"><span>⚡</span> 今日のクエスト</a>
+      <a href="#practice" class="nav-link"><span>◎</span> 練習ツール</a>
+      <a href="#achievements" class="nav-link"><span>◆</span> 実績</a>
+    </nav>
+    <div class="sidebar-spacer"></div>
+    <div class="sidebar-tip"><div class="tip-icon">✦</div><strong>SMALL STEPS, BIG RIFFS.</strong><p>毎日少しずつ。昨日より1音、うまくなろう。</p></div>
+    <div class="sidebar-foot">FRET QUEST • BROWSER EDITION</div>
+  </aside>
+  <main id="home" class="main">
+    <header class="topbar">
+      <div><div class="date-label" id="today-label">TODAY'S SESSION</div><div class="topbar-title">My practice space <span class="wave">✳</span></div></div>
+      <div class="top-actions"><label class="difficulty-label" for="difficulty">難易度</label><select id="difficulty" aria-label="練習難易度"><option value="beginner">ビギナー</option><option value="intermediate">プレイヤー</option><option value="advanced">チャレンジャー</option></select><div class="avatar" title="あなたのプロフィール">G</div></div>
+    </header>
+    <section class="welcome">
+      <div class="welcome-copy"><div class="eyebrow"><span class="live-dot"></span> YOUR DAILY JAM</div><h1>今日も、1フレーズ<br><em>うまくなろう。</em></h1><p>毎日5分の積み重ねが、次のステージにつながる。</p><a class="primary-btn" href="#missions">今日の練習を始める <span>↗</span></a></div>
+      <div class="hero-art" aria-hidden="true"><div class="halo halo-one"></div><div class="halo halo-two"></div><div class="guitar-body"><div class="guitar-neck"><span class="frets">╎ ╎ ╎ ╎ ╎ ╎</span></div><div class="guitar-head">♬</div><div class="guitar-pickup"></div><div class="guitar-hole"></div></div><div class="art-star star-a">✳</div><div class="art-star star-b">✦</div><div class="hero-sticker">PLAY<br>EVERY<br>DAY ↗</div></div>
+    </section>
+    <section class="stats-grid" aria-label="練習ステータス">
+      <div class="stat"><div class="stat-top"><span>🔥</span><span>DAY STREAK</span></div><div class="stat-value"><span id="streak-value">0</span> <small>日連続</small></div><div class="stat-sub" id="streak-sub">今日から始めよう</div></div>
+      <div class="stat"><div class="stat-top"><span>⚡</span><span>TOTAL XP</span></div><div class="stat-value"><span id="xp-value">0</span> <small>XP</small></div><div class="stat-sub">練習するほど成長</div></div>
+      <div class="stat level-stat"><div class="stat-top"><span>◈</span><span>PLAYER LEVEL</span></div><div class="level-row"><div class="stat-value">Lv.<span id="level-value">1</span></div><span id="level-needed" class="level-next">NEXT 150 XP</span></div><div class="xp-track"><div id="xp-fill" class="xp-fill"></div></div></div>
+    </section>
+    <section class="section missions" id="missions">
+      <div class="section-heading"><div><div class="kicker">DAILY MISSION</div><h2>今日のクエスト <span class="section-decoration">✦</span></h2><p>3つのミッションをクリアして、デイリーボーナスを獲得。</p></div><div class="mission-progress"><span id="mission-count">0 / 3</span><span>COMPLETED</span></div></div>
+      <div class="daily-track" aria-label="デイリー進捗"><span class="track-on" id="daily-track-fill"></span></div>
+      <div class="quest-grid">
+        <article class="quest-card quest-chord" data-card="chord"><div class="quest-top"><div class="quest-icon">♬</div><span class="quest-no">QUEST 01</span></div><div class="quest-meta">TECHNIQUE <span>・</span> 35 SEC</div><h3>コード・チェンジ</h3><p>コードをすばやく切り替える。実際にギターを持って挑戦しよう。</p><div class="quest-footer"><span class="reward">⚡ +30 XP</span><button type="button" class="quest-button" data-launch="chord">挑戦する <span>↗</span></button></div></article>
+        <article class="quest-card quest-fret" data-card="fret"><div class="quest-top"><div class="quest-icon">◎</div><span class="quest-no">QUEST 02</span></div><div class="quest-meta">KNOWLEDGE <span>・</span> 8 Q</div><h3>指板マスター</h3><p>指定された弦とフレットの音名を当てよう。指板が地図に変わる。</p><div class="quest-footer"><span class="reward">⚡ +30 XP</span><button type="button" class="quest-button" data-launch="fret">挑戦する <span>↗</span></button></div></article>
+        <article class="quest-card quest-rhythm" data-card="rhythm"><div class="quest-top"><div class="quest-icon">◉</div><span class="quest-no">QUEST 03</span></div><div class="quest-meta">GROOVE <span>・</span> 8 BEATS</div><h3>リズム・キーパー</h3><p>ビートに合わせてタップ。安定したタイム感をゲームで磨こう。</p><div class="quest-footer"><span class="reward">⚡ +30 XP</span><button type="button" class="quest-button" data-launch="rhythm">挑戦する <span>↗</span></button></div></article>
+      </div>
+      <div class="bonus-banner"><span class="gift-icon">🎁</span><div><strong>DAILY CLEAR BONUS</strong><p id="bonus-caption">3つ全部クリアで、さらに +40 XP</p></div><span class="bonus-end" id="bonus-status">+40 XP</span></div>
+    </section>
+    <section class="section practice" id="practice">
+      <div class="section-heading"><div><div class="kicker">YOUR TOOLKIT</div><h2>フリープラクティス</h2><p>ミッション以外の練習にも。まずはシンプルなメトロノーム。</p></div></div>
+      <div class="tool-card"><div class="tool-heading"><div><span class="tool-icon">◷</span><strong>メトロノーム</strong></div><span class="tool-status" id="metro-status">READY</span></div><div class="metronome-controls"><button class="bpm-adjust" type="button" data-bpm="-5" aria-label="BPMを5下げる">−</button><div class="bpm-readout"><span id="bpm-value">90</span><small>BPM</small></div><button class="bpm-adjust" type="button" data-bpm="5" aria-label="BPMを5上げる">＋</button><button id="metro-toggle" type="button" class="metro-button">▶ スタート</button></div><input type="range" id="bpm-slider" min="40" max="220" step="1" value="90" aria-label="メトロノームのテンポ"><div class="beat-dots" aria-hidden="true"><span></span><span></span><span></span><span></span></div></div>
+    </section>
+    <section class="section achievements" id="achievements">
+      <div class="section-heading"><div><div class="kicker">KEEP THE FIRE ALIVE</div><h2>成長の記録</h2><p>続けてきた日が、ちゃんと残る。</p></div></div>
+      <div class="record-grid"><div class="record-card"><div class="record-top">LAST 14 DAYS <span>練習カレンダー</span></div><div class="calendar-row" id="calendar-row" aria-label="過去14日間の練習記録"></div><div class="calendar-foot"><span>● 練習した日</span><span id="practice-days">累計0日</span></div></div><div class="record-card"><div class="record-top">ACHIEVEMENTS <span>実績バッジ</span></div><div class="badges" id="badges"></div></div></div>
+    </section>
+    <footer class="footer">MADE FOR GUITAR PLAYERS <span>✳</span> YOUR NEXT RIFF STARTS HERE.<p>練習記録はこのブラウザにのみ保存されます。ギターの演奏音を自動判定する機能は、現バージョンにはありません。</p></footer>
+  </main>
+</div>
+<div class="modal-backdrop" id="modal" hidden><div class="modal-dialog" role="dialog" aria-modal="true" aria-labelledby="modal-title"><div class="modal-header"><span class="modal-brand">FRET QUEST <span>✳</span></span><button class="modal-close" type="button" id="modal-close" aria-label="クエストを閉じる">✕</button></div><div class="modal-inner" id="modal-inner"></div></div></div>
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+</body>
+</html>
