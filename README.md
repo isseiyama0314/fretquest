@@ -19,6 +19,20 @@ Melodies are public-domain tunes or original phrases written for this app. All e
 
 27 lessons are play-along stages (`stage.js`). Notes (tab: string and fret) or strum arrows scroll toward a hit line over a synthesized backing: drums for melodies, a soft attack-free pad for strumming so it is not mistaken for a strum. Each note is graded PERFECT / GREAT / OK / MISS with combo and a 0–100 score. ★1 (60) clears the lesson, ★2 is 80, ★3 is 93. "Slow" (75% tempo) can clear but is capped at ★2. A timing-offset setting (0 / +0.1 s / +0.2 s for Bluetooth) compensates output delay, and the result screen reports the average early/late drift.
 
+## Jam sessions
+
+`jam.js` loops the chord changes of blues and jazz standards (12-bar blues in A, Sweet Home Chicago, The Thrill Is Gone, Billie's Bounce, ii–V–I, Autumn Leaves, Fly Me to the Moon, Blue Bossa) with a generated band: walking bass, ride and comping for swing, a shuffle groove for blues, and a bossa nova pattern. Only chord progressions are included, never melodies; the progressions are common simplified versions. A fretboard map shows the current chord's tones (with degrees) and the notes that fit. With the microphone on, each newly detected single note scores loosely: chord tone 100, scale tone 50, anything else 0 and breaks the combo. Nothing fails. The bass is kept below the guitar's low E and detections below E2 are ignored, but backing played through a speaker can still be picked up; earphones are recommended. Best scores stay in this browser (`fretQuestJam`).
+
+## Rhythm games
+
+`games.js` has three games played on muted strings (onset timing only, with a tap fallback):
+
+- Call & response: the app plays a one-bar rhythm, the player answers it in the next bar. Two wins raise the level (denser patterns, faster tempo; from level 7 the pattern is hidden). Three misses end the game.
+- Tempo survival: a count-in bar, then two judged bars of a chosen pattern. 85% or better raises the tempo by 5. Three misses end the game.
+- Just timing: strum quarter notes while the click plays, then keep going through 2, 4, 8, 12 and 16 silent bars. The player's own offset during the click bars is the baseline, so device latency does not count as drift. The average deviation and the rushing/dragging trend are reported.
+
+While the player is judged, the backing is a soft attack-free pad, so speaker sound is not mistaken for a strum. Best records stay in this browser (`fretQuestGames`).
+
 ## Actual assessment limits
 
 Melody stages (microphone): a YIN-style detector must hear the exact target pitch (nearest semitone) for two consecutive frames inside the note's window. A repeated pitch only counts if a new pick attack is detected, so a ringing note cannot pass the next identical note. This does not grade chords, fingering or tone.
@@ -38,6 +52,8 @@ The manifest, PNG icons and a service worker support home-screen installation an
 ## Validation
 
 `tests/stage-playthrough.cjs` drives the real page in headless Chromium and feeds synthetic plucked notes and strums in as the microphone. It checks that clean playing scores at least 95, that silence and random strumming stay below the clear line, that the +0.2 s offset setting restores a delayed performance, and that tap mode works. `ALL=1` also plays every stage once. Serve the folder that contains `fretquest/` on port 8765 first (for example `python3 -m http.server 8765`).
+
+`tests/jam-games.cjs` does the same for sessions (chord-tone arpeggios score 100%, a chromatic line does not) and the three rhythm games (a perfect player clears them; a steadily drifting player fails the timing game).
 
 These are synthetic signals. They do not establish accuracy with a real guitar, a real iPhone microphone or real Bluetooth latency; those still need device testing.
 
