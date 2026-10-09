@@ -11,7 +11,8 @@ await p.addInitScript(()=>{
   const ctx=window.FretQuest.audioContext(),dest=ctx.createMediaStreamDestination(),T=ctx.currentTime,plan=window.__plan;
   const pluck=(t,freq,dur,v=.3)=>{const o=ctx.createOscillator(),g=ctx.createGain(),f=ctx.createBiquadFilter();o.type='sawtooth';o.frequency.value=freq;f.type='lowpass';f.frequency.value=2500;g.gain.setValueAtTime(.0001,t);g.gain.exponentialRampToValueAtTime(v,t+.005);g.gain.exponentialRampToValueAtTime(.001,t+dur);o.connect(f);f.connect(g);g.connect(dest);o.start(t);o.stop(t+dur+.05);};
   if(plan.kind==='tone')pluck(T+.05,plan.freq,30,.25);
-  if(plan.kind==='cal'){const spb=60/90;for(let i=0;i<8;i++)[82.4,110,146.8].forEach((f,k)=>pluck(T+.5+(4+i)*spb+plan.off+k*.006,f,.09,.12));}
+  /* The app reads its start time just after the microphone opens, so schedule from the next task to share that clock reading. */
+  if(plan.kind==='cal')setTimeout(()=>{const T2=ctx.currentTime,spb=60/90;for(let i=0;i<8;i++)[82.4,110,146.8].forEach((f,k)=>pluck(T2+.5+(4+i)*spb+plan.off+k*.006,f,.09,.12));},0);
   if(plan.kind==='stage'){const l=window.FQCourses.flatMap(c=>c.lessons).find(x=>x.id===plan.id),e=l.exercise,spb=60/e.bpm,t0=T+.35+4*spb+plan.off;e.notes.forEach(n=>pluck(t0+n.beat*spb,440*Math.pow(2,(n.midi-69)/12),n.len*spb*.95));}
   return dest.stream;};
 });

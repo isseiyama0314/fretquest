@@ -31,16 +31,39 @@ function renderHero(state){
  $('#hero-stars').textContent=stages.reduce((n,x)=>n+earnedStars(state,x),0);$('#hero-stars-total').textContent='/ '+stages.length*3;
  $('#hero-streak').textContent=F.streak();
 }
+/* Today's menu: the next lesson, a session and a rhythm game. Picks rotate by date so every day differs. */
+const MENU_JAMS=['blues-a','ii-v-i','chicago','autumn','bossa','billie','thrill','fly'],MENU_GAMES=['call','survival','clock'];
+function renderMenu(state){
+ const grid=$('#menu-grid');if(!grid||!window.FQJam||!window.FQGames)return;
+ const st=F.menuStatus(),dayNo=Math.floor(new Date(F.today()+'T12:00:00').getTime()/864e5),{c,l}=heroPick(state);
+ /* Beginners rotate through the easier sessions until they have cleared 12 lessons. */
+ const pool=all.filter(x=>state.courses?.[x.id]).length<12?MENU_JAMS.slice(0,3):MENU_JAMS,jam=FQJam.sessions.find(x=>x.id===pool[dayNo%pool.length]),gameId=MENU_GAMES[dayNo%MENU_GAMES.length],game=FQGames.games[gameId];
+ const items=[
+  {kind:'LESSON',label:'レッスン',title:l.title,sub:c.title+' ・ '+labels[l.type],done:st.lesson,doneText:'今日1レッスンクリア',go:()=>{selected=c;render();open(c,l);}},
+  {kind:'SESSION',label:'セッション',title:jam.title,sub:jam.genre+' ・ ♩ '+jam.bpm,done:st.jam,doneText:'今日セッション済み',go:()=>FQJam.lobby(jam)},
+  {kind:'GAME',label:'リズムゲーム',title:game.title,sub:game.tag,done:st.game,doneText:'今日ゲーム済み',go:()=>FQGames.lobby(gameId)}
+ ];
+ const count=items.filter(x=>x.done).length;
+ grid.innerHTML=items.map((x,i)=>'<button type="button" class="menu-card'+(x.done?' done':'')+'" data-menu="'+i+'"><span class="menu-num">'+(x.done?F.icon('check'):'0'+(i+1))+'</span><span class="menu-copy"><small>'+x.label+'</small><strong>'+x.title+'</strong><span>'+(x.done?x.doneText:x.sub)+'</span></span><span class="menu-go">'+(x.done?'もう一度':i?'+20 XP':state.courses?.[l.id]?'★を更新':'+40 XP')+' '+F.icon('arrow')+'</span></button>').join('');
+ grid.querySelectorAll('[data-menu]').forEach(b=>b.onclick=()=>items[Number(b.dataset.menu)].go());
+ $('#menu-count').textContent=count+' / 3';
+ $('#menu-bonus').className='menu-bonus'+(st.bonus?' got':'');
+ $('#menu-bonus').innerHTML=F.icon('gift')+'<span>'+(st.bonus?'今日のメニュー完走！ ボーナス +40 XP 獲得。また明日。':'あと '+(3-count)+' つで、完走ボーナス +40 XP')+'</span>';
+ const next=items.find(x=>!x.done);
+ $('#daily-start').innerHTML=(next?'今日のメニュー（'+count+' / 3）':'今日のメニュー完走 ✓')+' '+F.icon('arrow');
+ $('#daily-start').onclick=next?next.go:()=>$('#today').scrollIntoView({behavior:'smooth'});
+}
 function render(){
  const state=F.getState(),done=all.filter(l=>state.courses?.[l.id]).length;
  renderHero(state);
+ renderMenu(state);
  $('#course-total').textContent=done+' / '+all.length;
  $('#course-overall-fill').style.width=done/all.length*100+'%';
- $('#course-grid').innerHTML=courses.map((c,i)=>{const n=c.lessons.filter(l=>state.courses?.[l.id]).length;return '<button type="button" class="course-book cover-'+c.color+(selected.id===c.id?' selected':'')+'" data-course="'+c.id+'" aria-pressed="'+(selected.id===c.id)+'"><div class="book-meta"><span>COURSE / 0'+(i+1)+'</span><span>'+c.level+'</span></div><div class="book-art">'+F.icon(c.icon)+'<span class="book-orbit"></span><span class="book-star">✦</span></div><h3>'+c.title+'</h3><p>'+c.subtitle+'</p><div class="book-foot"><span>'+n+' / '+c.lessons.length+' レッスン<b class="book-stars">★ '+c.lessons.filter(play).reduce((k,x)=>k+earnedStars(state,x),0)+' / '+c.lessons.filter(play).length*3+'</b></span><span>'+(n===c.lessons.length?'✓ COMPLETE':'OPEN '+F.icon('arrow'))+'</span></div><div class="book-track"><span style="width:'+n/c.lessons.length*100+'%"></span></div></button>';}).join('');
+ $('#course-grid').innerHTML=courses.map((c,i)=>{const n=c.lessons.filter(l=>state.courses?.[l.id]).length;return '<button type="button" class="course-book cover-'+c.color+(selected.id===c.id?' selected':'')+'" data-course="'+c.id+'" aria-pressed="'+(selected.id===c.id)+'"><div class="book-meta"><span>コース 0'+(i+1)+'</span><span>'+c.level+'</span></div><div class="book-art">'+F.icon(c.icon)+'<span class="book-orbit"></span><span class="book-star">✦</span></div><h3>'+c.title+'</h3><p>'+c.subtitle+'</p><div class="book-foot"><span>'+n+' / '+c.lessons.length+' レッスン<b class="book-stars">★ '+c.lessons.filter(play).reduce((k,x)=>k+earnedStars(state,x),0)+' / '+c.lessons.filter(play).length*3+'</b></span><span>'+(n===c.lessons.length?'✓ 制覇':'開く '+F.icon('arrow'))+'</span></div><div class="book-track"><span style="width:'+n/c.lessons.length*100+'%"></span></div></button>';}).join('');
  document.querySelectorAll('[data-course]').forEach(b=>b.onclick=()=>{selected=courses.find(c=>c.id===b.dataset.course);render();$('#course-detail-title').focus({preventScroll:true});});
  const c=selected,n=c.lessons.filter(l=>state.courses?.[l.id]).length,next=nextLesson(c);
  $('#course-detail').className='course-detail cover-'+c.color;
- $('#course-detail').innerHTML='<div class="course-detail-top"><div><span class="kicker">YOUR NEXT SMALL WIN</span><h3 id="course-detail-title" tabindex="-1">'+c.title+'</h3><p>'+c.subtitle+' 各レッスンをクリアすると、次が開きます。</p></div><button type="button" class="primary-btn" id="continue-course">'+(n===c.lessons.length?'もう一度練習する':'続きから練習する')+' '+F.icon('arrow')+'</button></div><div class="lesson-path">'+c.lessons.map((l,i)=>{const d=state.courses?.[l.id],available=unlocked(c,l);return '<button type="button" class="course-lesson '+(d?'cleared':available?'available':'locked')+'" data-lesson="'+l.id+'" '+(!available?'disabled':'')+'><span class="lesson-stop">'+(d?F.icon('check'):available?String(i+1):'<span aria-hidden="true">⌑</span>')+'</span><span class="lesson-stop-copy"><strong>'+l.title+'</strong><small>'+labels[l.type]+' ・ 約'+l.minutes+'分</small></span><span class="lesson-stop-state">'+(d?(play(l)&&d.method!=='self'?'<span class="stop-stars">'+FS().starText(FS().starsFor(d.bestScore))+'</span>':'復習'):available?'+40 XP':'前のレッスンで解放')+'</span></button>';}).join('')+'</div>';
+ $('#course-detail').innerHTML='<div class="course-detail-top"><div><span class="kicker">次のレッスン</span><h3 id="course-detail-title" tabindex="-1">'+c.title+'</h3><p>'+c.subtitle+' 各レッスンをクリアすると、次が開きます。</p></div><button type="button" class="primary-btn" id="continue-course">'+(n===c.lessons.length?'もう一度練習する':'続きから練習する')+' '+F.icon('arrow')+'</button></div><div class="lesson-path">'+c.lessons.map((l,i)=>{const d=state.courses?.[l.id],available=unlocked(c,l);return '<button type="button" class="course-lesson '+(d?'cleared':available?'available':'locked')+'" data-lesson="'+l.id+'" '+(!available?'disabled':'')+'><span class="lesson-stop">'+(d?F.icon('check'):available?String(i+1):'<span aria-hidden="true">⌑</span>')+'</span><span class="lesson-stop-copy"><strong>'+l.title+'</strong><small>'+labels[l.type]+' ・ 約'+l.minutes+'分</small></span><span class="lesson-stop-state">'+(d?(play(l)&&d.method!=='self'?'<span class="stop-stars">'+FS().starText(FS().starsFor(d.bestScore))+'</span>':'復習'):available?'+40 XP':'前のレッスンで解放')+'</span></button>';}).join('')+'</div>';
  $('#continue-course').onclick=()=>open(c,next);
  document.querySelectorAll('[data-lesson]').forEach(b=>b.onclick=()=>{const l=c.lessons.find(x=>x.id===b.dataset.lesson);if(unlocked(c,l))open(c,l);});
 }

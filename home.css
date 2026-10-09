@@ -64,3 +64,26 @@
 /* The hero already shows the streak, so the stat row keeps XP and level only. */
 .stats-grid .streak-stat{display:none}
 .stats-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+
+/* Today's menu */
+.menu-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
+.menu-card{display:grid;grid-template-columns:auto 1fr;grid-template-areas:"num copy" "go go";gap:12px 14px;align-items:center;text-align:left;border:0;border-radius:22px;padding:18px;background:linear-gradient(160deg,#2c2548,#1b1829);color:#f4f1ff;cursor:pointer;box-shadow:0 7px 0 #29273c26,inset 0 0 0 1px #ffffff14;transition:transform .14s}
+.menu-card:hover{transform:translateY(-2px)}
+.menu-card:focus-visible{outline:3px solid #c7ef75;outline-offset:3px}
+.menu-num{grid-area:num;display:grid;place-items:center;width:44px;height:44px;border-radius:14px;background:#ffffff12;font:900 15px "DM Sans",sans-serif;color:#c7ef75}
+.menu-num .icon{width:20px;height:20px}
+.menu-copy{grid-area:copy;min-width:0}
+.menu-copy small{display:block;font:800 10px "Noto Sans JP",sans-serif;color:#c7ef75;letter-spacing:.06em}
+.menu-copy strong{display:block;font:900 16px/1.35 "Noto Sans JP",sans-serif;color:#fff;margin:2px 0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.menu-copy span{font:600 11px "Noto Sans JP",sans-serif;color:#b9b2d6}
+.menu-go{grid-area:go;justify-self:stretch;display:flex;align-items:center;justify-content:center;gap:6px;padding:10px;border-radius:12px;background:#c7ef75;color:#1c1930;font:900 12px "Noto Sans JP",sans-serif}
+.menu-go .icon{width:14px;height:14px}
+.menu-card.done{background:linear-gradient(160deg,#2f3b2a,#1b2018)}
+.menu-card.done .menu-num{background:#c7ef75;color:#1c1930}
+.menu-card.done .menu-go{background:#ffffff14;color:#ddd7f5}
+.menu-bonus{display:flex;align-items:center;gap:12px;margin-top:12px;padding:14px 18px;border-radius:18px;background:#ffffff;box-shadow:inset 0 0 0 1px var(--line);font:800 13px "Noto Sans JP",sans-serif;color:var(--ink)}
+.menu-bonus .icon{width:22px;height:22px;color:#a483e0;flex:none}
+.menu-bonus.got{background:#c7ef75;box-shadow:none}
+.menu-bonus.got .icon{color:#1c1930}
+@media (max-width:900px){.menu-grid{grid-template-columns:1fr}.menu-card{grid-template-columns:auto 1fr auto;grid-template-areas:"num copy go"}.menu-go{justify-self:end;padding:9px 12px}}
+.today-menu{margin-bottom:34px}

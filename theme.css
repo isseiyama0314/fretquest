@@ -1,0 +1,137 @@
+/* FRET QUEST stage theme: one dark look for the whole app, matching the play screens.
+   Loaded last; it overrides the colours of the original light pages and lifts tiny text to readable sizes. */
+:root{--bg:#14121f;--paper:#1f1b31;--ink:#f4f1ff;--muted:#b9b2d6;--line:#ffffff17;--surface:#1f1b31;--surface-2:#2a2446;--faint:#8f88ad;--lime:#c7ef75;color-scheme:dark}
+body{background:radial-gradient(120% 60% at 50% -10%,#2a2147 0%,var(--bg) 55%) fixed,var(--bg);color:var(--ink)}
+::selection{background:#c7ef7555}
+
+/* Shell */
+.sidebar{background:#17142499;border-color:var(--line);backdrop-filter:blur(14px)}
+.brand,.brand span{color:var(--ink)}
+.brand-mark{border-color:#c7ef75;box-shadow:3px 4px 0 #00000080;color:#1c1930}
+.brand small,.sidebar-label,.sidebar-foot{color:var(--faint);font-size:9px}
+.nav-link{color:var(--faint);font-size:12px}
+.nav-link:hover{background:#ffffff0f;color:var(--ink)}
+.nav-link.active{background:#c7ef75;color:#1c1930;box-shadow:0 4px 0 #00000059}
+.nav-link.active .icon{color:#1c1930}
+.sidebar-note{background:#2a2446;border-color:#ffffff1a;box-shadow:3px 5px 0 #00000059}
+.sidebar-note strong{color:var(--ink)}
+.sidebar-note p{color:var(--muted);font-size:11px}
+.topbar-title{color:var(--ink)}
+.date-label{color:var(--faint);font-size:11px}
+.avatar{background:#2a2446;border-color:#ffffff26;color:#c7ef75}
+.status-dot{background:#c7ef75}
+
+/* Section headings */
+.kicker{color:#c7ef75;font-size:10px;letter-spacing:.16em}
+.section-heading h2,.section h2,.section h3{color:var(--ink)}
+.section-heading p{color:var(--muted);font-size:12px}
+.mission-progress{color:var(--ink)}
+.mission-progress small{color:var(--faint);font-size:9px}
+.primary-btn{background:#c7ef75;border-color:#c7ef75;color:#1c1930;box-shadow:0 5px 0 #779941}
+.primary-btn:hover{background:#d4f58e}
+
+/* Stats */
+.stat{background:var(--surface);border-color:var(--line);box-shadow:0 5px 0 #00000040}
+.stat-icon,.xp-stat .stat-icon,.level-stat .stat-icon{background:#ffffff12;color:#c7ef75}
+.stat-top{color:var(--faint);font-size:10px}
+.stat-value{color:var(--ink)}
+.stat-value small,.stat-sub,.level-next{color:var(--faint);font-size:11px}
+.xp-track{background:#ffffff14}
+
+/* Courses */
+.course-overall{background:#ffffff14}
+.course-overall>span{background:linear-gradient(90deg,#c7ef75,#6fe3d2)}
+.cover-lime{--cover:#1f2a1a;--accent:#c7ef75;--art:#c7ef75}
+.cover-peach{--cover:#2d1f1f;--accent:#ffb397;--art:#ffb397}
+.cover-lilac{--cover:#251f38;--accent:#cec1f1;--art:#cec1f1}
+.course-book{background:linear-gradient(160deg,var(--cover),#1a1727);border-color:var(--line);color:var(--ink);box-shadow:0 6px 0 #00000059}
+.course-book:hover{box-shadow:0 9px 0 #00000059}
+.course-book.selected{box-shadow:0 6px 0 var(--accent),0 0 30px #00000066}
+.course-book p{color:var(--muted);font-size:12px}
+.book-meta,.book-foot{font-size:10px}
+.book-orbit{opacity:.85}
+.book-art .icon{color:#1c1930}
+.book-track{background:#ffffff14}
+.course-detail{background:var(--surface);border-color:var(--line);box-shadow:0 6px 0 #00000059}
+.course-detail p{color:var(--muted);font-size:12px}
+.course-lesson{background:#ffffff08;border-color:var(--line);color:var(--ink)}
+.course-lesson.available{background:#ffffff10;border-color:var(--accent)}
+.course-lesson.cleared{background:#c7ef7512}
+.course-lesson.locked{color:var(--faint)}
+.lesson-stop{background:#ffffff12;color:var(--faint)}
+.available .lesson-stop{background:var(--art);color:#1c1930}
+.cleared .lesson-stop{background:#c7ef75;color:#1c1930}
+.lesson-stop-copy strong{font-size:13px}
+.lesson-stop-copy small,.lesson-stop-state{color:var(--faint);font-size:10px}
+.stop-stars{color:#ffd166}
+.book-stars{color:#ffd166}
+.academy-utility{color:var(--muted);font-size:12px}
+.academy-utility button{background:#ffffff0d;border-color:var(--line);color:var(--ink);font-size:12px}
+.academy-utility button:hover{background:#ffffff1a}
+
+/* Menu bonus row */
+.menu-bonus{background:var(--surface);box-shadow:inset 0 0 0 1px var(--line);color:var(--ink)}
+.menu-bonus .icon{color:#ffd166}
+
+/* Records */
+.record-card{background:var(--surface);border-color:var(--line);box-shadow:0 5px 0 #00000040}
+.record-top{color:var(--faint);font-size:11px}
+.calendar-day{background:#ffffff0d;color:var(--faint);font-size:10px}
+.calendar-day.active{background:#c7ef75;color:#1c1930;border-color:#c7ef75;box-shadow:0 2px 0 #779941}
+.calendar-foot{color:var(--faint);font-size:10px}
+.calendar-foot i{background:#c7ef75}
+.badge-icon{background:#ffffff0d;border-color:var(--line);color:#ffffff40}
+.badge.unlocked .badge-icon{background:#ffd16626;border-color:#ffd166;color:#ffd166;box-shadow:0 3px 0 #00000059}
+.badge small{color:var(--faint);font-size:10px}
+.badge.unlocked small{color:#ffd166}
+.footer{border-color:var(--line);color:var(--faint);font-size:10px}
+.footer p{color:var(--faint);font-size:11px}
+.footer-wordmark{color:var(--muted)}
+.toast{background:#2a2446;border-color:#c7ef75;color:#f4f1ff}
+
+/* Every dialog uses the stage look, not only play screens. */
+.modal-backdrop{background:#0a0912b3}
+.modal-dialog{background:radial-gradient(120% 80% at 50% 0%,#3a2f63 0%,#1c1930 62%);border-color:#ffffff14;color:#f4f1ff;box-shadow:0 12px 0 #0000004d,0 30px 80px #00000066}
+.modal-header{border-color:#ffffff1f}
+.modal-brand{color:#c9c2e6}
+.modal-close{background:#ffffff14;color:#fff;border-color:#ffffff22}
+.modal-inner h2,.modal-success h2{color:#fff}
+.modal-inner p{color:#b9b2d6;font-size:13px}
+.lesson-progress{color:#c7ef75;font-size:10px}
+.lesson-bar{background:#ffffff14}
+.lesson-bar span{background:linear-gradient(90deg,#c7ef75,#6fe3d2)}
+.lesson-goal{color:#ddd7f5!important}
+.teaching-card{background:#ffffff0d;border-color:#ffffff14}
+.teaching-card>span{color:#c7ef75}
+.teaching-card h3{color:#fff}
+.teaching-card p{color:#c9c2e6!important}
+.lesson-ticket{border-color:#ffffff26;color:#b9b2d6;font-size:11px}
+.action-button{background:#c7ef75;border-color:#c7ef75;color:#1c1930;box-shadow:0 5px 0 #779941}
+.action-button:hover{background:#d4f58e}
+.action-button.secondary-action{background:#ffffff12;border-color:#ffffff26;color:#f4f1ff;box-shadow:none}
+.answer-button{background:#ffffff10;border-color:#ffffff26;color:#f4f1ff;box-shadow:0 4px 0 #00000059}
+.answer-button:hover{background:#ffffff1f}
+.answer-button.correct{background:#c7ef75;border-color:#c7ef75;color:#1c1930;box-shadow:0 4px 0 #779941}
+.answer-button.wrong{background:#ff8fb833;border-color:#ff8fb8;color:#ffd0e1;box-shadow:0 4px 0 #00000059}
+.quiz-explanation{background:transparent;color:#ddd7f5}
+.self-check-note{background:#ffc56b1f;color:#ffd99a}
+.chord-display,.intro-chord,.fretboard-display{background:#f4f1ff;border-color:transparent}
+.chord-target{color:#5d7a2a}
+.chord-sequence>span,.note-sequence>span{background:#ffffff12;color:#b9b2d6}
+.chord-sequence>.current,.note-sequence>.current{background:#c7ef75;color:#1c1930;box-shadow:0 3px 0 #779941}
+.chord-sequence>.done,.note-sequence>.done{background:#c7ef7526;color:#c7ef75}
+.pitch-target>span:last-child{color:#b9b2d6}
+.mic-panel{box-shadow:0 5px 0 #00000059}
+.rhythm-pattern>span{background:#ffffff0d;border-color:#ffffff1f;color:#b9b2d6}
+.rhythm-pattern>.rest{color:#ffffff40}
+.rhythm-pattern>.playing{background:#c7ef75;border-color:#c7ef75;color:#1c1930}
+.rhythm-pad{background:linear-gradient(180deg,#3d3463,#2a2446);border-color:#ffffff26;color:#fff;box-shadow:0 7px 0 #00000066}
+.rhythm-pad.flash{background:#c7ef75;color:#1c1930;border-color:#c7ef75;box-shadow:0 2px 0 #779941}
+.question-big{color:#fff}
+.success-medal{background:#ffd16626;border-color:#ffd166;box-shadow:0 7px 0 #00000059,inset 0 0 0 7px #ffd1661a}
+.success-medal .icon{color:#ffd166}
+.success-sub{color:#c7ef75;font-size:10px}
+.success-xp{background:#c7ef7526;border-color:#c7ef75;color:#c7ef75}
+.import-label{background:#ffffff0d;border-color:#ffffff40;color:#f4f1ff}
+.lesson-caption{color:#8f88ad!important}
+.today-menu,.jam-section{margin-top:40px}

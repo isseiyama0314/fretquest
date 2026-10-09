@@ -185,7 +185,9 @@ function judge(r,midi,ch,at){
 }
 
 function finish(r){
- const s=r.s;stop();
+ const s=r.s,played=r.ctx.currentTime-r.t0;stop();
+ /* A session counts as practice after a full pass or at least 30 seconds of playing. */
+ const earned=played>=Math.min(30,r.total)?F.recordActivity('jam:'+s.id):0;
  const scored=!!r.mic&&r.notes>0;
  if(scored&&r.points>best(s.id)){prefs.best=prefs.best||{};prefs.best[s.id]=r.points;save();}
  renderCards();
@@ -196,12 +198,14 @@ function finish(r){
     +'<div class="result-grid"><div><b>'+r.notes+'</b><small>NOTES</small></div><div><b>'+Math.round(r.tones/r.notes*100)+'%</b><small>CHORD TONES</small></div><div><b>'+Math.round(r.inside/r.notes*100)+'%</b><small>IN KEY</small></div><div><b>'+r.maxCombo+'</b><small>MAX COMBO</small></div></div>'
     +'<p>'+(r.tones/r.notes>=.4?'コードの音をしっかり狙えています。次はテンポを上げてみよう。':'まずは大きい丸（コードの音）を、コードが変わった瞬間に1音だけ狙ってみよう。')+'</p>'
     :'<p>'+(r.mic?'音が検出されませんでした。ギターをマイクに近づけて、1音ずつはっきり弾いてみよう。':'伴奏だけのセッションでした。マイクをオンにすると、コードに合う音を弾けたかを表示します。')+'</p>')
+   +(earned?'<div class="success-xp">+'+earned+' XP</div>':'')
    +'<p class="lesson-caption">'+(r.mic?'単音の音の高さだけを見ています。和音、リズム、フレーズの良し悪しは判定しません。':'')+'</p>'
    +'<button type="button" class="action-button" id="jam-again">もう一度セッション</button><button type="button" class="action-button secondary-action" id="jam-back">閉じる</button></div>';
   $('#jam-again').onclick=()=>lobby(s);$('#jam-back').onclick=F.close;$('#jam-again').focus();
  });
 }
 
+window.addEventListener('fq:progress',()=>{try{prefs.best=JSON.parse(localStorage.getItem('fretQuestJam'))?.best||prefs.best;}catch{}renderCards();});
 window.FQJam={sessions:SESSIONS,renderCards,lobby};
 renderCards();
 })();
