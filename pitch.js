@@ -1,8 +1,9 @@
 /* YIN-style difference estimator. Monophonic audio only. No audio leaves the device. */
 (function(root,factory){const api=factory();if(typeof module==='object'&&module.exports)module.exports=api;else root.FQPitch=api;})(typeof window!=='undefined'?window:globalThis,function(){'use strict';
-function detect(input,sampleRate){
+/* minRms gates out silence; callers pass a level relative to the measured noise floor. */
+function detect(input,sampleRate,minRms=.008){
   let energy=0,mean=0;for(let i=0;i<input.length;i++){energy+=input[i]*input[i];mean+=input[i];}
-  const rms=Math.sqrt(energy/input.length);if(rms<.008)return {frequency:null,rms,clarity:0};mean/=input.length;
+  const rms=Math.sqrt(energy/input.length);if(rms<minRms)return {frequency:null,rms,clarity:0};mean/=input.length;
   const stride=sampleRate>30000?2:1,rate=sampleRate/stride,buf=new Float32Array(Math.floor(input.length/stride));
   for(let i=0;i<buf.length;i++)buf[i]=input[i*stride]-mean;
   const min=Math.max(2,Math.floor(rate/1400)),max=Math.min(Math.floor(rate/70),Math.floor(buf.length/2)-1),size=buf.length-max;

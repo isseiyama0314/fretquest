@@ -33,11 +33,19 @@ Melodies are public-domain tunes or original phrases written for this app. All e
 
 While the player is judged, the backing is a soft attack-free pad, so speaker sound is not mistaken for a strum. Best records stay in this browser (`fretQuestGames`).
 
+## Tools, daily menu and records
+
+`tools.js` adds a microphone tuner (nearest string or a tapped one with a reference tone, median-smoothed, within 5 cents counts as tuned) and an automatic timing measurement (eight clicks; the median offset is saved and used by stages, sessions and games; noisy or incomplete runs are refused).
+
+Today's menu replaces the retired daily quests (35-second chord change, note-name quiz, screen-tap rhythm): one lesson (the next one, or the lowest-starred stage), one session and one rhythm game, rotating by date. Beginners only get the three easier sessions until 12 lessons are cleared. A lesson clear earns 40 XP the first time; each session or game earns 20 XP the first time it is played that day; finishing all three adds a 40 XP bonus. Sessions and games count toward practice days and streaks, appear in the calendar and badges, and their best records travel with the JSON export. Older records that hold the retired quests remain valid.
+
 ## Actual assessment limits
 
 Melody stages (microphone): a YIN-style detector must hear the exact target pitch (nearest semitone) for two consecutive frames inside the note's window. A repeated pitch only counts if a new pick attack is detected, so a ringing note cannot pass the next identical note. This does not grade chords, fingering or tone.
 
 Strum stages (microphone): only the timing of strum attacks is graded. Attacks that match no target count as EXTRA and cost points, so random strumming scores 0. Whether the correct chord shape is held is not judged and the screen says so.
+
+The microphone is opened as raw instrument input (no echo cancellation, noise suppression or automatic gain): iOS voice processing suppressed sustained guitar notes. Attack and pitch thresholds follow a noise floor measured between notes, so quiet sources such as an unplugged electric guitar register while steady room noise does not; the floor does not rise while notes ring. Meters use a decibel scale. If several notes are missed while almost nothing reaches the microphone, the stage suggests moving the phone closer.
 
 Tap mode is available on every stage and is labeled as screen-tap timing, not guitar grading. The microphone requests echo cancellation; headphones are still recommended. No audio is recorded or uploaded.
 
@@ -51,9 +59,9 @@ The manifest, PNG icons and a service worker support home-screen installation an
 
 ## Validation
 
-`tests/stage-playthrough.cjs` drives the real page in headless Chromium and feeds synthetic plucked notes and strums in as the microphone. It checks that clean playing scores at least 95, that silence and random strumming stay below the clear line, that the +0.2 s offset setting restores a delayed performance, and that tap mode works. `ALL=1` also plays every stage once. Serve the folder that contains `fretquest/` on port 8765 first (for example `python3 -m http.server 8765`).
+`tests/stage-playthrough.cjs` drives the real page in headless Chromium and feeds synthetic plucked notes and strums in as the microphone. It checks that clean playing scores at least 95 (also at 1/20 level with room noise, which scored 0 before the adaptive thresholds), that silence and random strumming stay below the clear line, that the +0.2 s offset setting restores a delayed performance, and that tap mode works. `ALL=1` also plays every stage once. Serve the folder that contains `fretquest/` on port 8765 first (for example `python3 -m http.server 8765`).
 
-`tests/jam-games.cjs` does the same for sessions (chord-tone arpeggios score 100%, a chromatic line does not) and the three rhythm games (a perfect player clears them; a steadily drifting player fails the timing game).
+`tests/tools.cjs` checks tuner readings and that a player 0.2 s late scores 100 after measuring. `tests/records.cjs` checks the daily menu, XP, bonus, streak, duplicate protection and export/import. `tests/jam-games.cjs` does the same for sessions (chord-tone arpeggios score 100%, a chromatic line does not) and the three rhythm games (a perfect player clears them; a steadily drifting player fails the timing game).
 
 These are synthetic signals. They do not establish accuracy with a real guitar, a real iPhone microphone or real Bluetooth latency; those still need device testing.
 

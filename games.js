@@ -81,7 +81,7 @@ async function start(id){
  const frame=()=>{
   if(run!==r)return;
   if(mic){mic.an.getFloatTimeDomainData(mic.buf);let e=0;for(let i=0;i<mic.buf.length;i+=4)e+=mic.buf[i]*mic.buf[i];r.level=r.level*.6+Math.sqrt(e/(mic.buf.length/4))*.4;
-   const at=ctx.currentTime-r.comp;if(r.onset(mic.buf,at))r.onsets.push(at);$('#g-level').style.width=Math.min(100,r.level*900)+'%';}
+   const at=ctx.currentTime-r.comp;if(r.onset(mic.buf,at))r.onsets.push(at);$('#g-level').style.width=K.meterPct(r.level)+'%';}
   if(game.tick(ctx.currentTime)===false)return;
   r.raf=requestAnimationFrame(frame);
  };
@@ -207,19 +207,22 @@ function graph(offsets,spb){
 
 function finish(r,res){
  stop();const id=r.id,old=prefs.best[id]||0,record=res.score>old;
- if(record){prefs.best[id]=res.score;save();}renderCards();
+ if(record){prefs.best[id]=res.score;save();}
+ const earned=F.recordActivity('game:'+id);renderCards();
  F.show(el=>{
   $('.modal-dialog').classList.add('is-stage');
   el.innerHTML='<div class="stage-result'+(record?' passed':'')+'">'+(record?'<div class="confetti" aria-hidden="true">'+Array.from({length:20},(_,i)=>'<i style="--x:'+(5+i*4.5)+'%;--delay:'+(i%4*.07)+'s;--r:'+(i%2?200:-160)+'deg"></i>').join('')+'</div>':'')
    +'<div class="lesson-progress">RHYTHM GAME / RESULT</div><h2 id="modal-title">'+(record?'自己ベスト更新！':'ゲーム終了')+'</h2>'
    +'<div class="result-score"><strong>'+(res.score||0)+'</strong><small>'+(id==='call'?'LEVEL':id==='survival'?'BPM':'BARS')+'</small></div><p>'+res.line+'</p>'
    +(res.history?res.history.map(h=>'<div class="clock-row"><b>'+h.silent+'小節</b><span>平均 '+Math.round(h.mean)+'ms</span><span>'+(Math.abs(h.drift)>=40?(h.drift<0?'走り気味':'もたり気味'):'安定')+'</span><span>'+(h.ok?'✓':'✗')+'</span></div>').join(''):'')
+   +(earned?'<div class="success-xp">+'+earned+' XP</div>':'')
    +'<p class="lesson-caption">'+(r.mic?'マイクで音の立ち上がりのタイミングを測りました。':'画面タップのタイミングを測りました。ギター演奏の判定ではありません。')+' ベスト記録はこの端末に保存されます。</p>'
    +'<button type="button" class="action-button" id="g-again">もう一度</button><button type="button" class="action-button secondary-action" id="g-close">閉じる</button></div>';
   $('#g-again').onclick=()=>lobby(id);$('#g-close').onclick=F.close;$('#g-again').focus();
  });
 }
 
-window.FQGames={renderCards,lobby};
+window.addEventListener('fq:progress',()=>{try{prefs.best=JSON.parse(localStorage.getItem('fretQuestGames'))?.best||prefs.best;}catch{}renderCards();});
+window.FQGames={games:GAMES,renderCards,lobby};
 renderCards();
 })();

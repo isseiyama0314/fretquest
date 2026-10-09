@@ -61,7 +61,8 @@ function schedule(r){
 }
 
 async function openMic(ctx){
- const stream=await navigator.mediaDevices.getUserMedia({audio:{echoCancellation:true,noiseSuppression:false,autoGainControl:false}});
+ /* Raw instrument input: iOS voice processing (echo cancellation) treats a sustained guitar note as noise and suppresses it. */
+ const stream=await navigator.mediaDevices.getUserMedia({audio:{echoCancellation:false,noiseSuppression:false,autoGainControl:false}});
  const src=ctx.createMediaStreamSource(stream),an=ctx.createAnalyser();an.fftSize=2048;src.connect(an);
  return {stream,src,an,buf:new Float32Array(an.fftSize)};
 }
@@ -75,7 +76,10 @@ function stop(){
 /* ---------- Judging ---------- */
 function mark(r,it,grade,at){
  it.grade=grade;it.hitAt=at;r.counts[grade]++;r.points+=GRADE[grade].pts;
- if(grade==='miss'){r.combo=0;}else{r.combo++;r.maxCombo=Math.max(r.maxCombo,r.combo);burst(r,it);}
+ if(grade==='miss'){r.combo=0;r.missRun=(r.missRun||0)+1;
+  /* Several misses while the microphone hears almost nothing: the guitar is too far or too quiet. */
+  if(r.mic&&!r.warned&&r.missRun>=3&&(r.peak||0)<.006){r.warned=true;F.notify('ギターの音がほとんど届いていません。iPhoneを弦から10〜20cmに近づけてみて。');}
+ }else{r.missRun=0;r.combo++;r.maxCombo=Math.max(r.maxCombo,r.combo);burst(r,it);}
  popup(r,GRADE[grade].label,grade,grade==='miss'||grade==='perfect'?'':at<it.time?'EARLY':'LATE');
 }
 function judge(r,it,at){
@@ -90,21 +94,31 @@ function strike(r,at){
  if(at>-.2&&at<r.c.length+.3){r.extra++;r.combo=0;popup(r,'EXTRA','extra','');}
 }
 /* Onset detector: the newest ~10 ms must jump well above both the recent quiet level and the previous frame.
-   After a hit the floor jumps to the new level, so one ringing strum is never counted twice. */
+   After a hit the floor jumps to the new level, so one ringing strum is never counted twice.
+   Thresholds follow the room's noise floor instead of a fixed level, so a quiet guitar (an unplugged electric,
+   a phone across the room) still registers while steady background noise does not. */
 function onsetDetector(){
- let hist=[1,1,1,1,1,1],prev=1,last=-99;
- return (buf,at)=>{
+ let hist=[1,1,1,1,1,1],prev=1,last=-99,floor=null;
+ const detect=(buf,at)=>{
   let e=0;for(let i=buf.length-512;i<buf.length;i++)e+=buf[i]*buf[i];
-  const short=Math.sqrt(e/512),hit=short>.02&&short>Math.min(...hist)*2+.004&&short>prev*1.3&&at-last>.08;
+  const short=Math.sqrt(e/512);
+  /* Noise floor: falls quickly to quiet moments; it may only rise between notes (no attack for 0.35 s),
+     so a ringing guitar never raises its own threshold. */
+  floor=floor===null?short:short<floor?floor*.7+short*.3:at-last>.35?floor*.995+short*.005:floor;
+  const hit=short>Math.max(.0025,floor*3)&&short>Math.min(...hist)*2+floor&&short>prev*1.3&&at-last>.08;
   prev=short;
   if(hit){hist=hist.map(()=>short);last=at;}else{hist.push(short);hist.shift();}
   return hit;
  };
+ detect.gate=()=>Math.max(.0012,(floor||0)*3);
+ return detect;
 }
+/* Input level on a decibel scale (-60 dB to -10 dB), so quiet playing still moves the meter. */
+const meterPct=rms=>Math.max(0,Math.min(100,(20*Math.log10(Math.max(rms,1e-6))+60)*2));
 function listen(r,now){
- const m=r.mic;m.an.getFloatTimeDomainData(m.buf);const d=window.FQPitch.detect(m.buf,r.ctx.sampleRate),at=now-r.comp;
- r.level=r.level*.6+d.rms*.4;
- if(r.onset(m.buf,at)){r.lastOnset=at;r.stable=0;if(!r.c.song)strike(r,at);}
+ const m=r.mic;m.an.getFloatTimeDomainData(m.buf);const at=now-r.comp,onset=r.onset(m.buf,at),d=window.FQPitch.detect(m.buf,r.ctx.sampleRate,r.onset.gate());
+ r.level=r.level*.6+d.rms*.4;r.peak=Math.max((r.peak||0)*.995,d.rms);
+ if(onset){r.lastOnset=at;r.stable=0;if(!r.c.song)strike(r,at);}
  if(!r.c.song)return;
  if(!d.frequency){r.stable=0;r.lastMidi=null;r.heard=null;return;}
  const midi=Math.round(window.FQPitch.midi(d.frequency));r.heard=midi;
@@ -171,7 +185,7 @@ function hud(r,t){
  $('#stage-score').textContent=Math.max(0,Math.round((r.points-r.extra*EXTRA_PENALTY)/total));
  $('#stage-combo').textContent=r.combo;$('#stage-combo-box').classList.toggle('hot',r.combo>=10);
  $('#stage-progress').style.width=Math.min(100,Math.max(0,t/r.c.length*100))+'%';
- if(r.mic)$('#stage-level').style.width=Math.min(100,r.level*900)+'%';
+ if(r.mic)$('#stage-level').style.width=meterPct(r.level)+'%';
  const next=r.c.items.find(i=>!i.grade);
  if(r.c.song){
   const heard=$('#stage-heard');if(heard)heard.textContent=r.mic?(r.heard!=null?noteName(r.heard):'—'):'TAP';
@@ -194,6 +208,8 @@ function lobby(session,hooks){
   +'<div class="stage-options"><div class="chip-row" role="group" aria-label="テンポ"><button type="button" data-speed="0.75">ゆっくり</button><button type="button" data-speed="1">ふつう</button></div>'
   +'<div class="chip-row" role="group" aria-label="判定方法"><button type="button" data-input="mic">ギターで弾く（マイク）</button><button type="button" data-input="tap">画面タップで遊ぶ</button></div>'
   +'<div class="chip-row three" role="group" aria-label="タイミング補正"><button type="button" data-latency="0">補正なし</button><button type="button" data-latency="0.1">+0.1秒</button><button type="button" data-latency="0.2">+0.2秒<small>Bluetooth</small></button></div>'
+  +'<button type="button" class="stage-measure" id="stage-measure">'+(prefs.latency&&![0,.1,.2].includes(prefs.latency)?'測定値 '+(prefs.latency>0?'+':'')+prefs.latency.toFixed(2)+'秒を使用中 ・ ':'')+'ずれを自動で測る →</button>'
+  +'<button type="button" class="stage-measure" id="stage-tune">弾く前にチューニング →</button>'
   +'<label class="stage-toggle"><input type="checkbox" id="stage-backing"> <span>伴奏を鳴らす</span></label></div>'
   +'<button type="button" class="action-button" id="stage-start">スタート '+F.icon('arrow')+'</button><button type="button" class="action-button secondary-action" id="stage-demo">お手本を見て聴く</button>'
   +'<p class="lesson-caption" id="stage-caption"></p></div>';
@@ -211,6 +227,8 @@ function lobby(session,hooks){
  document.querySelectorAll('[data-input]').forEach(b=>b.onclick=()=>{prefs.input=b.dataset.input;savePrefs();sync();});
  document.querySelectorAll('[data-latency]').forEach(b=>b.onclick=()=>{prefs.latency=Number(b.dataset.latency);savePrefs();sync();});
  $('#stage-backing').onchange=e=>{prefs.backing=e.target.checked;savePrefs();};
+ $('#stage-tune').onclick=()=>window.FQTools.tuner();
+ $('#stage-measure').onclick=()=>window.FQTools.calibrate(()=>lobby(session,hooks));
  $('#stage-start').onclick=()=>start('play');$('#stage-demo').onclick=()=>start('demo');
  sync();
  const r={cv:$('#stage-canvas'),c,fx:[],preview:true};r.g=r.cv.getContext('2d');requestAnimationFrame(()=>{if(r.cv.isConnected)draw(r,-.01,0);});
@@ -310,5 +328,6 @@ function preview(cv,l){
  };
  requestAnimationFrame(frame);
 }
-window.FQStage={lobby,preview,starsFor,starText,stop,kit:{synth,openMic,onsetDetector,chordMidis,noteName}};
+const setLatency=v=>{prefs.latency=v;savePrefs();};
+window.FQStage={lobby,preview,starsFor,starText,stop,setLatency,kit:{synth,openMic,onsetDetector,meterPct,chordMidis,noteName}};
 })();
