@@ -320,6 +320,7 @@ function finish(r){
  const mean=r.offsets.length>=5?r.offsets.reduce((a,b)=>a+b,0)/r.offsets.length:0,drift=Math.abs(mean)>=.06?'<p class="stage-drift">平均で<b>'+Math.abs(mean).toFixed(2)+'秒'+(mean>0?'遅め':'早め')+'</b>でした。'+(mean>0?'イヤホンや端末の遅れなら、スタート前の「タイミング補正」で調整できます。':'少し落ち着いて、伴奏をよく聴いてみよう。')+'</p>':'';
  fileBars(r);
  if(passed)hooks.passed?.();
+ hooks.done?.({score:recorded,passed});
  const earned=passed?F.recordLesson(r.lesson.id,recorded,r.input==='mic'?'microphone':'tap'):0;
  F.show(el=>{
   $('.modal-dialog').classList.add('is-stage');
