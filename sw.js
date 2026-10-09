@@ -1,6 +1,6 @@
 /* Scope is /fretquest/ only. Never cache audio, account data or other sites. */
-const VERSION='fq-academy-20261012-mic1';
-const FILES=['./','./index.html','./style.css?v=20261012-mic1','./academy.css?v=20261012-mic1','./lessons.js?v=20261012-mic1','./pitch.js?v=20261012-mic1','./app.js?v=20261012-mic1','./stage.css?v=20261012-mic1','./stage.js?v=20261012-mic1','./home.css?v=20261012-mic1','./jam.css?v=20261012-mic1','./theme.css?v=20261012-mic1','./tools.js?v=20261012-mic1','./jam.js?v=20261012-mic1','./games.js?v=20261012-mic1','./academy.js?v=20261012-mic1','./manifest.webmanifest','./icons/icon-180.png','./icons/icon-192.png','./icons/icon-512.png'];
+const VERSION='fq-academy-20261012-skip1';
+const FILES=['./','./index.html','./style.css?v=20261012-skip1','./academy.css?v=20261012-skip1','./lessons.js?v=20261012-skip1','./pitch.js?v=20261012-skip1','./app.js?v=20261012-skip1','./stage.css?v=20261012-skip1','./stage.js?v=20261012-skip1','./home.css?v=20261012-skip1','./jam.css?v=20261012-skip1','./theme.css?v=20261012-skip1','./tools.js?v=20261012-skip1','./jam.js?v=20261012-skip1','./games.js?v=20261012-skip1','./academy.js?v=20261012-skip1','./manifest.webmanifest','./icons/icon-180.png','./icons/icon-192.png','./icons/icon-512.png'];
 /* A new version takes over right away instead of waiting for every open tab to close.
    Files are fetched with cache:'reload' so the offline copy never comes from a stale HTTP cache. */
 self.addEventListener('install',event=>{event.waitUntil(caches.open(VERSION).then(cache=>cache.addAll(FILES.map(f=>new Request(f,{cache:'reload'})))).then(()=>self.skipWaiting()));});

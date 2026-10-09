@@ -135,3 +135,9 @@ body{background:radial-gradient(120% 60% at 50% -10%,#2a2147 0%,var(--bg) 55%) f
 .import-label{background:#ffffff0d;border-color:#ffffff40;color:#f4f1ff}
 .lesson-caption{color:#8f88ad!important}
 .today-menu,.jam-section{margin-top:40px}
+/* Skipping ahead for experienced players */
+.skip-row{display:flex;flex-wrap:wrap;gap:8px;margin-top:14px}
+.skip-row button{border:0;border-radius:12px;padding:10px 14px;font:800 12px "Noto Sans JP",sans-serif;cursor:pointer}
+#skip-challenge{background:#ffd166;color:#1c1930;box-shadow:0 4px 0 #b88a00}
+#skip-unlock{background:#ffffff12;color:var(--ink);box-shadow:inset 0 0 0 1px #ffffff26}
+#experienced[aria-pressed="true"]{background:#c7ef75;color:#1c1930;border-color:#c7ef75}
