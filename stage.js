@@ -194,6 +194,8 @@ function lobby(session,hooks){
   +'<div class="stage-options"><div class="chip-row" role="group" aria-label="テンポ"><button type="button" data-speed="0.75">ゆっくり</button><button type="button" data-speed="1">ふつう</button></div>'
   +'<div class="chip-row" role="group" aria-label="判定方法"><button type="button" data-input="mic">ギターで弾く（マイク）</button><button type="button" data-input="tap">画面タップで遊ぶ</button></div>'
   +'<div class="chip-row three" role="group" aria-label="タイミング補正"><button type="button" data-latency="0">補正なし</button><button type="button" data-latency="0.1">+0.1秒</button><button type="button" data-latency="0.2">+0.2秒<small>Bluetooth</small></button></div>'
+  +'<button type="button" class="stage-measure" id="stage-measure">'+(prefs.latency&&![0,.1,.2].includes(prefs.latency)?'測定値 '+(prefs.latency>0?'+':'')+prefs.latency.toFixed(2)+'秒を使用中 ・ ':'')+'ずれを自動で測る →</button>'
+  +'<button type="button" class="stage-measure" id="stage-tune">弾く前にチューニング →</button>'
   +'<label class="stage-toggle"><input type="checkbox" id="stage-backing"> <span>伴奏を鳴らす</span></label></div>'
   +'<button type="button" class="action-button" id="stage-start">スタート '+F.icon('arrow')+'</button><button type="button" class="action-button secondary-action" id="stage-demo">お手本を見て聴く</button>'
   +'<p class="lesson-caption" id="stage-caption"></p></div>';
@@ -211,6 +213,8 @@ function lobby(session,hooks){
  document.querySelectorAll('[data-input]').forEach(b=>b.onclick=()=>{prefs.input=b.dataset.input;savePrefs();sync();});
  document.querySelectorAll('[data-latency]').forEach(b=>b.onclick=()=>{prefs.latency=Number(b.dataset.latency);savePrefs();sync();});
  $('#stage-backing').onchange=e=>{prefs.backing=e.target.checked;savePrefs();};
+ $('#stage-tune').onclick=()=>window.FQTools.tuner();
+ $('#stage-measure').onclick=()=>window.FQTools.calibrate(()=>lobby(session,hooks));
  $('#stage-start').onclick=()=>start('play');$('#stage-demo').onclick=()=>start('demo');
  sync();
  const r={cv:$('#stage-canvas'),c,fx:[],preview:true};r.g=r.cv.getContext('2d');requestAnimationFrame(()=>{if(r.cv.isConnected)draw(r,-.01,0);});
@@ -310,5 +314,6 @@ function preview(cv,l){
  };
  requestAnimationFrame(frame);
 }
-window.FQStage={lobby,preview,starsFor,starText,stop,kit:{synth,openMic,onsetDetector,chordMidis,noteName}};
+const setLatency=v=>{prefs.latency=v;savePrefs();};
+window.FQStage={lobby,preview,starsFor,starText,stop,setLatency,kit:{synth,openMic,onsetDetector,chordMidis,noteName}};
 })();

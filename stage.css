@@ -88,3 +88,5 @@
  .stage-screen.preview{height:170px}
 }
 @media (prefers-reduced-motion:reduce){.stage-judge.show,.result-stars span.on,.stage-pad.hit{animation-duration:.01s}}
+
+.stage-measure{border:0;background:none;color:#c7ef75;font:800 12px "Noto Sans JP",sans-serif;text-align:left;padding:2px 6px;cursor:pointer;text-decoration:underline;text-underline-offset:3px}
