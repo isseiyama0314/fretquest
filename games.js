@@ -21,6 +21,7 @@ const SURVIVAL={'4':{label:'4分音符',p:'x...x...x...x...'},'8':{label:'8分�
 const GAMES={
  call:{title:'コール＆レスポンス',tag:'聴いて、まねして、返す。',kicker:'COPY THE GROOVE',about:'アプリが1小節のリズムを叩きます。次の小節で、同じリズムをミュートした弦で返そう。正解で少しずつ難しく、ミス3回で終了。'},
  survival:{title:'テンポ・サバイバル',tag:'どこまで速く刻める？',kicker:'HOW FAST CAN YOU GO',about:'4カウントの後、2小節ぶん同じパターンを刻みます。85％以上そろえばテンポが5上がります。ミス3回で終了。'},
+ remix:{title:'苦手リミックス',tag:'ミスしたリズムを、まとめて克服。',kicker:'REMIX YOUR WEAK SPOTS',about:'これまでのゲームや曲でミスしたリズムが「苦手リズム帳」にたまります。そこから8問を、聴いてまねる・譜面を見て弾く・耳だけで覚える、の3つの形で出題。2回続けて成功したリズムは卒業です。'},
  clock:{title:'ジャスト・タイミング',tag:'クリックが消えても、テンポキープ。',kicker:'YOUR INNER METRONOME',about:'4分音符を刻み続けよう。途中でクリックが消えます。消えている間もテンポを保てたか、ずれをミリ秒で測ります。'}
 };
 const hits=p=>[...p].map((c,i)=>c==='x'?i:-1).filter(i=>i>=0);
@@ -29,7 +30,7 @@ let run=null;
 
 /* ---------- Shared engine ---------- */
 function cardHtml(){return Object.entries(GAMES).map(([id,g])=>'<button type="button" class="game-card game-'+id+'" data-game="'+id+'"><span class="jam-genre">'+g.kicker+'</span><strong>'+g.title+'</strong><span class="jam-changes">'+g.tag+'</span><span class="game-best">'+bestLabel(id)+'</span></button>').join('');}
-function bestLabel(id){const b=prefs.best[id];if(!b)return 'NEW';return id==='call'?'BEST LEVEL '+b:id==='survival'?'BEST ♩ '+b:'BEST '+b+' 小節';}
+function bestLabel(id){const b=prefs.best[id];if(!b)return 'NEW';return id==='call'?'BEST LEVEL '+b:id==='survival'?'BEST ♩ '+b:id==='remix'?'BEST '+b+' / 8':'BEST '+b+' 小節';}
 function renderCards(){const el=$('#game-cards');if(!el)return;el.innerHTML=cardHtml();el.querySelectorAll('[data-game]').forEach(b=>b.onclick=()=>lobby(b.dataset.game));}
 
 function stop(){if(!run)return;const r=run;run=null;cancelAnimationFrame(r.raf);r.audio.stop();if(r.mic){r.mic.stream.getTracks().forEach(t=>t.stop());r.mic.src.disconnect();}document.removeEventListener('visibilitychange',r.onHide);}
@@ -44,6 +45,7 @@ function lobby(id){
    +'<div class="game-howto"><b>準備</b>左手で6本の弦に軽く触れて音を止め、右手でジャッと刻みます（ブラッシング）。音程は判定しません。</div>'
    +'<div class="stage-options">'
    +(id==='survival'?'<div class="chip-row three" role="group" aria-label="パターン">'+Object.entries(SURVIVAL).map(([k,v])=>'<button type="button" data-pat="'+k+'">'+v.label+'</button>').join('')+'</div>':'')
+   +(id==='remix'?bookHtml():'')
    +(id==='clock'?'<div class="chip-row three" role="group" aria-label="テンポ">'+[60,80,100].map(b=>'<button type="button" data-cb="'+b+'">♩ '+b+'</button>').join('')+'</div>':'')
    +'<div class="chip-row" role="group" aria-label="判定方法"><button type="button" data-in="mic">ギターで刻む（マイク）</button><button type="button" data-in="tap">画面タップで遊ぶ</button></div></div>'
    +'<button type="button" class="action-button" id="game-start">スタート '+F.icon('arrow')+'</button>'
@@ -77,7 +79,7 @@ async function start(id){
  r.onHide=()=>{if(document.hidden){stop();lobby(id);}};document.addEventListener('visibilitychange',r.onHide);
  $('#g-quit').onclick=()=>{stop();lobby(id);};
  if(!mic){const tap=e=>{e.preventDefault();if(run!==r)return;r.onsets.push(ctx.currentTime-r.comp);const pad=$('#g-pad');pad.classList.remove('hit');void pad.offsetWidth;pad.classList.add('hit');};$('#g-pad').addEventListener('pointerdown',tap);}
- const game=({call,survival,clock})[id](r);
+ const game=({call,survival,clock,remix})[id](r);
  const frame=()=>{
   if(run!==r)return;
   if(mic){mic.an.getFloatTimeDomainData(mic.buf);let e=0;for(let i=0;i<mic.buf.length;i+=4)e+=mic.buf[i]*mic.buf[i];r.level=r.level*.6+Math.sqrt(e/(mic.buf.length/4))*.4;
@@ -98,37 +100,79 @@ function grid(pattern,lit,hidden){return [...pattern].map((c,i)=>'<span class="'
 function beatsUi(index){document.querySelectorAll('#g-beats i').forEach((x,i)=>x.classList.toggle('on',index===i));}
 function flash(text,cls){const el=$('#g-phase');el.textContent=text;el.className='game-phase '+(cls||'');}
 
-/* ---------- Game 1: call & response ---------- */
-function call(r){
- let level=1,lives=3,wins=0,round=null,bpm=76;
- const newRound=start=>{
-  const spb=60/bpm,step=spb/4,pool=CALLS[Math.min(CALLS.length-1,Math.floor((level-1)/2))],pattern=pick(pool),callStart=start,resp=start+4*spb;
-  for(let k=0;k<4;k++)r.audio.hat(callStart+k*spb,k===0);
-  hits(pattern).forEach(i=>wood(r,callStart+i*step,i===0));
-  r.audio.pad(callStart,PAD,10*spb);
-  round={pattern,spb,step,callStart,resp,end:resp+4*spb,targets:hits(pattern).map(i=>resp+i*step),judged:false,hidden:level>=7};
-  $('#g-grid').innerHTML=grid(pattern,new Set(),round.hidden);
+/* ---------- Shared call & response rounds ----------
+   plan.next(result) returns the next round {pattern,bpm,mode,src,tol,extra} or null to stop.
+   Modes ("faces"): call = hear it and see it, ear = hear it only, read = see it only and play it straight away. */
+const PROMPT={call:['LISTEN','このリズムを覚えて'],ear:['LISTEN','耳だけで覚えよう'],read:['READ','譜面を読んで、次の小節で弾こう']};
+function copyRounds(r,plan){
+ let round=null;
+ const newRound=(start,item)=>{
+  const spb=60/item.bpm,step=spb/4,resp=start+4*spb;
+  for(let k=0;k<4;k++)r.audio.hat(start+k*spb,k===0);
+  if(item.mode!=='read')hits(item.pattern).forEach(i=>wood(r,start+i*step,i===0));
+  r.audio.pad(start,PAD,10*spb);
+  round={...item,spb,step,callStart:start,resp,end:resp+4*spb,targets:hits(item.pattern).map(i=>resp+i*step),judged:false,hidden:item.mode==='ear'};
+  $('#g-grid').innerHTML=grid(item.pattern,new Set(),round.hidden);
+  if(item.src)$('#g-extra').innerHTML='<span class="g-src">'+item.src+'</span>';
  };
- const first=r.ctx.currentTime+.4;for(let k=0;k<4;k++)r.audio.click(first+k*60/bpm,k===0);newRound(first+4*60/bpm);
- $('#g-left').textContent=level;
+ const firstItem=plan.next(null),first=r.ctx.currentTime+.4,spb0=60/firstItem.bpm;
+ for(let k=0;k<4;k++)r.audio.click(first+k*spb0,k===0);newRound(first+4*spb0,firstItem);
  return {tick(now){
   const v=now-r.out,R=round;
-  if(v<R.callStart){flash('READY');$('#g-sub').textContent='まずは聴くだけ';beatsUi(-1);return;}
-  if(v<R.resp){const i=Math.floor((v-R.callStart)/R.step);flash('LISTEN','listen');$('#g-sub').textContent=R.hidden?'耳だけで覚えよう':'このリズムを覚えて';beatsUi(Math.floor(i/4));
-   $('#g-grid').innerHTML=grid(R.pattern,new Set(hits(R.pattern).filter(h=>h<=i&&!R.hidden)),R.hidden);return;}
-  if(v<R.end){flash('YOUR TURN','turn');$('#g-sub').textContent='同じリズムを返そう';beatsUi(Math.floor((v-R.resp)/R.spb));return;}
+  if(v<R.callStart){flash('READY');$('#g-sub').textContent=R.mode==='read'?'譜面を見て準備':'まずは聴くだけ';beatsUi(-1);return;}
+  if(v<R.resp){const i=Math.floor((v-R.callStart)/R.step);flash(PROMPT[R.mode][0],'listen');$('#g-sub').textContent=PROMPT[R.mode][1];beatsUi(Math.floor(i/4));
+   if(R.mode==='call')$('#g-grid').innerHTML=grid(R.pattern,new Set(hits(R.pattern).filter(h=>h<=i)),false);return;}
+  if(v<R.end){flash('YOUR TURN','turn');$('#g-sub').textContent=R.mode==='read'?'譜面どおりに弾こう':'同じリズムを返そう';beatsUi(Math.floor((v-R.resp)/R.spb));return;}
   if(!R.judged&&now-r.comp>R.end+.12){
-   R.judged=true;const tol=level<5?.13:.1,m=match(R.targets,r.onsets.filter(o=>o>R.resp-.12&&o<R.end+.12),tol),ok=m.hit===R.targets.length&&m.extra<=(level<3?1:0);
+   R.judged=true;const m=match(R.targets,r.onsets.filter(o=>o>R.resp-.12&&o<R.end+.12),R.tol),ok=m.hit===R.targets.length&&m.extra<=R.extra;
    r.onsets=r.onsets.filter(o=>o>=R.end+.12);
+   const fate=K.rhythmBook.record(R.pattern,R.bpm,R.src||'コール＆レスポンス',ok);
    $('#g-grid').innerHTML=grid(R.pattern,new Set(),false);
-   if(ok){wins++;if(wins%2===0)level++;bpm=Math.min(132,76+Math.floor((level-1)/2)*6);flash('NICE!','ok');}else{lives--;flash(m.hit<R.targets.length?'MISS':'EXTRA','ng');}
-   $('#g-sub').textContent=(ok?'ばっちり！':m.hit+' / '+R.targets.length+' 拍そろった'+(m.extra?'・余分 '+m.extra:''));
-   $('#g-left').textContent=level;$('#g-right').textContent='♥'.repeat(lives)+'♡'.repeat(3-lives);
-   if(lives<=0){setTimeout(()=>finish(r,{score:level,wins,line:wins+' ラウンド成功・レベル '+level+' まで到達'}),900);return false;}
-   newRound(R.end+2*R.spb);
+   flash(ok?(fate==='conquered'?'克服！':'NICE!'):m.hit<R.targets.length?'MISS':'EXTRA',ok?'ok':'ng');
+   $('#g-sub').textContent=ok?(fate==='conquered'?'苦手リズム帳から卒業！':'ばっちり！'):m.hit+' / '+R.targets.length+' 拍そろった'+(m.extra?'・余分 '+m.extra:'');
+   const next=plan.next({round:R,ok,m,fate});
+   if(!next){setTimeout(plan.finish,900);return false;}
+   newRound(R.end+2*R.spb,next);
   }
   beatsUi(-1);
  }};
+}
+
+/* ---------- Game 1: call & response ---------- */
+function call(r){
+ let level=1,lives=3,wins=0;const missed=[];
+ return copyRounds(r,{
+  next(res){
+   if(res){if(res.ok){wins++;if(wins%2===0)level++;}else{lives--;missed.push(res.round.pattern);}
+    $('#g-left').textContent=level;$('#g-right').textContent='♥'.repeat(Math.max(0,lives))+'♡'.repeat(3-Math.max(0,lives));if(lives<=0)return null;}
+   return {pattern:pick(CALLS[Math.min(CALLS.length-1,Math.floor((level-1)/2))]),bpm:Math.min(132,76+Math.floor((level-1)/2)*6),mode:level>=7?'ear':'call',src:'コール＆レスポンス Lv'+level,tol:level<5?.13:.1,extra:level<3?1:0};
+  },
+  finish:()=>finish(r,{score:level,wins,missed,line:wins+' ラウンド成功・レベル '+level+' まで到達'})
+ });
+}
+
+/* ---------- Game 4: weak-rhythm remix ----------
+   Eight rounds drawn from the rhythm book (weakest first), each with a different face.
+   Short books are topped up with standard patterns so the remix always runs. */
+let reviewSet=null;
+const REMIX_ROUNDS=8;
+function remix(r){
+ const weak=reviewSet||K.rhythmBook.weak().slice(0,REMIX_ROUNDS);reviewSet=null;
+ const base=weak.map(w=>({pattern:w.p,bpm:Math.max(70,Math.min(120,w.bpm||84)),src:w.src})),items=[];
+ /* Repeat the weak rhythms to fill eight rounds, so one can be passed twice and leave the book. Warm-ups only when the book is empty. */
+ for(let i=0;items.length<REMIX_ROUNDS;i++)items.push(base.length?base[i%base.length]:{pattern:pick(CALLS[Math.min(CALLS.length-1,1+Math.floor(i/3))]),bpm:84,src:'ウォームアップ'});
+ for(let i=items.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[items[i],items[j]]=[items[j],items[i]];}
+ const faces=['call','read','ear'];let n=0,cleared=0,conquered=0;const missed=[];
+ $('#g-left-label').textContent='ROUND';$('#g-right-label').textContent='CLEAR';$('#g-right').classList.remove('g-lives');$('#g-right').textContent='0 / '+REMIX_ROUNDS;
+ return copyRounds(r,{
+  next(res){
+   if(res){if(res.ok)cleared++;else missed.push(res.round.pattern);if(res.fate==='conquered')conquered++;$('#g-right').textContent=cleared+' / '+REMIX_ROUNDS;}
+   if(n>=items.length)return null;
+   const it=items[n];n++;$('#g-left').textContent=n+' / '+REMIX_ROUNDS;
+   return {...it,mode:faces[(n-1)%3],tol:.12,extra:0};
+  },
+  finish:()=>finish(r,{score:cleared,missed,conquered,line:(cleared>=7?'ハイレベル！':cleared>=4?'OK！ この調子で。':'もう一回！')+' '+REMIX_ROUNDS+'問中 '+cleared+'問クリア'+(conquered?'・'+conquered+'個のリズムを克服':'')})
+ });
 }
 
 /* ---------- Game 2: tempo survival ---------- */
@@ -151,6 +195,7 @@ function survival(r){
   if(!R.judged&&now-r.comp>R.end+.12){
    R.judged=true;const m=match(R.targets,r.onsets.filter(o=>o>R.judge-.2&&o<R.end+.12),.1),acc=Math.max(0,(m.hit-m.extra*.5)/R.targets.length);
    r.onsets=r.onsets.filter(o=>o>=R.end+.12);
+   K.rhythmBook.record(pat.p,bpm,'テンポ・サバイバル ♩'+bpm,acc>=.85);
    if(acc>=.85){top=Math.max(top,bpm);bpm+=5;flash('TEMPO UP!','ok');}else{lives--;flash('MISS','ng');}
    $('#g-sub').textContent=Math.round(acc*100)+'％ そろった';$('#g-right').textContent='♥'.repeat(lives)+'♡'.repeat(3-lives);
    if(lives<=0){setTimeout(()=>finish(r,{score:top,line:pat.label+'で ♩ '+(top||'—')+' までクリア'}),900);return false;}
@@ -205,20 +250,32 @@ function graph(offsets,spb){
  return s+'</svg>';
 }
 
+/* The rhythm book as shown in the remix lobby. */
+function bookHtml(){
+ const weak=K.rhythmBook.weak();
+ if(!weak.length)return '<div class="book-empty">苦手リズム帳はまだ空です。ほかのゲームや曲でミスしたリズムがここにたまります。今は基本パターンでリミックスします。</div>';
+ return '<div class="book"><div class="book-head"><b>苦手リズム帳</b><span>'+weak.length+'個</span></div>'+weak.slice(0,6).map(w=>'<div class="book-row"><div class="mini-grid">'+[...w.p].map((c,i)=>'<i class="'+(c==='x'?'on':'')+(i%4===0?' beat':'')+'"></i>').join('')+'</div><span class="book-src">'+w.src+'</span><span class="book-rate">'+w.miss+'ミス'+(w.hit?' / '+w.hit+'成功':'')+'</span></div>').join('')+(weak.length>6?'<div class="book-more">ほか '+(weak.length-6)+'個</div>':'')+'</div>';
+}
+/* Rhythms missed in this game, with a one-tap review. */
+function missedHtml(missed){
+ const list=[...new Set(missed||[])].slice(0,4);if(!list.length)return '';
+ return '<div class="book"><div class="book-head"><b>今回ミスしたリズム</b><span>苦手リズム帳に追加</span></div>'+list.map(p=>'<div class="book-row"><div class="mini-grid">'+[...p].map((c,i)=>'<i class="'+(c==='x'?'on':'')+(i%4===0?' beat':'')+'"></i>').join('')+'</div></div>').join('')+'<button type="button" class="action-button" id="g-review">このリズムを今すぐ復習</button></div>';
+}
 function finish(r,res){
- stop();const id=r.id,old=prefs.best[id]||0,record=res.score>old;
+ stop();const id=r.id,old=prefs.best[id]||0,record=res.score>old&&!(id==='call'&&!res.wins);
  if(record){prefs.best[id]=res.score;save();}
  const earned=F.recordActivity('game:'+id);renderCards();
  F.show(el=>{
   $('.modal-dialog').classList.add('is-stage');
   el.innerHTML='<div class="stage-result'+(record?' passed':'')+'">'+(record?'<div class="confetti" aria-hidden="true">'+Array.from({length:20},(_,i)=>'<i style="--x:'+(5+i*4.5)+'%;--delay:'+(i%4*.07)+'s;--r:'+(i%2?200:-160)+'deg"></i>').join('')+'</div>':'')
    +'<div class="lesson-progress">RHYTHM GAME / RESULT</div><h2 id="modal-title">'+(record?'自己ベスト更新！':'ゲーム終了')+'</h2>'
-   +'<div class="result-score"><strong>'+(res.score||0)+'</strong><small>'+(id==='call'?'LEVEL':id==='survival'?'BPM':'BARS')+'</small></div><p>'+res.line+'</p>'
+   +'<div class="result-score"><strong>'+(res.score||0)+'</strong><small>'+(id==='call'?'LEVEL':id==='survival'?'BPM':id==='remix'?'/ 8':'BARS')+'</small></div><p>'+res.line+'</p>'
+   +missedHtml(res.missed)
    +(res.history?res.history.map(h=>'<div class="clock-row"><b>'+h.silent+'小節</b><span>平均 '+Math.round(h.mean)+'ms</span><span>'+(Math.abs(h.drift)>=40?(h.drift<0?'走り気味':'もたり気味'):'安定')+'</span><span>'+(h.ok?'✓':'✗')+'</span></div>').join(''):'')
    +(earned?'<div class="success-xp">+'+earned+' XP</div>':'')
    +'<p class="lesson-caption">'+(r.mic?'マイクで音の立ち上がりのタイミングを測りました。':'画面タップのタイミングを測りました。ギター演奏の判定ではありません。')+' ベスト記録はこの端末に保存されます。</p>'
    +'<button type="button" class="action-button" id="g-again">もう一度</button><button type="button" class="action-button secondary-action" id="g-close">閉じる</button></div>';
-  $('#g-again').onclick=()=>lobby(id);$('#g-close').onclick=F.close;$('#g-again').focus();
+  $('#g-again').onclick=()=>lobby(id);$('#g-review')?.addEventListener('click',()=>{reviewSet=[...new Set(res.missed)].map(p=>K.rhythmBook.weak().find(w=>w.p===p)||{p,bpm:84,src:'今回のミス'});lobby('remix');});$('#g-close').onclick=F.close;$('#g-again').focus();
  });
 }
 

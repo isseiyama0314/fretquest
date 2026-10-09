@@ -67,6 +67,37 @@ async function openMic(ctx){
  return {stream,src,an,buf:new Float32Array(an.fftSize)};
 }
 
+/* Rhythm book: one-bar rhythms (16 steps, x = attack) the player missed, from any game or stage.
+   A rhythm enters the book on a miss and leaves it after two clean passes in a row. Kept in this browser. */
+const BOOK_KEY='fretQuestRhythmBook',BOOK_MAX=60;
+const rhythmBook={
+ load(){try{const b=JSON.parse(localStorage.getItem(BOOK_KEY));return b&&typeof b.items==='object'?b:{items:{}};}catch{return {items:{}};}},
+ save(b){try{localStorage.setItem(BOOK_KEY,JSON.stringify(b));}catch{}},
+ /* Returns 'added', 'missed', 'hit', 'conquered' or null when nothing was stored. */
+ record(p,bpm,src,ok){
+  if(!/^[x.]{16}$/.test(p)||!p.includes('x'))return null;
+  const b=this.load();let it=b.items[p];
+  if(!it){if(ok)return null;it={p,bpm,src,miss:0,hit:0,streak:0};}
+  let fate;
+  if(ok){it.hit++;it.streak++;fate=it.streak>=2?'conquered':'hit';}else{fate=it.miss?'missed':'added';it.miss++;it.streak=0;it.bpm=Math.round(bpm);it.src=src;}
+  it.last=Date.now();
+  if(fate==='conquered')delete b.items[p];else b.items[p]=it;
+  const list=Object.values(b.items);
+  if(list.length>BOOK_MAX)list.sort((a,c)=>this.weight(a)-this.weight(c)).slice(0,list.length-BOOK_MAX).forEach(x=>delete b.items[x.p]);
+  this.save(b);return fate;
+ },
+ /* Weaker and more recent rhythms come first. */
+ weight(it){return it.miss*2-it.hit-it.streak+Math.max(0,3-(Date.now()-(it.last||0))/864e5);},
+ weak(){return Object.values(this.load().items).sort((a,c)=>this.weight(c)-this.weight(a));}
+};
+/* Splits a finished 4/4 chart into bars and files each bar's rhythm: missed bars go in, clean bars count toward leaving. */
+function fileBars(r){
+ const c=r.c;if(c.meter!==4)return;
+ const bars={};
+ for(const it of c.items){const bar=Math.floor(it.beat/4+1e-9),step=(it.beat-bar*4)*4;if(Math.abs(step-Math.round(step))>1e-6){bars[bar]=null;continue;}
+  if(bars[bar]===null)continue;(bars[bar]=bars[bar]||{steps:new Set(),ok:true}).steps.add(Math.round(step));if(it.grade==='miss')bars[bar].ok=false;}
+ for(const [bar,v] of Object.entries(bars)){if(!v)continue;const p=Array.from({length:16},(_,i)=>v.steps.has(i)?'x':'.').join('');rhythmBook.record(p,c.bpm,r.lesson.title+' '+(Number(bar)+1)+'小節目',v.ok);}
+}
 function stop(){
  if(!run)return;const r=run;run=null;cancelAnimationFrame(r.raf);r.audio.stop();
  if(r.mic){r.mic.stream.getTracks().forEach(t=>t.stop());r.mic.src.disconnect();}
@@ -287,6 +318,7 @@ function finish(r){
  const total=r.c.items.length,score=Math.max(0,Math.min(100,Math.round((r.points-r.extra*EXTRA_PENALTY)/total))),slow=r.speed<1;
  const recorded=slow?Math.min(score,SLOW_CAP):score,stars=starsFor(recorded),passed=score>=PASS;
  const mean=r.offsets.length>=5?r.offsets.reduce((a,b)=>a+b,0)/r.offsets.length:0,drift=Math.abs(mean)>=.06?'<p class="stage-drift">平均で<b>'+Math.abs(mean).toFixed(2)+'秒'+(mean>0?'遅め':'早め')+'</b>でした。'+(mean>0?'イヤホンや端末の遅れなら、スタート前の「タイミング補正」で調整できます。':'少し落ち着いて、伴奏をよく聴いてみよう。')+'</p>':'';
+ fileBars(r);
  if(passed)hooks.passed?.();
  const earned=passed?F.recordLesson(r.lesson.id,recorded,r.input==='mic'?'microphone':'tap'):0;
  F.show(el=>{
@@ -330,5 +362,5 @@ function preview(cv,l){
  requestAnimationFrame(frame);
 }
 const setLatency=v=>{prefs.latency=v;savePrefs();};
-window.FQStage={lobby,preview,starsFor,starText,stop,setLatency,kit:{synth,openMic,onsetDetector,meterPct,chordMidis,noteName}};
+window.FQStage={lobby,preview,starsFor,starText,stop,setLatency,kit:{synth,openMic,onsetDetector,meterPct,chordMidis,noteName,rhythmBook}};
 })();

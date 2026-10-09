@@ -118,3 +118,20 @@
 .cal-stage{min-height:190px}
 .cal-dots i{width:12px;height:12px}
 @media (max-width:620px){.tool-links{grid-template-columns:1fr}}
+
+/* Rhythm book and remix */
+.game-remix:before{background:radial-gradient(circle,#ffd166 0%,transparent 65%)}
+.g-src{display:inline-block;margin-top:4px;padding:4px 10px;border-radius:99px;background:#ffffff12;font:700 11px "Noto Sans JP",sans-serif;color:#ddd7f5}
+.book{margin:12px 0;padding:12px;border-radius:16px;background:#ffffff0a;box-shadow:inset 0 0 0 1px #ffffff14;text-align:left}
+.book-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;font:800 12px "Noto Sans JP",sans-serif;color:#fff}
+.book-head span{color:#8f88ad;font-size:10px}
+.book-row{display:grid;grid-template-columns:minmax(0,1fr) auto;grid-template-areas:"grid rate" "src src";gap:4px 10px;padding:8px 0;border-top:1px solid #ffffff10}
+.book-row .mini-grid{grid-area:grid}
+.mini-grid{display:grid;grid-template-columns:repeat(16,1fr);gap:2px}
+.mini-grid i{height:14px;border-radius:3px;background:#ffffff10}
+.mini-grid i.beat{background:#ffffff1f}
+.mini-grid i.on{background:#ffc56b}
+.book-src{grid-area:src;font:600 10px "Noto Sans JP",sans-serif;color:#b9b2d6}
+.book-rate{grid-area:rate;font:800 10px "Noto Sans JP",sans-serif;color:#ff8fb8;align-self:center}
+.book-more,.book-empty{font:600 11px/1.7 "Noto Sans JP",sans-serif;color:#b9b2d6;padding-top:6px}
+.book .action-button{margin-top:10px}
