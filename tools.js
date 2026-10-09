@@ -20,7 +20,7 @@ function tuner(){
    +'<p>1本ずつ鳴らすと、いちばん近い弦を自動で選びます。弦をタップすると、その弦に固定してお手本の音が鳴ります。</p>'
    +'<div class="tuner-face"><div class="tuner-note" id="tn-note">—</div><div class="tuner-cents" id="tn-cents">弦を1本鳴らそう</div>'
    +'<div class="tuner-meter"><span class="tuner-zone"></span><i class="tuner-needle" id="tn-needle"></i><span class="tuner-scale"><b>♭</b><b>0</b><b>♯</b></span></div>'
-   +'<div class="tuner-hint" id="tn-hint">&nbsp;</div></div>'
+   +'<div class="tuner-hint" id="tn-hint">&nbsp;</div><div class="stage-mic tuner-mic"><span>MIC</span><div class="stage-level"><span id="tn-level"></span></div></div></div>'
    +'<div class="tuner-strings" role="group" aria-label="弦を選ぶ">'+STRINGS.map(s=>'<button type="button" data-tn="'+s.midi+'"><small>'+s.n+'弦</small><b>'+s.name+'</b><i aria-hidden="true">✓</i></button>').join('')+'</div>'
    +'<button type="button" class="action-button" id="tn-start">マイクをオンにする</button>'
    +'<p class="lesson-caption">標準チューニング（E A D G B E、A4=440Hz）。±5セント以内が合格の目安です。</p></div>';
@@ -31,11 +31,12 @@ function tuner(){
    let opened;try{opened=await openMic();}catch(e){if(generation===F.generation()){btn.disabled=false;F.notify(micError(e));}return;}
    if(generation!==F.generation()){opened.mic.stream.getTracks().forEach(t=>t.stop());return;}
    const {ctx,mic}=opened;stop();session={mic};F.setCleanup(stop);btn.textContent='マイクで聴いています';
-   const recent=[];let goodSince=0;const me=session;
+   const recent=[],floor=K.onsetDetector();let goodSince=0,level=0;const me=session;
    const frame=()=>{
     if(session!==me)return;
-    mic.an.getFloatTimeDomainData(mic.buf);const d=window.FQPitch.detect(mic.buf,ctx.sampleRate);
-    if(d.frequency&&d.rms>.01){recent.push(d.frequency);if(recent.length>7)recent.shift();}else if(recent.length)recent.shift();
+    mic.an.getFloatTimeDomainData(mic.buf);floor(mic.buf,ctx.currentTime);const d=window.FQPitch.detect(mic.buf,ctx.sampleRate,floor.gate());
+    level=level*.7+d.rms*.3;$('#tn-level').style.width=K.meterPct(level)+'%';
+    if(d.frequency){recent.push(d.frequency);if(recent.length>7)recent.shift();}else if(recent.length)recent.shift();
     if(recent.length>=3){
      /* Median of recent frames keeps the needle steady while the string rings out. */
      const f=[...recent].sort((a,b)=>a-b)[Math.floor(recent.length/2)],heard=window.FQPitch.midi(f);

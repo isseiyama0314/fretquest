@@ -11,7 +11,7 @@ await p.addInitScript(()=>{
  Math.random=()=>0;
  navigator.mediaDevices.getUserMedia=async()=>{
   const ctx=window.FretQuest.audioContext(),dest=ctx.createMediaStreamDestination(),T=ctx.currentTime,plan=window.__plan;
-  const pluck=(t,midi,dur,v=.3)=>{const o=ctx.createOscillator(),g=ctx.createGain(),f=ctx.createBiquadFilter();o.type='sawtooth';o.frequency.value=440*Math.pow(2,(midi-69)/12);f.type='lowpass';f.frequency.value=2500;g.gain.setValueAtTime(.0001,t);g.gain.exponentialRampToValueAtTime(v,t+.005);g.gain.exponentialRampToValueAtTime(.001,t+Math.max(.12,dur*.95));o.connect(f);f.connect(g);g.connect(dest);o.start(t);o.stop(t+dur+.05);};
+  const pluck=(t,midi,dur,v=.3)=>{v*=plan.gain||1;const o=ctx.createOscillator(),g=ctx.createGain(),f=ctx.createBiquadFilter();o.type='sawtooth';o.frequency.value=440*Math.pow(2,(midi-69)/12);f.type='lowpass';f.frequency.value=2500;g.gain.setValueAtTime(.0001,t);g.gain.exponentialRampToValueAtTime(v,t+.005);g.gain.exponentialRampToValueAtTime(.001,t+Math.max(.12,dur*.95));o.connect(f);f.connect(g);g.connect(dest);o.start(t);o.stop(t+dur+.05);};
   const strum=t=>[40,45,50,55].forEach((m,k)=>pluck(t+k*.006,m,.09,.12));
   if(plan.kind==='jam'){
    /* Arpeggiate the current chord's tones, one per beat. */
@@ -38,9 +38,9 @@ await p.goto(BASE,{waitUntil:'networkidle'});
 await p.evaluate(()=>window.FretQuest.ensureAudio());await p.waitForTimeout(800);
 const check=(name,ok,detail)=>{if(!ok)failed++;console.log(ok?'ok  ':'FAIL',name,'=>',detail);};
 
-async function jam(id,{wrong=false}={}){
+async function jam(id,{wrong=false,gain=1}={}){
  const s=await p.evaluate(id=>{const s=window.FQJam.sessions.find(x=>x.id===id);return {bpm:s.bpm};},id);
- await p.evaluate(({id,bpm,wrong})=>{window.__plan={kind:'jam',id,bpm,wrong};},{id,bpm:s.bpm,wrong});
+ await p.evaluate(({id,bpm,wrong,gain})=>{window.__plan={kind:'jam',id,bpm,wrong,gain};},{id,bpm:s.bpm,wrong,gain});
  await p.click(`[data-jam="${id}"]`);await p.click('[data-ch="1"]');await p.click('[data-mic="1"]');
  if(OUT)await p.screenshot({path:`${OUT}/jam-lobby.png`});
  await p.click('#jam-start');await p.waitForSelector('#jam-now');
@@ -49,7 +49,7 @@ async function jam(id,{wrong=false}={}){
  const grid=await p.$$eval('.result-grid div',d=>d.map(x=>x.innerText.replace('\n',' ')));
  const tones=parseInt((grid.find(x=>x.includes('CHORD TONES'))||'0'));
  if(OUT)await p.screenshot({path:`${OUT}/jam-result.png`});
- check('jam '+id+(wrong?' (chromatic)':''),wrong?tones<50:tones>=90,grid.join(', '));
+ check('jam '+id+(wrong?' (chromatic)':'')+(gain<1?' quiet x'+gain:''),wrong?tones<50:tones>=90,grid.join(', '));
  await p.click('#jam-back');await p.waitForTimeout(300);
 }
 async function game(id,plan,expect,opts={}){
@@ -65,7 +65,7 @@ async function game(id,plan,expect,opts={}){
  await p.click('#g-close');await p.waitForTimeout(300);
 }
 const only=process.env.ONLY;
-if(!only||only==='jam'){await jam('ii-v-i');await jam('ii-v-i',{wrong:true});await jam('bossa');}
+if(!only||only==='jam'){await jam('ii-v-i');await jam('ii-v-i',{wrong:true});await jam('bossa');await jam('ii-v-i',{gain:.05});}
 if(!only||only==='call')await game('call',{kind:'call',rounds:8},s=>s>=5,{shot:6000});
 if(!only||only==='survival')await game('survival',{kind:'survival',rounds:5},s=>s>=90,{pat:'mix'});
 if(!only||only==='clock')await game('clock',{kind:'clock',bpm:100,beats:240},s=>s===16,{cb:100});

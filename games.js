@@ -81,7 +81,7 @@ async function start(id){
  const frame=()=>{
   if(run!==r)return;
   if(mic){mic.an.getFloatTimeDomainData(mic.buf);let e=0;for(let i=0;i<mic.buf.length;i+=4)e+=mic.buf[i]*mic.buf[i];r.level=r.level*.6+Math.sqrt(e/(mic.buf.length/4))*.4;
-   const at=ctx.currentTime-r.comp;if(r.onset(mic.buf,at))r.onsets.push(at);$('#g-level').style.width=Math.min(100,r.level*900)+'%';}
+   const at=ctx.currentTime-r.comp;if(r.onset(mic.buf,at))r.onsets.push(at);$('#g-level').style.width=K.meterPct(r.level)+'%';}
   if(game.tick(ctx.currentTime)===false)return;
   r.raf=requestAnimationFrame(frame);
  };

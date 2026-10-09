@@ -149,8 +149,7 @@ async function start(){
   const now=ctx.currentTime-r.t0,view=now-(ctx.outputLatency||ctx.baseLatency||0),beatIndex=Math.floor(view/spb),barIndex=Math.floor(beatIndex/4),bar=s.chart[((barIndex%s.chart.length)+s.chart.length)%s.chart.length];
   const per=4/bar.length,ch=view<0?s.chart[0][0]:bar[Math.min(bar.length-1,Math.floor((beatIndex%4)/per))];
   if(mic){
-   const at=now-r.comp;mic.an.getFloatTimeDomainData(mic.buf);const d=window.FQPitch.detect(mic.buf,ctx.sampleRate);level=level*.6+d.rms*.4;
-   if(r.onset(mic.buf,at)){r.lastOnset=at;r.stable=0;}
+   const at=now-r.comp;mic.an.getFloatTimeDomainData(mic.buf);if(r.onset(mic.buf,at)){r.lastOnset=at;r.stable=0;}const d=window.FQPitch.detect(mic.buf,ctx.sampleRate,r.onset.gate());level=level*.6+d.rms*.4;
    const midi=d.frequency?Math.round(window.FQPitch.midi(d.frequency)):null;
    /* Ignore anything below the guitar's low E: the backing bass lives there. */
    if(midi===null||midi<40){r.stable=0;r.lastMidi=null;}
@@ -167,7 +166,7 @@ async function start(){
   if(key!==r.shownHeard){r.shownHeard=key;$('#jam-now').textContent=pretty(ch.sym);$('#jam-next').textContent=pretty(bar.length>1&&ch===bar[0]?bar[1].sym:nextBar[0].sym);$('#jam-board').innerHTML=fretboard(s,ch,r.heard);if(mic)$('#jam-heard').textContent=r.heard!=null?K.noteName(r.heard):'—';}
   document.querySelectorAll('#jam-beats i').forEach((x,i)=>x.classList.toggle('on',view>=-4*spb&&((beatIndex%4)+4)%4===i));
   $('#jam-progress').style.width=Math.max(0,Math.min(100,view/r.total*100))+'%';
-  if(mic){$('#jam-level').style.width=Math.min(100,level*900)+'%';$('#jam-score').textContent=r.points;$('#jam-combo').textContent=r.combo;$('#jam-combo-box').classList.toggle('hot',r.combo>=8);}
+  if(mic){$('#jam-level').style.width=K.meterPct(level)+'%';$('#jam-score').textContent=r.points;$('#jam-combo').textContent=r.combo;$('#jam-combo-box').classList.toggle('hot',r.combo>=8);}
   if(view>r.total+.3){finish(r);return;}
   r.raf=requestAnimationFrame(frame);
  };
