@@ -226,7 +226,9 @@ function open(m){
    +m.about.map(t=>'<p>'+t+'</p>').join('')
    +((m.learn.type||(m.kind!=='comp'?'song':'strum'))==='song'?'<div class="jam-board-wrap">'+board(m)+'</div><div class="jam-legend"><span><i class="lg dojo-root"></i>ルート</span><span>数字はフレット番号</span></div>':chords(m))
    +'<div class="dojo-steps">'+STEPS.map(([k,label,sub],i)=>{const locked=i>0&&!st[i-1];return '<button type="button" class="dojo-step'+(st[i]?' done':'')+'" data-step="'+(i+1)+'" '+(locked?'disabled':'')+'><span class="dojo-pip">'+(st[i]?'✓':i+1)+'</span><span><b>'+label+'</b><small>'+(i===2?(m.use.session?'セッションでミッション':m.use.form):sub)+(locked?' ・ 前のステップをクリアで解放':'')+'</small></span><span class="dojo-go">'+(st[i]?'もう一度':'挑戦')+' →</span></button>';}).join('')+'</div>'
+   +(window.FQAir?window.FQAir.stepsHtml(m):'')
    +'<p class="lesson-caption">ステップ1・2は★1（60点）でクリア。ステップ3は'+(m.use.session?'ミッションの全項目達成':'★1')+'でクリア。3つそろえばマスター。</p></div>';
+  window.FQAir?.bindSteps(el,m);
   el.querySelectorAll('[data-step]').forEach(b=>b.onclick=()=>{const step=Number(b.dataset.step);if(step===3&&m.use.session)runMission(m);else runStage(m,step);});
  });
 }
@@ -236,10 +238,10 @@ function render(){
  $('#dojo-rank').textContent=rank();$('#dojo-count').textContent=mastered()+' / '+LIST.length;
  $('#dojo-tabs').innerHTML=GENRES.map(([g,label])=>'<button type="button" data-genre="'+g+'" aria-pressed="'+(g===genre)+'">'+label+'<small>'+LIST.filter(m=>m.genre===g&&status(m).every(Boolean)).length+' / '+LIST.filter(m=>m.genre===g).length+'</small></button>').join('');
  $('#dojo-tabs').querySelectorAll('[data-genre]').forEach(b=>b.onclick=()=>{genre=b.dataset.genre;try{localStorage.setItem('fretQuestDojoGenre',genre);}catch{}render();});
- el.innerHTML=[['solo','ソロ・アドリブ'],['comp','伴奏'],['line','ベースライン']].map(([kind,label])=>{const ms=list.filter(m=>m.kind===kind);return ms.length?'<div class="dojo-group"><h3>'+label+'</h3><div class="dojo-grid">'+ms.map(m=>{const st=status(m),done=st.every(Boolean);return '<button type="button" class="dojo-card'+(done?' mastered':'')+'" data-module="'+m.id+'"><span class="jam-genre">'+(done?'MASTERED':kind==='solo'?'SOLO':kind==='line'?'BASS':'COMP')+'</span><strong>'+m.title+'</strong><span class="jam-changes">'+m.tag+'</span><span class="dojo-pips">'+st.map((d,i)=>'<i class="'+(d?'on':'')+'" title="'+STEPS[i][1]+'"></i>').join('')+'</span></button>';}).join('')+'</div></div>':'';}).join('');
+ el.innerHTML=[['solo','ソロ・アドリブ'],['comp','伴奏'],['line','ベースライン']].map(([kind,label])=>{const ms=list.filter(m=>m.kind===kind);return ms.length?'<div class="dojo-group"><h3>'+label+'</h3><div class="dojo-grid">'+ms.map(m=>{const st=status(m),done=st.every(Boolean);return '<button type="button" class="dojo-card'+(done?' mastered':'')+'" data-module="'+m.id+'"><span class="jam-genre">'+(done?'MASTERED':kind==='solo'?'SOLO':kind==='line'?'BASS':'COMP')+'</span><strong>'+m.title+'</strong><span class="jam-changes">'+m.tag+'</span><span class="dojo-pips">'+st.map((d,i)=>'<i class="'+(d?'on':'')+'" title="'+STEPS[i][1]+'"></i>').join('')+'</span>'+(window.FQAir&&window.FQAir.status(m).every(Boolean)?'<span class="dojo-air">指板 ✓</span>':'')+'</button>';}).join('')+'</div></div>':'';}).join('');
  el.querySelectorAll('[data-module]').forEach(b=>b.onclick=()=>open(LIST.find(m=>m.id===b.dataset.module)));
 }
-window.addEventListener('fq:progress',render);
+window.addEventListener('fq:progress',render);window.addEventListener('fq:air',render);
 render();
 window.FQDojo={modules:LIST,guitarModules:MODULES,bassModules:BASS_MODULES,open,status,chartFor};
 })();

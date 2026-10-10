@@ -33,7 +33,7 @@ const SESSIONS=[
 ];
 SESSIONS.forEach(s=>{s.chart=s.bars.split(' ').map(bar=>bar.split(',').map(parse));});
 
-let prefs={bpm:{},choruses:2,mic:true};
+let prefs={bpm:{},choruses:2,mic:true,air:false};
 try{Object.assign(prefs,JSON.parse(localStorage.getItem('fretQuestJam'))||{});}catch{}
 const save=()=>{try{localStorage.setItem('fretQuestJam',JSON.stringify(prefs));}catch{}};
 const best=id=>Number(prefs.best?.[id])||0;
@@ -132,12 +132,13 @@ function lobby(s,opts={}){
    +'<p class="jam-key">'+(BASS?'伴奏はベース抜き。あなたがベーシストです。小節の頭はルート（R）、あとはコードの音（大きい丸）でつなごう。':'使える音：<b>'+s.keyName+'</b>。演奏中は、今のコードの音を大きい丸で表示します。')+'</p>'
    +'<div class="stage-options"><label class="jam-tempo">テンポ <b id="jam-bpm-label">'+bpm+'</b><input type="range" id="jam-bpm" min="'+Math.round(s.bpm*.6)+'" max="'+Math.round(s.bpm*1.3)+'" value="'+bpm+'"></label>'
    +'<div class="chip-row three" role="group" aria-label="長さ"><button type="button" data-ch="1">1コーラス</button><button type="button" data-ch="2">2コーラス</button><button type="button" data-ch="4">4コーラス</button></div>'
-   +(opts.mission?'':'<div class="chip-row" role="group" aria-label="採点"><button type="button" data-mic="1">'+INST.name+'で採点（マイク）</button><button type="button" data-mic="0">伴奏だけ流す</button></div>')+'</div>'
+   +(opts.mission||opts.air?'':'<div class="chip-row three" role="group" aria-label="弾き方"><button type="button" data-mic="1">'+INST.name+'で弾く<small>マイクで採点</small></button><button type="button" data-mic="air">画面の指板で<small>タップで採点</small></button><button type="button" data-mic="0">伴奏だけ</button></div>')
+   +(opts.air?'<p class="jam-key">画面の指板をタップして弾きます（'+INST.name+'もマイクも使いません）。</p>':'')+'</div>'
    +'<button type="button" class="action-button" id="jam-start">セッション開始 '+F.icon('arrow')+'</button>'
    +'<p class="lesson-caption">コード進行のみを収録し、メロディは含みません。採点は「今のコードに合う音を弾いたか」のゆるい目安で、間違いはありません。伴奏をスピーカーで鳴らすとマイクが拾うことがあるため、イヤホン推奨。音声は録音・送信しません。</p></div>';
-  const sync=()=>{document.querySelectorAll('[data-ch]').forEach(b=>b.setAttribute('aria-pressed',String(Number(b.dataset.ch)===prefs.choruses)));document.querySelectorAll('[data-mic]').forEach(b=>b.setAttribute('aria-pressed',String((b.dataset.mic==='1')===prefs.mic)));};
+  const sync=()=>{document.querySelectorAll('[data-ch]').forEach(b=>b.setAttribute('aria-pressed',String(Number(b.dataset.ch)===prefs.choruses)));document.querySelectorAll('[data-mic]').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.mic===(prefs.air?'air':prefs.mic?'1':'0'))));};
   document.querySelectorAll('[data-ch]').forEach(b=>b.onclick=()=>{prefs.choruses=Number(b.dataset.ch);save();sync();});
-  document.querySelectorAll('[data-mic]').forEach(b=>b.onclick=()=>{prefs.mic=b.dataset.mic==='1';save();sync();});
+  document.querySelectorAll('[data-mic]').forEach(b=>b.onclick=()=>{prefs.air=b.dataset.mic==='air';prefs.mic=b.dataset.mic==='1';save();sync();});
   $('#jam-bpm').oninput=e=>{prefs.bpm[s.id]=Number(e.target.value);$('#jam-bpm-label').textContent=e.target.value;save();};
   $('#jam-start').onclick=start;sync();$('#jam-start').focus();
  });
@@ -151,19 +152,21 @@ async function start(){
  if(!ctx||ctx.state!=='running'){F.notify('音を再生できません。消音設定と音量を確認してください。');lobby(s);return;}
  let mic=null;
  const mission=currentOpts.mission;
- if(prefs.mic||mission){try{mic=await K.openMic(ctx);}catch(e){if(generation!==F.generation())return;F.notify('マイクを使えません。伴奏だけで始めます。');}
+ /* Screen fretboard instead of the microphone: from the lobby choice, or forced by the caller (opts.air, optionally a fret window). */
+ const air=!!currentOpts.air||(!mission&&prefs.air);
+ if(!air&&(prefs.mic||mission)){try{mic=await K.openMic(ctx);}catch(e){if(generation!==F.generation())return;F.notify('マイクを使えません。伴奏だけで始めます。');}
   if(generation!==F.generation()){mic?.stream.getTracks().forEach(t=>t.stop());return;}}
  const bpm=prefs.bpm[s.id]||s.bpm,spb=60/bpm,audio=K.synth(ctx);
- const r={s,ctx,mic,audio,b:band(ctx,audio),spb,choruses:mission?Math.max(prefs.choruses,mission.choruses||1):prefs.choruses,mission,opts:currentOpts,log:[],t0:ctx.currentTime+.4+4*spb,comp:(ctx.outputLatency||ctx.baseLatency||0)+.045+latency(),
+ const r={s,ctx,mic,air,audio,b:band(ctx,audio),spb,tapComp:(ctx.outputLatency||ctx.baseLatency||0)+.01+latency(),choruses:mission?Math.max(prefs.choruses,mission.choruses||1):prefs.choruses,mission,opts:currentOpts,log:[],t0:ctx.currentTime+.4+4*spb,comp:(ctx.outputLatency||ctx.baseLatency||0)+.045+latency(),
   onset:K.onsetDetector(),lastOnset:-99,stable:0,lastMidi:null,scoredMidi:null,scoredAt:-99,heard:null,points:0,notes:0,tones:0,inside:0,combo:0,maxCombo:0,shownBar:-1,shownHeard:null};
  r.total=s.chart.length*4*r.choruses*spb;
  for(let i=0;i<4;i++)audio.click(r.t0-(4-i)*spb,i===0);
  r.beats=s.chart.length*4*r.choruses;r.nextBeat=0;
  const el=$('#modal-inner');
- el.innerHTML='<div class="jam-play"><div class="stage-hud"><div><small>SCORE</small><strong id="jam-score">'+(mic?0:'—')+'</strong></div><div class="stage-title"><small>♩ '+bpm+' ・ <span id="jam-chorus">1</span> / '+r.choruses+'</small><b id="modal-title">'+s.title+'</b></div><div class="stage-combo" id="jam-combo-box"><small>COMBO</small><strong id="jam-combo">'+(mic?0:'—')+'</strong></div></div>'
+ el.innerHTML='<div class="jam-play"><div class="stage-hud"><div><small>SCORE</small><strong id="jam-score">'+(mic||air?0:'—')+'</strong></div><div class="stage-title"><small>♩ '+bpm+' ・ <span id="jam-chorus">1</span> / '+r.choruses+'</small><b id="modal-title">'+s.title+'</b></div><div class="stage-combo" id="jam-combo-box"><small>COMBO</small><strong id="jam-combo">'+(mic||air?0:'—')+'</strong></div></div>'
   +'<div class="stage-track"><span id="jam-progress"></span></div>'
   +'<div class="jam-now"><div><small>NOW</small><b id="jam-now">—</b></div><div class="jam-next"><small>NEXT</small><b id="jam-next">—</b></div><div class="jam-beats" id="jam-beats"><i></i><i></i><i></i><i></i></div></div>'
-  +'<div class="jam-board-wrap" id="jam-board"></div><div class="jam-legend"><span><i class="lg tone"></i>コードの音</span><span><i class="lg scale"></i>使える音</span>'+(mic?'<span>きこえた音 <b id="jam-heard">—</b></span>':'')+'</div>'
+  +'<div class="jam-board-wrap" id="jam-board"></div><div class="jam-legend"><span><i class="lg tone"></i>コードの音</span><span><i class="lg scale"></i>使える音</span>'+(mic||air?'<span>'+(air?'タップした音':'きこえた音')+' <b id="jam-heard">—</b></span>':'')+'</div>'+(air?'<div class="air-shift"><button type="button" id="air-left" aria-label="低いフレットへ">◀</button><span id="air-range"></span><button type="button" id="air-right" aria-label="高いフレットへ">▶</button></div>':'')
   +(r.mission?'<div class="mission-box live" id="jam-mission">'+goalsHtml(r.mission,[],true)+'</div>':'')+'<div id="stage-judge" class="stage-judge jam-judge" aria-live="polite"></div>'
   +'<div class="jam-chart" id="jam-chart">'+s.chart.map((bar,i)=>'<span data-bar="'+i+'">'+bar.map(c=>pretty(c.sym)).join(' ')+'</span>').join('')+'</div>'
   +(mic?'<div class="stage-mic"><span>MIC</span><div class="stage-level"><span id="jam-level"></span></div></div>':'')
@@ -171,6 +174,7 @@ async function start(){
  run=r;F.setCleanup(stop);
  r.onHide=()=>{if(document.hidden){stop();lobby(s);}};document.addEventListener('visibilitychange',r.onHide);
  $('#jam-stop').onclick=()=>finish(r);
+ if(air)airBoard(r,typeof currentOpts.air==='object'?currentOpts.air:null);
  let level=0;
  const frame=()=>{
   if(run!==r)return;
@@ -192,15 +196,36 @@ async function start(){
    $('#jam-chorus').textContent=Math.min(r.choruses,Math.max(1,Math.floor(barIndex/s.chart.length)+1));}
   const nextBar=s.chart[(((barIndex+1)%s.chart.length)+s.chart.length)%s.chart.length];
   const key=ch.sym+'|'+r.heard;
-  if(key!==r.shownHeard){r.shownHeard=key;$('#jam-now').textContent=pretty(ch.sym);$('#jam-next').textContent=pretty(bar.length>1&&ch===bar[0]?bar[1].sym:nextBar[0].sym);$('#jam-board').innerHTML=fretboard(s,ch,r.heard);if(mic)$('#jam-heard').textContent=r.heard!=null?K.noteName(r.heard):'—';}
+  if(key!==r.shownHeard){r.shownHeard=key;$('#jam-now').textContent=pretty(ch.sym);$('#jam-next').textContent=pretty(bar.length>1&&ch===bar[0]?bar[1].sym:nextBar[0].sym);if(air){r.ch=ch;colorBoard(r);}else $('#jam-board').innerHTML=fretboard(s,ch,r.heard);if(mic||air)$('#jam-heard').textContent=r.heard!=null?K.noteName(r.heard):'—';}
   document.querySelectorAll('#jam-beats i').forEach((x,i)=>x.classList.toggle('on',view>=-4*spb&&((beatIndex%4)+4)%4===i));
   $('#jam-progress').style.width=Math.max(0,Math.min(100,view/r.total*100))+'%';
+  if(air){$('#jam-score').textContent=r.points;$('#jam-combo').textContent=r.combo;$('#jam-combo-box').classList.toggle('hot',r.combo>=8);}
   if(mic){$('#jam-level').style.width=K.meterPct(level)+'%';$('#jam-score').textContent=r.points;$('#jam-combo').textContent=r.combo;$('#jam-combo-box').classList.toggle('hot',r.combo>=8);}
   if(view>r.total+.3){finish(r);return;}
   r.raf=requestAnimationFrame(frame);
  };
  r.raf=requestAnimationFrame(frame);
 }
+
+/* ---------- Screen fretboard (air) ---------- */
+/* The default window starts at the key's root on the lowest string, where the usual box shapes sit. */
+function airWindow(s){const low=INST.open[INST.open.length-1],rf=(s.key-low%12+12)%12,lo=rf<=1?0:rf-1;return {lo,hi:lo+8};}
+function airBoard(r,w){
+ r.win=w||r.win||airWindow(r.s);const box=$('#jam-board');box.innerHTML=window.FQAir.boardHtml(r.win);box.classList.add('air-board-wrap','play');
+ $('#air-range').textContent=r.win.lo+'〜'+r.win.hi+'フレット';
+ $('#air-left').onclick=()=>{if(r.win.lo>0){r.win={lo:r.win.lo-1,hi:r.win.hi-1};airBoard(r,r.win);}};
+ $('#air-right').onclick=()=>{if(r.win.hi<17){r.win={lo:r.win.lo+1,hi:r.win.hi+1};airBoard(r,r.win);}};
+ window.FQAir.bindBoard(box,({midi,el})=>{
+  if(run!==r)return;r.audio.pluck(r.ctx.currentTime+.003,window.FQAir.voice(midi),.5,.15);el.classList.remove('hit');void el.offsetWidth;el.classList.add('hit');
+  const at=r.ctx.currentTime-r.t0-r.tapComp;r.heard=midi;if(at<0)return;judge(r,midi,chordAt(r.s,at/r.spb),at);
+ });
+ colorBoard(r);
+}
+/* Chord-tone and scale colouring of the board for the current chord. */
+function colorBoard(r){const ch=r.ch||r.s.chart[0][0],s=r.s;
+ document.querySelectorAll('#jam-board .air-cell').forEach(b=>{const m=Number(b.dataset.midi),pc=(m%12-ch.root+12)%12,keyPc=(m%12-s.key+12)%12,tone=ch.tones.includes(pc),inKey=!tone&&(s.keyScale.includes(keyPc)||ch.scale.includes(pc));
+  b.classList.toggle('tone',tone);b.classList.toggle('scale',inKey);b.classList.toggle('root',pc===0);b.querySelector('span').textContent=tone?DEGREE[pc]:'';});}
+function chordAt(s,beat){const bi=Math.floor(beat),barIndex=Math.floor(bi/4),bar=s.chart[((barIndex%s.chart.length)+s.chart.length)%s.chart.length],per=4/bar.length;return bar[Math.min(bar.length-1,Math.floor((((bi%4)+4)%4)/per))];}
 
 function judge(r,midi,ch,at){
  r.scoredMidi=midi;r.scoredAt=at;r.notes++;
@@ -219,7 +244,7 @@ function finish(r){
  const s=r.s,played=r.ctx.currentTime-r.t0;stop();
  /* A session counts as practice after a full pass or at least 30 seconds of playing. */
  const earned=played>=Math.min(30,r.total)?F.recordActivity('jam:'+s.id):0;
- const scored=!!r.mic&&r.notes>0,goals=r.mission?r.mission.goals.map(g=>evalGoal(g,r.log)):null,missionPassed=!!goals&&scored&&goals.every(g=>g.ok);
+ const scored=(!!r.mic||r.air)&&r.notes>0,goals=r.mission?r.mission.goals.map(g=>evalGoal(g,r.log)):null,missionPassed=!!goals&&scored&&goals.every(g=>g.ok);
  if(r.mission)r.opts.onDone?.(missionPassed);
  if(scored&&r.points>best(s.id)){prefs.best=prefs.best||{};prefs.best[s.id]=r.points;save();}
  renderCards();
@@ -230,9 +255,9 @@ function finish(r){
    +(scored?'<div class="result-score"><strong>'+r.points+'</strong><small>PTS</small></div>'
     +'<div class="result-grid"><div><b>'+r.notes+'</b><small>NOTES</small></div><div><b>'+Math.round(r.tones/r.notes*100)+'%</b><small>CHORD TONES</small></div><div><b>'+Math.round(r.inside/r.notes*100)+'%</b><small>IN KEY</small></div><div><b>'+r.maxCombo+'</b><small>MAX COMBO</small></div></div>'
     +'<p>'+(r.tones/r.notes>=.4?'コードの音をしっかり狙えています。次はテンポを上げてみよう。':'まずは大きい丸（コードの音）を、コードが変わった瞬間に1音だけ狙ってみよう。')+'</p>'
-    :'<p>'+(r.mic?'音が検出されませんでした。'+INST.name+'をマイクに近づけて、1音ずつはっきり弾いてみよう。':'伴奏だけのセッションでした。マイクをオンにすると、コードに合う音を弾けたかを表示します。')+'</p>')
+    :'<p>'+(r.air?'指板のタップがありませんでした。コードの音（大きい丸）を狙ってタップしてみよう。':r.mic?'音が検出されませんでした。'+INST.name+'をマイクに近づけて、1音ずつはっきり弾いてみよう。':'伴奏だけのセッションでした。マイクをオンにすると、コードに合う音を弾けたかを表示します。')+'</p>')
    +(earned?'<div class="success-xp">+'+earned+' XP</div>':'')
-   +'<p class="lesson-caption">'+(r.mic?'単音の音の高さだけを見ています。和音、リズム、フレーズの良し悪しは判定しません。':'')+'</p>'
+   +'<p class="lesson-caption">'+(r.air?'画面の指板でタップした音の高さを見ています。演奏の判定ではありません。':r.mic?'単音の音の高さだけを見ています。和音、リズム、フレーズの良し悪しは判定しません。':'')+'</p>'
    +'<button type="button" class="action-button" id="jam-again">もう一度セッション</button><button type="button" class="action-button secondary-action" id="jam-back">閉じる</button></div>';
   const opts=r.opts||{};$('#jam-again').onclick=()=>lobby(s,opts);$('#jam-back').onclick=opts.back||F.close;$('#jam-again').focus();
  });

@@ -31,12 +31,12 @@ async function tapStep(id,step){
  await p.click('#stage-back');await p.waitForSelector('.dojo-module');return Number(score);
 }
 await p.click('[data-module="bb-box"]');await p.waitForSelector('.dojo-module');
-const locked=await p.$$eval('.dojo-step',e=>e.map(x=>x.disabled));
+const locked=await p.$$eval('.dojo-step:not(.air-step)',e=>e.map(x=>x.disabled));
 if(OUT)await p.screenshot({path:OUT+'/dojo-module.png'});
 check('steps unlock in order',JSON.stringify(locked)==='[false,true,true]',JSON.stringify(locked));
-const s1=await tapStep('bb-box',1),after1=await p.$$eval('.dojo-step',e=>e.map(x=>x.disabled));
+const s1=await tapStep('bb-box',1),after1=await p.$$eval('.dojo-step:not(.air-step)',e=>e.map(x=>x.disabled));
 check('learn step',s1>=95&&!after1[1],s1+' '+JSON.stringify(after1));
-const s2=await tapStep('bb-box',2);check('groove step',s2>=95&&!(await p.$$eval('.dojo-step',e=>e.map(x=>x.disabled)))[2],s2);
+const s2=await tapStep('bb-box',2);check('groove step',s2>=95&&!(await p.$$eval('.dojo-step:not(.air-step)',e=>e.map(x=>x.disabled)))[2],s2);
 
 // Use step: a session mission. First fail (low register), then pass (B.B. box register, A on every downbeat).
 async function mission(plan){
