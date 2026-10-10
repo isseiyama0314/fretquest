@@ -147,3 +147,22 @@ body{background:radial-gradient(120% 60% at 50% -10%,#2a2147 0%,var(--bg) 55%) f
 .inst-switch button{appearance:none;border:0;background:none;color:#cfc9e6;font:800 12px/1 "Noto Sans JP",sans-serif;padding:8px 12px;border-radius:999px;cursor:pointer;white-space:nowrap}
 .inst-switch button[aria-pressed="true"]{background:#c7ef75;color:#1c1930}
 @media(max-width:480px){.inst-switch button{padding:7px 9px;font-size:11px}}
+/* Interval review after a wrong answer: root, the right note and the chosen note on one board. */
+.interval-review{margin-top:12px;padding:12px;border-radius:16px;background:#ffffff0a;border:1px solid #ffffff14;color:#e9e5f7;font-weight:500}
+.interval-review p{margin:10px 0 0;font-size:13px;line-height:1.7;color:#cfc9e6}
+.train-feedback .interval-review p b{color:#fff;margin:0;font-size:inherit}
+.iv-legend{display:flex;gap:14px;font-size:12px;font-weight:800;margin-bottom:6px}
+.iv-legend span{display:flex;align-items:center;gap:6px}
+.iv-legend i{width:12px;height:12px;border-radius:50%;display:inline-block}
+.interval-board{width:100%;height:auto;display:block}
+circle.iv-root,.iv-legend i.iv-root{fill:#ffffff;stroke:none}
+circle.iv-right,.iv-legend i.iv-right{fill:#c7ef75;background:#c7ef75}
+circle.iv-wrong{fill:#ff8fb8;stroke:#ffd3e3;stroke-width:1.5}
+.iv-legend i.iv-wrong{background:#ff8fb8}
+.iv-root-t,.iv-right-t{fill:#1c1930;font:900 11px "DM Sans",sans-serif}
+.iv-wrong-t{fill:#1c1930;font:900 11px "DM Sans",sans-serif}
+.interval-review .iv-legend span{color:#e9e5f7}
+.iv-play{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:10px}
+.iv-play button{appearance:none;border:1px solid #ffffff26;background:#2a2446;color:#fff;border-radius:12px;padding:11px 6px;font:800 13px "Noto Sans JP",sans-serif;cursor:pointer}
+.iv-play button[data-iv="right"]{border-color:#c7ef7588;color:#c7ef75}
+.iv-play button[data-iv="wrong"]{border-color:#ff8fb888;color:#ff8fb8}

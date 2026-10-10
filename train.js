@@ -34,13 +34,42 @@ async function sound(){await F.ensureAudio();const ctx=F.audioContext();if(!ctx|
 async function playNotes(seq){/* seq: [[offsetSec, midi[], dur]] */const s=await sound();if(!s)return false;const t=s.ctx.currentTime+.08;seq.forEach(([o,ms,d])=>ms.forEach(m=>s.a.pluck(t+o,m,d,ms.length>1?.09:.16)));return true;}
 const chordMidis=(root,shape)=>shape.map(i=>root+i);
 
+/* ---------- Interval review: shown after a wrong answer ---------- */
+const IV_DEG=['R','♭2','2','♭3','3','4','♭5','5','♭6','6','♭7','7','8'];
+const INTERVAL_FEEL={1:'隣の音。ぶつかる強い緊張',2:'ドレの距離。音階の1歩',3:'ラド。暗く切ない（マイナーの3度）',4:'ドミ。明るい（メジャーの3度）',5:'ドファ。開けて、少し宙ぶらりん',6:'ドファ♯。不安定で、解決したくなる',7:'ドソ。空っぽで力強い（パワーコード）',8:'ドラ♭。切なく甘い',9:'ドラ。明るく開いた響き',10:'ドシ♭。ブルージー（7thコードの♭7）',11:'ドシ。オクターブの半音手前、浮遊感',12:'ドド。同じ音名が重なる'};
+/* Where an interval sits from a root on the lowest string: the same string, or one or two strings up
+   (those pairs are tuned a 4th apart on both guitar and bass), whichever keeps the hand closest. */
+const IV_ROOT=5;
+function intervalSpot(n){let best=null;for(const k of [0,1,2]){const d=n-5*k;if(!best||Math.abs(d)<Math.abs(best.d)||Math.abs(d)===Math.abs(best.d)&&k>best.k)best={k,d};}return {up:best.k,fret:IV_ROOT+best.d};}
+function intervalBoard(right,wrong){
+ const strings=OPEN.length-1,W=340,H=28+(strings-1)*24,fx=f=>20+(f-.5)*(W-24)/12,y=s=>14+(s-1)*24;
+ let svg='<svg viewBox="0 0 '+W+' '+(H+14)+'" class="jam-board interval-board" role="img" aria-label="正解と答えの位置">';
+ for(let f=0;f<=12;f++){const x=20+f*(W-24)/12;svg+='<line x1="'+x+'" x2="'+x+'" y1="4" y2="'+(H-2)+'" stroke="#ffffff'+(f===0?'66':'1a')+'" stroke-width="'+(f===0?3:1)+'"/>';if(f>0)svg+='<text x="'+fx(f)+'" y="'+(H+10)+'" text-anchor="middle" class="fret-no">'+f+'</text>';}
+ for(let s=1;s<=strings;s++)svg+='<line x1="18" x2="'+W+'" y1="'+y(s)+'" y2="'+y(s)+'" stroke="#ffffff30" stroke-width="'+(1+s*.25)+'"/>';
+ const dot=(f,s,cls,label)=>'<circle cx="'+fx(f)+'" cy="'+y(s)+'" r="11" class="'+cls+'"/><text x="'+fx(f)+'" y="'+(y(s)+4)+'" text-anchor="middle" class="'+cls+'-t">'+label+'</text>';
+ const at=(n,cls,label)=>{const p=intervalSpot(n);return dot(p.fret,strings-p.up,cls,label);};
+ return svg+dot(IV_ROOT,strings,'iv-root','R')+(wrong!==right?at(wrong,'iv-wrong',IV_DEG[wrong]):'')+at(right,'iv-right',IV_DEG[right])+'</svg>';
+}
+function intervalReview(n,m,seqFor){
+ const name=i=>INTERVALS.find(x=>x[0]===i)[1],diff=m-n;
+ const where=i=>{const p=intervalSpot(i),d=p.fret-IV_ROOT;return p.up===0?'同じ弦で'+i+'フレット先':(p.up===1?'1本':'2本')+'上の弦の'+(d===0?'同じフレット':Math.abs(d)+'フレット'+(d>0?'先':'手前'));};
+ return {html:'<div class="interval-review"><div class="iv-legend"><span><i class="iv-right"></i>正解 '+name(n)+'</span><span><i class="iv-wrong"></i>あなた '+name(m)+'</span></div>'
+  +intervalBoard(n,m)
+  +'<p><b>'+name(n)+'</b>：'+INTERVAL_FEEL[n]+'。Rから'+where(n)+'。<br><b>'+name(m)+'</b>：'+INTERVAL_FEEL[m]+'。正解より半音'+Math.abs(diff)+'個分'+(diff>0?'広い':'狭い')+'。</p>'
+  +'<div class="iv-play"><button type="button" data-iv="right">▶ 正解を聴く</button><button type="button" data-iv="wrong">▶ あなたの答えを聴く</button></div></div>',
+  bind(el){el.querySelector('[data-iv="right"]').onclick=()=>playNotes(seqFor(n));el.querySelector('[data-iv="wrong"]').onclick=()=>playNotes(seqFor(m));}};
+}
+
 /* ---------- Question generators per mode and level ---------- */
 const MODES_DEF={
  interval:{title:'音程当て',tag:'2つの音の距離を聴き分ける',icon:'music',about:'2つの音を聴いて、何度離れているかを答えます。ソロで「次に弾く音」を耳で選べるようになる、いちばんの基礎です。',
   levels:['3度・5度・オクターブ','4度・6度・2度を追加','7度・半音まで','増4度（トライトーン）も','下降と同時に鳴る音も'],
   make(lv){const n=pick(INTERVAL_LEVELS[lv-1]),root=52+Math.floor(Math.random()*12),mode=lv===5?pick(['up','down','both']):'up';
    const lo=mode==='down'?root+n:root,hi=mode==='down'?root:root+n,seq=mode==='both'?[[0,[root,root+n],1.4]]:[[0,[lo],.7],[.75,[hi],.9]];
-   const opts=INTERVAL_LEVELS[lv-1];return {prompt:mode==='both'?'同時に鳴った2音の音程は？':mode==='down'?'下がった音程は？':'上がった音程は？',play:()=>playNotes(seq),choices:opts.map(i=>INTERVALS.find(x=>x[0]===i)[1]),answer:INTERVALS.find(x=>x[0]===n)[1],explain:INTERVALS.find(x=>x[0]===n)[1]+'（半音'+n+'つ分）'};}},
+   /* The same root and direction for the review, so the two intervals can be compared directly. */
+   const seqFor=k=>mode==='both'?[[0,[root,root+k],1.4]]:mode==='down'?[[0,[root+k],.7],[.75,[root],.9]]:[[0,[root],.7],[.75,[root+k],.9]];
+   const opts=INTERVAL_LEVELS[lv-1];return {prompt:mode==='both'?'同時に鳴った2音の音程は？':mode==='down'?'下がった音程は？':'上がった音程は？',play:()=>playNotes(seq),
+    review:c=>{const m=INTERVALS.find(x=>x[1]===c)?.[0];return m?intervalReview(n,m,seqFor):null;},choices:opts.map(i=>INTERVALS.find(x=>x[0]===i)[1]),answer:INTERVALS.find(x=>x[0]===n)[1],explain:INTERVALS.find(x=>x[0]===n)[1]+'（半音'+n+'個分）'};}},
  chord:{title:'コード聴き分け',tag:'響きでコードの種類を当てる',icon:'fret',about:'鳴ったコードの「種類」を当てます。セッションで次のコードを耳で予想したり、聴いた曲をコピーしたりする力になります。',
   levels:['メジャーとマイナー','セブンスを追加','7thコード4種','ディミニッシュ・オーギュメントも','サス4・6thも'],
   make(lv){const set=CHORD_LEVELS[lv-1],k=pick(set),root=48+Math.floor(Math.random()*12),ms=chordMidis(root,CHORDS[k][1]);
@@ -138,18 +167,20 @@ function run(id,level){
    +(q.fretString?'<div class="train-fret" role="group" aria-label="フレット">'+[...Array(13).keys()].map(f=>'<button type="button" data-fret="'+f+'"><span>'+f+'</span>'+([3,5,7,9].includes(f)?'<i></i>':f===12?'<i></i><i></i>':'')+'</button>').join('')+'</div>':'')
    +(q.choices?'<div class="train-choices'+(q.grid?' grids':'')+'">'+q.choices.map((c,k)=>'<button type="button" data-choice="'+k+'">'+(q.grid?gridHtml(c):c)+'</button>').join('')+'</div>':'')
    +'<div class="train-feedback" id="train-feedback" aria-live="polite"></div><button type="button" class="action-button" id="train-next" hidden>次へ '+F.icon('arrow')+'</button></div>';
-  const done=ok=>{
+  const done=(ok,choice)=>{
    answered=true;st.i++;const fast=Math.max(0,Math.round((6000-(performance.now()-shownAt))/60));
    if(ok){st.correct++;st.combo++;st.best=Math.max(st.best,st.combo);st.score+=100+fast+Math.min(50,st.combo*5);}else st.combo=0;
    q.onResult?.(ok);
    const fb=$('#train-feedback');fb.className='train-feedback '+(ok?'ok':'ng');fb.innerHTML='<b>'+(ok?'正解！':'ざんねん')+'</b> '+(q.grid?(ok?'':'正解は下の譜面')+(ok?'':gridHtml(q.answer)):'正解：'+(q.melody?q.explain:Array.isArray(q.answer)?q.answer.join(' → '):q.fretString?q.explain:q.answer))+(q.explain&&!q.fretString&&!q.grid&&!q.melody?'<small>'+q.explain+'</small>':'');
+   /* A wrong answer can come with a review that contrasts it with the right one. */
+   const rv=!ok&&choice!=null&&q.review?.(choice);if(rv){fb.insertAdjacentHTML('beforeend',rv.html);rv.bind(fb);}
    el.querySelectorAll('[data-choice],[data-fret]').forEach(b=>b.disabled=true);
    const nx=$('#train-next');nx.hidden=false;nx.onclick=next;nx.focus();
   };
   el.querySelectorAll('[data-choice]').forEach(b=>b.onclick=()=>{
    if(answered)return;const c=q.choices[Number(b.dataset.choice)];
    if(q.multi){picked.push(c);const slots=el.querySelectorAll('#train-slots span');slots[picked.length-1].textContent=c;slots[picked.length-1].classList.add(c===q.answer[picked.length-1]?'ok':'ng');if(picked.length<q.multi)return;done(picked.every((x,k)=>x===q.answer[k]));return;}
-   const ok=c===q.answer;b.classList.add(ok?'correct':'wrong');if(!ok)el.querySelectorAll('[data-choice]').forEach(x=>{if(q.choices[Number(x.dataset.choice)]===q.answer)x.classList.add('correct');});done(ok);});
+   const ok=c===q.answer;b.classList.add(ok?'correct':'wrong');if(!ok)el.querySelectorAll('[data-choice]').forEach(x=>{if(q.choices[Number(x.dataset.choice)]===q.answer)x.classList.add('correct');});done(ok,c);});
   el.querySelectorAll('[data-fret]').forEach(b=>b.onclick=()=>{if(answered)return;const f=Number(b.dataset.fret),ok=q.answerFrets.includes(f);b.classList.add(ok?'correct':'wrong');el.querySelectorAll('[data-fret]').forEach(x=>{if(q.answerFrets.includes(Number(x.dataset.fret)))x.classList.add('correct');});done(ok);});
   if(q.melody){
    /* The first note is given; each tap sounds and fills the next slot; the answer is checked once every slot is filled. */
