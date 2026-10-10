@@ -49,14 +49,15 @@ function renderMenu(state){
   {kind:'SESSION',label:'セッション',title:jam.title,sub:jam.genre+' ・ ♩ '+jam.bpm,done:st.jam,doneText:'今日セッション済み',go:()=>FQJam.lobby(jam)},
   {kind:'GAME',label:'ゲーム',title:game.title,sub:game.tag,done:st.game,doneText:'今日ゲーム済み',go:()=>gameHost(gameId).lobby(gameId)}
  ];
- const count=items.filter(x=>x.done).length;
- grid.innerHTML=items.map((x,i)=>'<button type="button" class="menu-card'+(x.done?' done':'')+'" data-menu="'+i+'"><span class="menu-num">'+(x.done?F.icon('check'):'0'+(i+1))+'</span><span class="menu-copy"><small>'+x.label+'</small><strong>'+x.title+'</strong><span>'+(x.done?x.doneText:x.sub)+'</span></span><span class="menu-go">'+(x.done?'もう一度':i?'+20 XP':state.courses?.[l.id]?'★を更新':'+40 XP')+' '+F.icon('arrow')+'</span></button>').join('');
+ /* The goal is any one item; the first is the suggestion, the other two are extras for days with more time. */
+ const count=items.filter(x=>x.done).length,goal=count>=1;
+ grid.innerHTML=items.map((x,i)=>(i===1?'<div class="menu-sub">時間があれば（任意）</div>':'')+'<button type="button" class="menu-card'+(x.done?' done':'')+(i?' optional':' main')+'" data-menu="'+i+'"><span class="menu-num">'+(x.done?F.icon('check'):i?'+':'01')+'</span><span class="menu-copy"><small>'+(i?'':'<em class="menu-tag">今日の1つ</em>')+x.label+'</small><strong>'+x.title+'</strong><span>'+(x.done?x.doneText:x.sub)+'</span></span><span class="menu-go">'+(x.done?'もう一度':(xp=>xp?'+'+xp+' XP':'★を更新')((i?20:state.courses?.[l.id]?0:40)+(goal?0:20)))+' '+F.icon('arrow')+'</span></button>').join('');
  grid.querySelectorAll('[data-menu]').forEach(b=>b.onclick=()=>items[Number(b.dataset.menu)].go());
- $('#menu-count').textContent=count+' / 3';
- $('#menu-bonus').className='menu-bonus'+(st.bonus?' got':'');
- $('#menu-bonus').innerHTML=F.icon('gift')+'<span>'+(st.bonus?'今日のメニュー完走！ ボーナス +40 XP 獲得。また明日。':'あと '+(3-count)+' つで、完走ボーナス +40 XP')+'</span>';
+ $('#menu-count').innerHTML=(goal?'達成':'0 / 1')+(count>1?'<em> +'+(count-1)+'</em>':'');
+ $('#menu-bonus').className='menu-bonus'+(st.full?' got':goal?' half':'');
+ $('#menu-bonus').innerHTML=F.icon('gift')+'<span>'+(st.full?'フルコース達成！ 今日は +40 XP。また明日。':goal?'今日の目標達成！ +20 XP 獲得。時間があれば、あと'+(3-count)+'つでフルコース +20 XP。':'どれか1つで今日の目標達成 +20 XP。3つ全部でフルコース、さらに +20 XP。')+'</span>';
  const next=items.find(x=>!x.done);
- $('#daily-start').innerHTML=(next?'今日のメニュー（'+count+' / 3）':'今日のメニュー完走 ✓')+' '+F.icon('arrow');
+ $('#daily-start').innerHTML=(!goal?'今日の練習を始める':next?'もう1つやる（任意）':'今日はフルコース ✓')+' '+F.icon('arrow');
  $('#daily-start').onclick=next?next.go:()=>$('#today').scrollIntoView({behavior:'smooth'});
 }
 function render(){
