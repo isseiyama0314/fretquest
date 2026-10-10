@@ -141,7 +141,7 @@ async function traceStart(spec,prefs){
   if(t>-.3&&t<length+.3){r.extra++;r.combo=0;flashCell(el,'wrong');popup(best&&best.midi===midi?'場所がちがう':'WRONG','extra',best&&best.midi===midi?'同じ音、別のポジション':'');}
  });
  const frame=()=>{
-  if(run!==r)return;const now=ctx.currentTime-r.t0,view=now-r.outLat,judgeAt=now-r.comp;
+  if(run!==r)return;F.keepAudio(ctx);const now=ctx.currentTime-r.t0,view=now-r.outLat,judgeAt=now-r.comp;
   for(const it of r.items)if(!it.grade&&judgeAt>it.time+.3)mark(it,'miss',judgeAt);
   /* Approach rings on the next two positions: they close over 1.5 beats and meet the cell on the beat. */
   const upcoming=r.items.filter(it=>!it.grade).slice(0,2),lead=1.5*spb;
@@ -289,7 +289,7 @@ async function changesStart(spec,speed){
   if(!left.length)root.querySelectorAll('.air-cell.placed').forEach(x=>x.classList.add('ready'));
  });
  const frame=()=>{
-  if(run!==r)return;const now=ctx.currentTime-r.t0,view=now-outLat;
+  if(run!==r)return;F.keepAudio(ctx);const now=ctx.currentTime-r.t0,view=now-outLat;
   const c=spec.seq[r.ci];
   if(c){const due=c.beat*spb;$('#air-left').textContent=Math.max(0,due-view).toFixed(1)+'秒';
    if(view>=due+GRACE||(!left.length&&view>=due-.02)){

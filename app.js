@@ -17,7 +17,7 @@ function render(){const d=day(),played=hasPractice(d);$('#streak-value').textCon
 
 
 function openModal(type){modalGeneration++;$('.modal-dialog').classList.remove('is-stage');if($('#modal').hidden)lastFocus=document.activeElement;stopMetro();activeCleanup();activeCleanup=()=>{};$('#modal').hidden=false;document.body.style.overflow='hidden';$('.app-shell').inert=true;$('#modal-close').focus()}
-function closeModal(){modalGeneration++;$('.modal-dialog').classList.remove('is-stage');activeCleanup();activeCleanup=()=>{};$('#modal').hidden=true;document.body.style.overflow='';$('.app-shell').inert=false;if(lastFocus?.isConnected)lastFocus.focus();else $('.nav-link[href="#courses"]')?.focus()}
+function closeModal(){clearStall();modalGeneration++;$('.modal-dialog').classList.remove('is-stage');activeCleanup();activeCleanup=()=>{};$('#modal').hidden=true;document.body.style.overflow='';$('.app-shell').inert=false;if(lastFocus?.isConnected)lastFocus.focus();else $('.nav-link[href="#courses"]')?.focus()}
 $('#modal-close').onclick=closeModal;$('#modal').addEventListener('click',e=>{if(e.target===$('#modal'))closeModal()});document.addEventListener('keydown',e=>{if(e.key==='Escape'&&!$('#modal').hidden)closeModal();if(e.key==='Tab'&&!$('#modal').hidden){const focusable=$$('#modal button:not(:disabled), #modal [href], #modal input');const first=focusable[0],last=focusable[focusable.length-1];if(e.shiftKey&&document.activeElement===first){e.preventDefault();last.focus()}else if(!e.shiftKey&&document.activeElement===last){e.preventDefault();first.focus()}}});
 function fretDiagram(string,fret,target=null){const first=Math.max(1,fret-2),y=123-string*18,x=fret===0?34:55+(fret-first+.5)*56;let s='<div class="fretboard-display"><svg viewBox="0 0 350 170" role="img" aria-label="'+(6-string)+'弦の'+(fret===0?'開放弦':fret+'フレット')+'。'+(target?'丸印の位置で'+target+'を1音鳴らしてください。':'丸印の音名を答えてください。')+'">';for(let i=0;i<6;i++){const sy=123-i*18;s+='<text x="15" y="'+(sy+3)+'" font-size="8" fill="#b3a381">'+(6-i)+'</text><line x1="55" y1="'+sy+'" x2="335" y2="'+sy+'" stroke="#c1b393" stroke-width="'+(2.6-i*.27)+'"/>';}for(let i=0;i<=5;i++)s+='<line x1="'+(55+i*56)+'" y1="30" x2="'+(55+i*56)+'" y2="126" stroke="#c1b393" stroke-width="'+(i===0&&first===1?4:1.5)+'"/>';for(let i=0;i<5;i++)s+='<text x="'+(83+i*56)+'" y="148" text-anchor="middle" font-size="8" fill="#b3a381">'+(first+i)+'</text>';s+='<circle cx="'+x+'" cy="'+y+'" r="13" fill="#c7ef75" stroke="#8ead5f" stroke-width="1.5"/><text id="spot-note" x="'+x+'" y="'+(y+4)+'" text-anchor="middle" font-size="11" font-weight="800" fill="#6d873e">'+(target||'?')+'</text></svg></div>';return s}
 const chordShapes={E5:[0,2,2,-1,-1,-1],A5:[-1,0,2,2,-1,-1],D5:[-1,-1,0,2,3,-1],Em:[0,2,2,0,0,0],G:[3,2,0,0,0,3],C:[-1,3,2,0,1,0],D:[-1,-1,0,2,3,2],Am:[-1,0,2,2,1,0],F:[1,3,3,2,1,1],Bm:[-1,2,4,4,3,2],A:[-1,0,2,2,2,0],E:[0,2,2,1,0,0],'F♯m7':[2,4,2,2,2,2],B7:[-1,2,1,2,0,2],'C♯m':[-1,4,6,6,5,4],Emaj7:[0,2,1,1,0,0],'B♭':[-1,1,3,3,3,1],'G♯m':[4,6,6,4,4,4]};
@@ -33,19 +33,32 @@ function chordDiagram(name){const shape=chordShapes[name];if(!shape)return '';co
    While the microphone is live the session must allow recording, so it is "play-and-record" then. */
 const micStreams=new Set();let silentLoop=null;
 const micLive=()=>[...micStreams].some(st=>st.getTracks().some(t=>t.readyState==='live'));
-function audioSessionFor(kind){try{if(navigator.audioSession&&navigator.audioSession.type!==kind)navigator.audioSession.type=kind;}catch{}}
+function audioSessionFor(kind){try{if(navigator.audioSession&&navigator.audioSession.type!==kind){navigator.audioSession.type=kind;return true;}}catch{}return false;}
 function silentWav(){const n=8000,b=new ArrayBuffer(44+n),v=new DataView(b),w=(o,t)=>[...t].forEach((c,i)=>v.setUint8(o+i,c.charCodeAt(0)));w(0,'RIFF');v.setUint32(4,36+n,true);w(8,'WAVE');w(12,'fmt ');v.setUint32(16,16,true);v.setUint16(20,1,true);v.setUint16(22,1,true);v.setUint32(24,8000,true);v.setUint32(28,8000,true);v.setUint16(32,1,true);v.setUint16(34,8,true);w(36,'data');v.setUint32(40,n,true);for(let i=0;i<n;i++)v.setUint8(44+i,128);return URL.createObjectURL(new Blob([b],{type:'audio/wav'}));}
 function playThroughSilentMode(){
- if(micLive())return;
- if(navigator.audioSession){audioSessionFor('playback');return;}
+ if(micLive())return false;
+ if(navigator.audioSession)return audioSessionFor('playback');
  /* Only iOS needs the fallback; elsewhere a looping media element could show a media notification. */
- if(!/iP(hone|ad|od)/.test(navigator.userAgent)&&!(/Macintosh/.test(navigator.userAgent)&&navigator.maxTouchPoints>1))return;
+ if(!/iP(hone|ad|od)/.test(navigator.userAgent)&&!(/Macintosh/.test(navigator.userAgent)&&navigator.maxTouchPoints>1))return false;
  try{if(!silentLoop){silentLoop=new Audio(silentWav());silentLoop.loop=true;silentLoop.setAttribute('playsinline','');silentLoop.preload='auto';}if(silentLoop.paused)silentLoop.play().catch(()=>{});}catch{}
+ return false;
+}
+/* Called every frame by the play screens: if the clock stops mid-run (iOS interruption), resume it,
+   and offer a button when iOS only allows resuming from a tap. Returns whether audio is running. */
+let stallEl=null,lastResume=0;
+function clearStall(){stallEl?.remove();stallEl=null;}
+function keepAudio(ctx){
+ if(!ctx||ctx.state==='running'){clearStall();return !!ctx;}
+ const t=performance.now();if(t-lastResume>1000){lastResume=t;ctx.resume().catch(()=>{});}
+ if(!stallEl){stallEl=document.createElement('button');stallEl.type='button';stallEl.className='audio-stall';stallEl.innerHTML='<b>音が止まっています</b><small>タップして再開</small>';document.body.appendChild(stallEl);}
+ stallEl.onclick=()=>{ctx.resume().catch(()=>{});};return false;
 }
 async function openMicStream(constraints){audioSessionFor('play-and-record');try{const st=await navigator.mediaDevices.getUserMedia(constraints);micStreams.add(st);st.getTracks().forEach(t=>t.addEventListener('ended',()=>micStreams.delete(st)));return st;}catch(e){if(!micLive())audioSessionFor('playback');throw e;}}
 /* iOS can leave the context "interrupted" (after a call, the microphone or an audio-session switch), not just "suspended":
    resume from any non-running state, and replace the context if it will not come back. */
-let audio=null;async function ensureAudio(){playThroughSilentMode();const AC=window.AudioContext||window.webkitAudioContext;try{audio=audio||new AC();if(audio.state!=='running'){try{await audio.resume();}catch{}}
+/* A session switch can interrupt a running context a moment later, so after a switch wait briefly and resume again. */
+let audio=null;async function ensureAudio(){const switched=playThroughSilentMode();const AC=window.AudioContext||window.webkitAudioContext;try{audio=audio||new AC();if(audio.state!=='running'){try{await audio.resume();}catch{}}
+ if(switched){await new Promise(r=>setTimeout(r,250));if(audio.state!=='running'){try{await audio.resume();}catch{}}}
  if(audio.state!=='running'){try{audio.close();}catch{}audio=new AC();try{await audio.resume();}catch{}}}catch{notify('この端末では音が使えません')}}function soundClick(accent=false){if(!audio||audio.state!=='running')return;const t=audio.currentTime,o=audio.createOscillator(),g=audio.createGain();o.type='sine';o.frequency.setValueAtTime(accent?1060:740,t);o.frequency.exponentialRampToValueAtTime(accent?520:410,t+.045);g.gain.setValueAtTime(.0001,t);g.gain.exponentialRampToValueAtTime(accent?.21:.13,t+.004);g.gain.exponentialRampToValueAtTime(.0001,t+.075);o.connect(g);g.connect(audio.destination);o.start(t);o.stop(t+.08)}
 let bpm=90,metroInterval=null,metroBeat=0;const dots=$$('.beat-dots span');function setBpm(n){bpm=Math.max(40,Math.min(220,n));$('#bpm-value').textContent=bpm;$('#bpm-slider').value=bpm;if(metroInterval){stopMetro();startMetro()}}function metroTick(){soundClick(metroBeat%4===0);dots.forEach((d,i)=>d.classList.toggle('lit',i===metroBeat%4));metroBeat++}async function startMetro(){const generation=++metroGeneration;await ensureAudio();if(generation!==metroGeneration)return;metroBeat=0;metroTick();metroInterval=setInterval(metroTick,60000/bpm);$('#metro-toggle').textContent='■ ストップ';$('#metro-toggle').classList.add('running');$('#metro-status').textContent='PLAYING'}function stopMetro(){metroGeneration++;clearInterval(metroInterval);metroInterval=null;dots.forEach(d=>d.classList.remove('lit'));$('#metro-toggle').textContent='▶ スタート';$('#metro-toggle').classList.remove('running');$('#metro-status').textContent='READY'}$('#metro-toggle').onclick=()=>metroInterval?stopMetro():startMetro();$$('[data-bpm]').forEach(b=>b.onclick=()=>setBpm(bpm+Number(b.dataset.bpm)));$('#bpm-slider').oninput=e=>setBpm(Number(e.target.value));$$('.nav-link').forEach(a=>a.addEventListener('click',()=>{$$('.nav-link').forEach(x=>x.classList.remove('active'));a.classList.add('active')}));document.addEventListener('visibilitychange',()=>{if(document.hidden&&metroInterval)stopMetro()});window.addEventListener('pagehide',()=>{stopMetro();activeCleanup()});render();
 // The academy shares the existing save format, modal lifecycle, audio and diagrams.
@@ -65,7 +78,7 @@ function mergeBests(key,incoming){if(!incoming||typeof incoming!=='object')retur
 function ledger(s){return Object.values(s.history||{}).reduce((sum,d)=>sum+(d.quests?.length||0)*30+(d.extra?.length||0)*20+(d.bonus?40:0),0)+Object.keys(s.courses||{}).length*40;}
 window.FretQuest={
  getState:()=>JSON.parse(JSON.stringify(data)),today,notify,icon:windowIcon,chordDiagram,fretDiagram,
- show:fn=>{openModal('academy');fn($('#modal-inner'));},close:closeModal,setCleanup:fn=>{activeCleanup=fn;},generation:()=>modalGeneration,ensureAudio,openMicStream,
+ show:fn=>{openModal('academy');fn($('#modal-inner'));},close:closeModal,setCleanup:fn=>{activeCleanup=fn;},generation:()=>modalGeneration,ensureAudio,openMicStream,keepAudio,
  audioDiag:()=>({state:audio?audio.state:'未作成',rate:audio?.sampleRate||0,session:navigator.audioSession?navigator.audioSession.type:'非対応',loop:silentLoop?(silentLoop.paused?'停止中':'再生中'):'なし',mic:micLive()}),
  playTone:async(midi,duration=.6,delay=0)=>{await ensureAudio();if(!audio||audio.state!=='running')return false;const o=audio.createOscillator(),g=audio.createGain(),t=audio.currentTime+delay;o.type='triangle';o.frequency.value=440*Math.pow(2,(midi-69)/12);g.gain.setValueAtTime(0,t);g.gain.linearRampToValueAtTime(.09,t+.015);g.gain.exponentialRampToValueAtTime(.0001,t+duration);o.connect(g);g.connect(audio.destination);o.start(t);o.stop(t+duration+.02);return true;},
  click:soundClick,streak,audioContext:()=>audio,chordShape:name=>chordShapes[name]||null,

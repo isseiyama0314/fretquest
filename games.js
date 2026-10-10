@@ -85,7 +85,7 @@ async function start(id){
  if(!mic){const tap=e=>{e.preventDefault();if(run!==r)return;r.onsets.push(ctx.currentTime-r.comp);const pad=$('#g-pad');pad.classList.remove('hit');void pad.offsetWidth;pad.classList.add('hit');};$('#g-pad').addEventListener('pointerdown',tap);}
  const game=({call,survival,clock,remix,offbeat,odd,poly})[id](r);
  const frame=()=>{
-  if(run!==r)return;
+  if(run!==r)return;F.keepAudio(r.ctx);
   if(mic){mic.an.getFloatTimeDomainData(mic.buf);let e=0;for(let i=0;i<mic.buf.length;i+=4)e+=mic.buf[i]*mic.buf[i];r.level=r.level*.6+Math.sqrt(e/(mic.buf.length/4))*.4;
    const at=ctx.currentTime-r.comp;if(r.onset(mic.buf,at))r.onsets.push(at);$('#g-level').style.width=K.meterPct(r.level)+'%';}
   if(game.tick(ctx.currentTime)===false)return;

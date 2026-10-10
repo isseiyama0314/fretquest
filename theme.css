@@ -224,3 +224,6 @@ circle.iv-wrong{fill:#ff8fb8;stroke:#ffd3e3;stroke-width:1.5}
 /* Recall slots wrap so long phrases stay on screen. */
 .train-slots.air-slots{flex-wrap:wrap;gap:5px}
 .train-slots.air-slots span{min-width:0;width:40px;padding:6px 0;font-size:11px;border-radius:9px}
+/* Shown when the audio clock stops mid-run and iOS only resumes from a tap. */
+.audio-stall{position:fixed;left:50%;top:50%;transform:translate(-50%,-50%);z-index:9999;display:flex;flex-direction:column;align-items:center;gap:4px;padding:22px 28px;border-radius:20px;border:2px solid #ffc56b;background:#2a2446f2;color:#fff;font:800 16px "Noto Sans JP",sans-serif;box-shadow:0 20px 60px #0009}
+.audio-stall small{font-size:12px;color:#ffc56b}
