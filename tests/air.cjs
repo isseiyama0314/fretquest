@@ -15,14 +15,16 @@ async function page(inst){
 }
 const tap=(p,s,f,scope='')=>p.locator(scope+' .air-cell[data-s="'+s+'"][data-f="'+f+'"]').first().dispatchEvent('pointerdown');
 /* Taps each note at its time, measured from the click on start (count-in of 4 beats after 0.4 s). */
-async function playTrace(p,id,{wrong=false,speed=1}={}){
+/* The same pitch on another string inside the board window, when there is one. */
+const altOf=(n,w,open)=>{for(let s=1;s<open.length;s++){const f=n.midi-open[s];if(s!==n.string&&f>=w.lo&&f<=w.hi)return {string:s,fret:f};}return null;};
+async function playTrace(p,id,{wrong=false,alt=false,speed=1}={}){
  await p.evaluate(id=>window.FQAir.start(window.FQDojo.modules.find(m=>m.id===id),1),id);await p.waitForSelector('#air-start');
  await p.click('[data-speed="'+speed+'"]');
- const spec=await p.evaluate(id=>{const s=window.FQAir.specFor(window.FQDojo.modules.find(m=>m.id===id),1);return {notes:s.notes,bpm:s.bpm,w:s.w};},id),spb=60/(spec.bpm*speed);
+ const spec=await p.evaluate(id=>{const s=window.FQAir.specFor(window.FQDojo.modules.find(m=>m.id===id),1);return {notes:s.notes,bpm:s.bpm,w:s.w,open:window.FQInst.get().open,alts:0};},id),spb=60/(spec.bpm*speed);
  await p.click('#air-start');const start=Date.now();await p.waitForSelector('.air-play');
  for(const n of spec.notes){const w=(.4+4*spb+n.beat*spb)*1000-(Date.now()-start);if(w>0)await p.waitForTimeout(w);
-  await tap(p,wrong?(n.string===1?2:n.string-1):n.string,n.fret,'.air-play');}
- await p.waitForSelector('.stage-result',{timeout:90000});const score=Number(await p.$eval('.result-score strong',e=>e.textContent));return score;
+  const a=alt&&altOf(n,spec.w,spec.open);if(a){spec.alts++;await tap(p,a.string,a.fret,'.air-play');}else await tap(p,wrong?(n.string===1?2:n.string-1):n.string,n.fret,'.air-play');}
+ await p.waitForSelector('.stage-result',{timeout:90000});const score=Number(await p.$eval('.result-score strong',e=>e.textContent));return alt?{score,alts:spec.alts,n:spec.notes.length}:score;
 }
 
 // ---------- Guitar ----------
@@ -39,6 +41,15 @@ const st1=await p.evaluate(()=>window.FQAir.status(window.FQDojo.modules.find(m=
 check('trace: right positions on time',score>=95&&st1[0],score+' '+JSON.stringify(st1));
 if(OUT)await p.screenshot({path:OUT+'/air-trace-result.png'});
 await p.click('#air-back');await p.waitForSelector('.dojo-module');
+{const r=await playTrace(p,'arp-251',{alt:true});check('trace: the same pitch on another string counts',r.score>=95&&r.alts>=5,JSON.stringify(r));
+ await p.click('#air-back');await p.waitForSelector('.dojo-module');
+ /* Recall in alternate positions throughout. */
+ await p.evaluate(()=>window.FQAir.start(window.FQDojo.modules.find(m=>m.id==='arp-251'),2));await p.waitForSelector('.air-recall');
+ const {notes,w}=await p.evaluate(()=>window.FQAir.specFor(window.FQDojo.modules.find(m=>m.id==='arp-251'),2)),open=await p.evaluate(()=>window.FQInst.get().open);let alts=0,msg='';
+ for(const n of notes){const a=altOf(n,w,open);if(a){alts++;await tap(p,a.string,a.fret,'.air-recall');if(!msg)msg=await p.$eval('#air-msg',e=>e.textContent);}else await tap(p,n.string,n.fret,'.air-recall');}
+ await p.waitForSelector('.stage-result',{timeout:10000});const sc=Number(await p.$eval('.result-score strong',e=>e.textContent));
+ check('recall: the same pitch on another string counts',sc===100&&alts>=5&&msg.includes('タブ譜では'),sc+' alts '+alts+' | '+msg);
+ await p.click('#air-back');await p.waitForSelector('.dojo-module');}
 score=await playTrace(p,'bb-box',{wrong:true});check('trace: wrong strings score low',score<60,score);
 await p.click('#air-back');await p.waitForSelector('.dojo-module');
 

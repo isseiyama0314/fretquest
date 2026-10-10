@@ -82,7 +82,8 @@ function resultScreen({kicker,title,score,passed,lines,again,back,next}){
 
 /* ---------- Game 1: trace ----------
    The phrase plays out on the board: a ring closes in on each position, tap it on the beat.
-   Right position and timing score like a stage; a wrong position costs points and leaves the note open. */
+   The right pitch on time scores like a stage, on any string (the same note in another position is pointed out but counts);
+   a wrong pitch costs points and leaves the note open. */
 let run=null;
 function stopRun(){if(!run)return;const r=run;run=null;cancelAnimationFrame(r.raf);r.audio.stop();document.removeEventListener('visibilitychange',r.onHide);}
 function traceLobby(spec){
@@ -130,15 +131,16 @@ async function traceStart(spec,prefs){
  const root=$('.air-play');run=r;F.setCleanup(stopRun);
  r.onHide=()=>{if(document.hidden){stopRun();traceLobby(spec);}};document.addEventListener('visibilitychange',r.onHide);
  $('#air-quit').onclick=()=>{stopRun();traceLobby(spec);};
- const mark=(it,grade,t)=>{it.grade=grade;r.counts[grade]++;r.points+=GRADE[grade].pts;
+ /* tapped: the cell actually tapped, when it is the same pitch in another position. */
+ const mark=(it,grade,t,tapped)=>{it.grade=grade;r.counts[grade]++;r.points+=GRADE[grade].pts;
   if(grade==='miss'){r.combo=0;popup('MISS','miss','');flashCell(cell(root,it.string,it.fret),'missed');}
-  else{r.combo++;r.maxCombo=Math.max(r.maxCombo,r.combo);popup(GRADE[grade].label,grade,grade==='perfect'?'':t<it.time?'EARLY':'LATE');flashCell(cell(root,it.string,it.fret),'hit');}};
+  else{r.combo++;r.maxCombo=Math.max(r.maxCombo,r.combo);popup(GRADE[grade].label,grade,tapped?'別ポジションでもOK':grade==='perfect'?'':t<it.time?'EARLY':'LATE');flashCell(tapped||cell(root,it.string,it.fret),'hit');}};
  bindBoard(root,({s,f,midi,el})=>{
   if(run!==r)return;const t=r.ctx.currentTime-r.t0-r.comp;
   a.pluck(r.ctx.currentTime+.003,voice(midi),.4,.14);
   let best=null;for(const it of r.items){if(it.grade)continue;const d=Math.abs(t-it.time);if(d<=.3&&(!best||d<Math.abs(t-best.time)))best=it;}
-  if(best&&best.string===s&&best.fret===f){const off=Math.abs(t-best.time);r.offsets.push(t-best.time);mark(best,off<=.09?'perfect':off<=.17?'great':'ok',t);return;}
-  if(t>-.3&&t<length+.3){r.extra++;r.combo=0;flashCell(el,'wrong');popup(best&&best.midi===midi?'場所がちがう':'WRONG','extra',best&&best.midi===midi?'同じ音、別のポジション':'');}
+  if(best&&best.midi===midi){const off=Math.abs(t-best.time);r.offsets.push(t-best.time);mark(best,off<=.09?'perfect':off<=.17?'great':'ok',t,best.string!==s?el:null);return;}
+  if(t>-.3&&t<length+.3){r.extra++;r.combo=0;flashCell(el,'wrong');popup('WRONG','extra','');}
  });
  const frame=()=>{
   if(run!==r)return;F.keepAudio(ctx);const now=ctx.currentTime-r.t0,view=now-r.outLat,judgeAt=now-r.comp;
@@ -170,14 +172,14 @@ function traceFinish(spec,r,speed){
 
 /* ---------- Game 2: recall ----------
    No guides: rebuild the phrase position by position. The first note is given; "listen" plays it as sound only.
-   The same pitch somewhere else is pointed out but not accepted, since the point is the shape on the neck.
+   The same pitch on another string counts too (it is pointed out, since the tab's position is the one shown).
    The player taps the lit first note too, so starting from it is never a mistake; only notes 2.. are scored. */
 function recall(spec){
  const notes=spec.notes;let idx=0,clean=0,wrongHere=0,mistakes=0;
  F.show(el=>{
   $('.modal-dialog').classList.add('is-stage');
   el.innerHTML='<div class="air-recall">'+head(spec.kicker,spec.title)
-   +'<p>ガイドなしで、フレーズを<b>同じ場所</b>で再現しよう。光っている1音目から弾き始めて、'+notes.length+'音。音はタップするたびに鳴ります。</p>'
+   +'<p>ガイドなしで、フレーズを再現しよう。光っている1音目から弾き始めて、'+notes.length+'音。<b>同じ音なら、どの弦で押さえてもOK</b>。音はタップするたびに鳴ります。</p>'
    +'<div class="train-slots air-slots" id="air-slots">'+notes.map(()=>'<span>？</span>').join('')+'</div>'
    +'<div class="air-board-wrap">'+boardHtml(spec.w)+'</div>'
    +'<div class="air-msg" id="air-msg" aria-live="polite">&nbsp;</div>'
@@ -190,17 +192,17 @@ function recall(spec){
   $('#air-hint').onclick=()=>{if(idx>=notes.length)return;wrongHere=Math.max(wrongHere,2);mistakes++;reveal();};
   bindBoard(root,({s,f,midi,el:b})=>{
    if(idx>=notes.length)return;tapSound(midi);const n=notes[idx];
-   if(n.string===s&&n.fret===f){
+   if(n.midi===midi){
     if(idx===0)root.querySelectorAll('.air-cell.first').forEach(x=>x.classList.remove('first'));
     else if(!wrongHere)clean++;root.querySelectorAll('.air-cell.hint').forEach(x=>x.classList.remove('hint'));
-    flashCell(b,'hit');slots[idx].textContent=s+'-'+f;slots[idx].classList.add('filled',wrongHere?'ng':'ok');idx++;wrongHere=0;$('#air-msg').textContent=' ';
+    flashCell(b,'hit');slots[idx].textContent=s+'-'+f;slots[idx].classList.add('filled',wrongHere?'ng':'ok');$('#air-msg').textContent=n.string!==s?'OK！ タブ譜では '+n.string+'弦'+n.fret+'フレット。':' ';idx++;wrongHere=0;
     if(idx>=notes.length){const score=Math.round(clean/(notes.length-1)*100),passed=score>=PASS;spec.onResult?.(score,passed);
      setTimeout(()=>{playPhrase(notes,spec.bpm);resultScreen({kicker:spec.kicker,title:'何も見ずに再現できた！',score,passed,next:spec.next,
       lines:'<div class="result-grid"><div><b>'+clean+' / '+(notes.length-1)+'</b><small>一発で正解</small></div><div><b>'+mistakes+'</b><small>まちがい</small></div></div>',
       again:()=>recall(spec),back:()=>{stopKit();spec.back();}});},500);}
     return;}
    flashCell(b,'wrong');if(idx===0){$('#air-msg').textContent='光っている場所から始めよう。';return;}wrongHere++;mistakes++;
-   $('#air-msg').textContent=midi===n.midi?'音は合っています。でも、このフレーズでは別の場所で弾きます。':wrongHere>=2?'正しい場所を光らせました。':'ちがう場所です。もう一度。';
+   $('#air-msg').textContent=wrongHere>=2?'正しい場所を光らせました。':'ちがう音です。もう一度。';
    if(wrongHere>=2)reveal();
   });
  });
