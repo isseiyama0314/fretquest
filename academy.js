@@ -43,7 +43,7 @@ function renderMenu(state){
  const grid=$('#menu-grid');if(!grid||!window.FQJam||!window.FQGames)return;
  const st=F.menuStatus(),dayNo=Math.floor(new Date(F.today()+'T12:00:00').getTime()/864e5),{c,l}=heroPick(state);
  /* Beginners rotate through the easier sessions until they have cleared 12 lessons. */
- const pool=!state.experienced&&all.filter(x=>state.courses?.[x.id]).length<12?MENU_JAMS.slice(0,3):MENU_JAMS,jam=FQJam.sessions.find(x=>x.id===pool[dayNo%pool.length]),gameId=FS().kit.rhythmBook.weak().length>=3?'remix':MENU_GAMES[dayNo%MENU_GAMES.length],game=gameHost(gameId).games[gameId];
+ const pool=!state.experienced&&all.filter(x=>state.courses?.[x.id]).length<12?MENU_JAMS.slice(0,3):MENU_JAMS,jam=FQJam.sessions.find(x=>x.id===pool[dayNo%pool.length]),games=MENU_GAMES.filter(id=>gameHost(id).games[id]),gameId=FS().kit.rhythmBook.weak().length>=3?'remix':games[dayNo%games.length],game=gameHost(gameId).games[gameId];
  const items=[
   {kind:'LESSON',label:'レッスン',title:l.title,sub:c.title+' ・ '+labels[l.type],done:st.lesson,doneText:'今日1レッスンクリア',go:()=>{selected=c;render();open(c,l);}},
   {kind:'SESSION',label:'セッション',title:jam.title,sub:jam.genre+' ・ ♩ '+jam.bpm,done:st.jam,doneText:'今日セッション済み',go:()=>FQJam.lobby(jam)},
@@ -119,7 +119,7 @@ async function microphone(target){
  try{
   context=new (window.AudioContext||window.webkitAudioContext)();await context.resume();
   if(cancelled||generation!==F.generation()){stop();return;}
-  stream=await navigator.mediaDevices.getUserMedia({audio:{echoCancellation:false,noiseSuppression:false,autoGainControl:false},video:false});
+  stream=await F.openMicStream({audio:{echoCancellation:false,noiseSuppression:false,autoGainControl:false},video:false});
   if(cancelled||generation!==F.generation()){stop();return;}
   source=context.createMediaStreamSource(stream);analyser=context.createAnalyser();analyser.fftSize=4096;source.connect(analyser);
   const samples=new Float32Array(analyser.fftSize);let previousText='';session.mode='mic';$('#mic-state').textContent='MIC / LISTENING';button.disabled=false;button.textContent='■ マイクを停止';$('#pitch-listen').disabled=true;

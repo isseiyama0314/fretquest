@@ -2,8 +2,9 @@
    The microphone hears single notes (pitch plus pick attack). Chords, fingering and which string was used are not judged.
    Nothing is recorded or uploaded. */
 (()=>{'use strict';
-const F=window.FretQuest,K=window.FQStage.kit,P=window.FQPitch,$=s=>document.querySelector(s);
-const OPEN=[null,64,59,55,50,45,40],NAMES=['C','C♯','D','D♯','E','F','F♯','G','G♯','A','A♯','B'],ALT={1:'C♯ / D♭',3:'D♯ / E♭',6:'F♯ / G♭',8:'G♯ / A♭',10:'A♯ / B♭'};
+const F=window.FretQuest,K=window.FQStage.kit,P=window.FQPitch,I=window.FQInst,$=s=>document.querySelector(s);
+/* Strings come from the instrument setting: 6 on guitar, 4 on bass (string 1 is the thinnest). */
+const BASS=I.isBass(),INST=I.get(),OPEN=INST.open,LOW=OPEN.length-1,NAMES=['C','C♯','D','D♯','E','F','F♯','G','G♯','A','A♯','B'],ALT={1:'C♯ / D♭',3:'D♯ / E♭',6:'F♯ / G♭',8:'G♯ / A♭',10:'A♯ / B♭'};
 const NATURAL=[0,2,4,5,7,9,11],ALL=[...Array(12).keys()];
 let prefs={best:{},hunt:'1',change:'gcd',bend:'2'};
 try{Object.assign(prefs,JSON.parse(localStorage.getItem('fretQuestDrills'))||{});}catch{}
@@ -14,7 +15,8 @@ const noteName=m=>NAMES[m%12]+(Math.floor(m/12)-1);
 const place=(s,f)=>s+'弦'+(f?f+'フレット':'開放');
 
 const HUNT_TIME=60;
-const HUNT={'1':{label:'6・5弦',strings:[6,5],pcs:NATURAL},'2':{label:'全部の弦',strings:[6,5,4,3,2,1],pcs:NATURAL},'3':{label:'♯♭もあり',strings:[6,5,4,3,2,1],pcs:ALL}};
+const STRINGS=OPEN.slice(1).map((_,i)=>LOW-i);
+const HUNT={'1':{label:LOW+'・'+(LOW-1)+'弦',strings:[LOW,LOW-1],pcs:NATURAL},'2':{label:'全部の弦',strings:STRINGS,pcs:NATURAL},'3':{label:'♯♭もあり',strings:STRINGS,pcs:ALL}};
 const PROGS={gcd:{label:'G → C → D → G',chords:['G','C','D','G']},pop:{label:'Em → C → G → D',chords:['Em','C','G','D']},f:{label:'C → Am → F → G',chords:['C','Am','F','G']}};
 /* Bends on strings 3 and 2, where they are usually played. steps are semitones. */
 const BENDS={'1':{label:'半音',steps:[1]},'2':{label:'全音',steps:[2]},'3':{label:'ミックス',steps:[1,2,2,3]}};
@@ -22,8 +24,8 @@ const BEND_SPOTS=[[3,7],[2,8],[3,9],[2,10],[3,5],[2,5],[3,12],[2,12]],BEND_ROUND
 const OPTS={hunt:HUNT,change:PROGS,bend:BENDS};
 const GAMES={
  hunt:{title:'指板ハンター',tag:'言われた音を、60秒で何個弾ける？',kicker:'FRETBOARD HUNTER',unit:'音',about:'画面に出た弦と音名を、ギターで弾こう。正しい高さの音が聞こえたら次の問題へ。60秒で何個見つけられるかに挑戦。',how:'指定された弦の0〜12フレットから探します。判定するのは音の高さだけで、どの弦で弾いたかは判定しません。'},
- change:{title:'コードチェンジ・アタック',tag:'小節の頭に、次のコードが間に合うか。',kicker:'CHORD CHANGE ATTACK',unit:'BPM',about:'1小節ごとにコードが変わります。各小節の1拍目に、そのコードのいちばん低い音（ルート）を弾こう。4小節中3回間に合えばテンポが上がります。ミス3回で終了。',how:'1拍目はルート音を1本だけ、2〜4拍目は自由にストロークしてOK。判定するのはルート音の高さとタイミングだけで、コード全体の押さえ方は判定しません。'},
- bend:{title:'チョーキング・ジャッジ',tag:'狙った音程まで、ぴったり上げる。',kicker:'BEND TO PITCH',unit:'点',about:'お手本の音を聴いてから、指定のフレットを弾いて弦を持ち上げよう。目標の高さで0.3秒キープできたら成功。ずれの小ささで点数が決まります。全8問。',how:'最初に押さえたフレットの音から持ち上げてください。はじめから高いフレットを押さえた音は数えません。'}
+ change:{title:'コードチェンジ・アタック',tag:'小節の頭に、次のコードが間に合うか。',kicker:'CHORD CHANGE ATTACK',unit:'BPM',about:'1小節ごとにコードが変わります。各小節の1拍目に、そのコードのいちばん低い音（ルート）を弾こう。4小節中3回間に合えばテンポが上がります。ミス3回で終了。',how:BASS?'1拍目にルート音を弾こう。2〜4拍目は自由（ルートを刻み続けてもOK）。判定するのは1拍目のルート音の高さとタイミングです。':'1拍目はルート音を1本だけ、2〜4拍目は自由にストロークしてOK。判定するのはルート音の高さとタイミングだけで、コード全体の押さえ方は判定しません。'},
+ ...(BASS?{}:{bend:{title:'チョーキング・ジャッジ',tag:'狙った音程まで、ぴったり上げる。',kicker:'BEND TO PITCH',unit:'点',about:'お手本の音を聴いてから、指定のフレットを弾いて弦を持ち上げよう。目標の高さで0.3秒キープできたら成功。ずれの小ささで点数が決まります。全8問。',how:'最初に押さえたフレットの音から持ち上げてください。はじめから高いフレットを押さえた音は数えません。'}})
 };
 let run=null;
 
@@ -32,6 +34,7 @@ const bestKey=id=>id+'-'+prefs[id];
 function bestLabel(id){const b=prefs.best[bestKey(id)];return (OPTS[id][prefs[id]]?.label||'')+' ・ '+(b?'BEST '+(id==='change'?'♩ ':'')+b+(id==='change'?'':' '+GAMES[id].unit):'NEW');}
 function renderCards(){
  const el=$('#drill-cards');if(!el)return;
+ if(BASS){const lead=$('#drill-lead');if(lead)lead.textContent='マイクで音の高さを判定。指板とコードチェンジ（ルート弾き）を3分で。';}
  el.innerHTML=Object.entries(GAMES).map(([id,g])=>'<button type="button" class="game-card drill-card drill-'+id+'" data-drill="'+id+'"><span class="jam-genre">'+g.kicker+'</span><strong>'+g.title+'</strong><span class="jam-changes">'+g.tag+'</span><span class="game-best">'+bestLabel(id)+'</span></button>').join('');
  el.querySelectorAll('[data-drill]').forEach(b=>b.onclick=()=>lobby(b.dataset.drill));
 }
@@ -73,7 +76,7 @@ async function start(id){
  const frame=()=>{
   if(run!==r)return;
   mic.an.getFloatTimeDomainData(mic.buf);
-  const at=ctx.currentTime-r.comp,onset=r.onset(mic.buf,at),d=P.detect(mic.buf,ctx.sampleRate,r.onset.gate());
+  const at=ctx.currentTime-r.comp,onset=r.onset(mic.buf,at),d=P.detect(mic.buf,ctx.sampleRate,r.onset.gate(),INST.minHz);
   r.level=r.level*.6+d.rms*.4;$('#d-level').style.width=K.meterPct(r.level)+'%';
   if(onset){r.lastOnset=at;r.stable=0;}
   /* A note counts once the same semitone is heard in two frames in a row; firstMatch is when it began. */
@@ -116,8 +119,14 @@ function hunt(r){
 }
 
 /* ---------- Drill 2: chord-change attack ---------- */
-/* The chord's lowest fretted string is its root in every shape used here (G, C, D, Em, Am, F). */
-function rootOf(name){const shape=F.chordShape(name)||[];const i=shape.findIndex(x=>x>=0);return i<0?null:{s:6-i,fret:shape[i],midi:OPEN[6-i]+shape[i]};}
+/* Guitar: the chord's lowest fretted string is its root in every shape used here (G, C, D, Em, Am, F).
+   Bass: the root on the two lowest strings at the lowest fret. */
+function rootOf(name){
+ if(BASS){const pc=I.rootPc(name);let best=null;for(const s of [LOW,LOW-1])for(let f=0;f<12;f++)if((OPEN[s]+f)%12===pc&&(!best||f<best.fret))best={s,fret:f,midi:OPEN[s]+f};return best;}
+ const shape=F.chordShape(name)||[];const i=shape.findIndex(x=>x>=0);return i<0?null:{s:6-i,fret:shape[i],midi:OPEN[6-i]+shape[i]};
+}
+/* Roots are accepted from just below the lowest open string up two octaves. */
+const ROOT_LO=OPEN[LOW]-2,ROOT_HI=OPEN[LOW]+24;
 function change(r){
  const prog=PROGS[prefs.change]||PROGS.gcd,bars=prog.chords.map(c=>({chord:c,root:rootOf(c)}));
  let bpm=60,lives=3,top=0,round=null;const rows=[];
@@ -135,7 +144,7 @@ function change(r){
  newRound(r.ctx.currentTime+.5);
  return {tick(now,f){
   const v=now-r.out,R=round;
-  if(f.midi!==null&&f.midi>=38&&f.midi<=64)for(const b of R.bars){
+  if(f.midi!==null&&f.midi>=ROOT_LO&&f.midi<=ROOT_HI)for(const b of R.bars){
    if(b.hit!==null||f.midi%12!==b.root.midi%12)continue;
    /* Time it by the pick attack when one came just before the pitch settled. */
    const t=r.lastOnset<=f.since&&r.lastOnset>f.since-.15?r.lastOnset:f.since;

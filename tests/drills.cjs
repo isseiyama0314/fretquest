@@ -55,6 +55,15 @@ if(!only||only==='bend'){
  /* Fretting the target note directly is not a bend. */
  await drill('bend','2',(s,f,seen)=>{if(s.q&&!seen.has(s.q.go)){seen.add(s.q.go);f.pluck(s.q.go+.1,s.q.target,1.2);}},function frettedTargetScoresZero(x){return x===0;});
 }
+/* Bass: four strings and the low range; bending is not offered. */
+if(!only||only==='bass'){
+ await p.evaluate(()=>localStorage.setItem('fretQuestInstrument','bass'));await p.reload({waitUntil:'networkidle'});
+ await p.evaluate(()=>window.FretQuest.ensureAudio());await p.waitForTimeout(800);
+ check('bass cards',(await p.$$eval('#drill-cards [data-drill]',e=>e.map(x=>x.dataset.drill).join()))==='hunt,change','hunt,change');
+ await drill('hunt','2',(s,f,seen)=>{if(s.q&&!seen.has(s.q.shownAt)){seen.add(s.q.shownAt);f.pluck(s.now+.05,s.q.targets[0],.7);}},function bassFindsMany(x){return x>=25;});
+ await drill('change','pop',(s,f,seen)=>{if(!s.round||seen.has(s.round.bars[0].t))return;seen.add(s.round.bars[0].t);const spb=60/s.round.bpm;s.round.bars.forEach(b=>[0,1,2,3].forEach(k=>f.pluck(b.t+k*spb,b.midi,spb*.8)));},function bassRootsReach140(x){return x===140;});
+ await p.evaluate(()=>localStorage.removeItem('fretQuestInstrument'));
+}
 const st=await p.evaluate(()=>{const d=window.FretQuest.getState().history[window.FretQuest.today()];return {extra:d?.extra,best:JSON.parse(localStorage.getItem('fretQuestDrills')).best};});
 if(!only)check('activity and bests',['game:hunt','game:change','game:bend'].every(x=>st.extra.includes(x))&&st.best['hunt-2']>=30&&st.best['change-gcd']===140,JSON.stringify(st));
 if(errs.length){failed++;console.log('page errors',JSON.stringify(errs));}

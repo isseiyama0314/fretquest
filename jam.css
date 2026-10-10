@@ -245,3 +245,23 @@
 .bend-needle{width:6px;margin-left:-3px;border-radius:3px;background:#ffc56b;box-shadow:0 0 12px #ffc56b}
 .bend-scale{position:relative;height:14px;margin-top:5px;font:700 10px "Noto Sans JP",sans-serif;color:#8f88ad}
 .bend-scale span{position:absolute;left:0;white-space:nowrap}.bend-scale span+span{transform:translateX(-50%);color:#c7ef75}
+
+/* Melody ear-copy board */
+.tc-melody:before{background:radial-gradient(circle,#ffc56b 0%,transparent 65%)}
+.tc-meter:before{background:radial-gradient(circle,#6fe3d2 0%,transparent 65%)}
+.tc-timing:before{background:radial-gradient(circle,#ff8fb8 0%,transparent 65%)}
+.game-offbeat:before{background:radial-gradient(circle,#8fb4ff 0%,transparent 65%)}
+.game-odd:before{background:radial-gradient(circle,#c69cff 0%,transparent 65%)}
+.game-poly:before{background:radial-gradient(circle,#6fe3d2 0%,transparent 65%)}
+.train-slots.melody span{min-width:44px}
+.train-slots span.filled{color:#fff}
+.train-board{padding:8px 6px 4px;border-radius:14px;background:linear-gradient(180deg,#3a2a1c,#26190f);box-shadow:inset 0 0 0 1px #ffffff1a}
+.train-string{display:grid;grid-template-columns:16px repeat(8,1fr);gap:3px;margin-bottom:3px;position:relative}
+.train-string:before{content:"";position:absolute;left:16px;right:0;top:50%;height:1.5px;background:#e9d9b866;pointer-events:none}
+.train-string b{font:800 9px "DM Sans",sans-serif;color:#b9b2d6;align-self:center}
+.train-string button{position:relative;height:34px;border:0;border-radius:7px;background:transparent;cursor:pointer;box-shadow:inset -1px 0 0 #ffffff26}
+.train-string button:first-of-type{background:#ffffff10}
+.train-string button:active,.train-string button.tapped{background:#c7ef7566}
+.train-string button.start:after{content:"";position:absolute;inset:8px;border-radius:50%;background:#ffd166;box-shadow:0 0 10px #ffd166}
+.train-frets{display:grid;grid-template-columns:16px repeat(8,1fr);gap:3px;text-align:center;font:800 9px "DM Sans",sans-serif;color:#8f88ad}
+.train-undo{display:block;margin:8px 0 0 auto;border:0;border-radius:10px;padding:8px 12px;background:#ffffff12;color:#ddd7f5;font:800 11px "Noto Sans JP",sans-serif;cursor:pointer}

@@ -2,7 +2,9 @@
    Microphone audio is analysed on this device only. Nothing is recorded or uploaded. */
 (()=>{'use strict';
 const F=window.FretQuest,K=window.FQStage.kit,$=s=>document.querySelector(s);
-const STRINGS=[{n:6,midi:40,name:'E'},{n:5,midi:45,name:'A'},{n:4,midi:50,name:'D'},{n:3,midi:55,name:'G'},{n:2,midi:59,name:'B'},{n:1,midi:64,name:'E'}];
+const INST=window.FQInst.get(),BASS=window.FQInst.isBass();
+const STRINGS=BASS?[{n:4,midi:28,name:'E'},{n:3,midi:33,name:'A'},{n:2,midi:38,name:'D'},{n:1,midi:43,name:'G'}]
+ :[{n:6,midi:40,name:'E'},{n:5,midi:45,name:'A'},{n:4,midi:50,name:'D'},{n:3,midi:55,name:'G'},{n:2,midi:59,name:'B'},{n:1,midi:64,name:'E'}];
 let session=null;
 function stop(){if(!session)return;const s=session;session=null;cancelAnimationFrame(s.raf);clearTimeout(s.timer);s.audio?.stop();if(s.mic){s.mic.stream.getTracks().forEach(t=>t.stop());s.mic.src.disconnect();}}
 async function openMic(){
@@ -23,9 +25,9 @@ function tuner(){
    +'<div class="tuner-hint" id="tn-hint">&nbsp;</div><div class="stage-mic tuner-mic"><span>MIC</span><div class="stage-level"><span id="tn-level"></span></div></div></div>'
    +'<div class="tuner-strings" role="group" aria-label="弦を選ぶ">'+STRINGS.map(s=>'<button type="button" data-tn="'+s.midi+'"><small>'+s.n+'弦</small><b>'+s.name+'</b><i aria-hidden="true">✓</i></button>').join('')+'</div>'
    +'<button type="button" class="action-button" id="tn-start">マイクをオンにする</button>'
-   +'<p class="lesson-caption">標準チューニング（E A D G B E、A4=440Hz）。±5セント以内が合格の目安です。</p></div>';
+   +'<p class="lesson-caption">'+(BASS?'4弦ベースの標準チューニング（E A D G、A4=440Hz）。お手本の音は聴きやすいよう1オクターブ上で鳴らします。':'標準チューニング（E A D G B E、A4=440Hz）。')+'±5セント以内が合格の目安です。</p></div>';
   let locked=null;const done=new Set();
-  document.querySelectorAll('[data-tn]').forEach(b=>b.onclick=()=>{const m=Number(b.dataset.tn);locked=locked===m?null:m;document.querySelectorAll('[data-tn]').forEach(x=>x.classList.toggle('locked',Number(x.dataset.tn)===locked));if(locked)F.playTone(locked,1.4);});
+  document.querySelectorAll('[data-tn]').forEach(b=>b.onclick=()=>{const m=Number(b.dataset.tn);locked=locked===m?null:m;document.querySelectorAll('[data-tn]').forEach(x=>x.classList.toggle('locked',Number(x.dataset.tn)===locked));if(locked)F.playTone(BASS?locked+12:locked,1.4);});
   $('#tn-start').onclick=async()=>{
    const generation=F.generation(),btn=$('#tn-start');btn.disabled=true;
    let opened;try{opened=await openMic();}catch(e){if(generation===F.generation()){btn.disabled=false;F.notify(micError(e));}return;}
@@ -34,12 +36,15 @@ function tuner(){
    const recent=[],floor=K.onsetDetector();let goodSince=0,level=0;const me=session;
    const frame=()=>{
     if(session!==me)return;
-    mic.an.getFloatTimeDomainData(mic.buf);floor(mic.buf,ctx.currentTime);const d=window.FQPitch.detect(mic.buf,ctx.sampleRate,floor.gate());
+    mic.an.getFloatTimeDomainData(mic.buf);floor(mic.buf,ctx.currentTime);/* The floor creeps up under a long held note; cap the gate so a sustained string keeps reading (YIN itself rejects pitchless noise). */
+    const d=window.FQPitch.detect(mic.buf,ctx.sampleRate,Math.min(floor.gate(),.003),INST.minHz);
     level=level*.7+d.rms*.3;$('#tn-level').style.width=K.meterPct(level)+'%';
     if(d.frequency){recent.push(d.frequency);if(recent.length>7)recent.shift();}else if(recent.length)recent.shift();
     if(recent.length>=3){
      /* Median of recent frames keeps the needle steady while the string rings out. */
-     const f=[...recent].sort((a,b)=>a-b)[Math.floor(recent.length/2)],heard=window.FQPitch.midi(f);
+     let f=[...recent].sort((a,b)=>a-b)[Math.floor(recent.length/2)],heard=window.FQPitch.midi(f);
+     /* A phone microphone often hears a bass string an octave (or two) high: fold it back down to the open strings. */
+     if(BASS){let best=null;for(const k of [0,1,2])for(const st of STRINGS){if(locked!=null&&st.midi!==locked)continue;const d=Math.abs(heard-12*k-st.midi);if(!best||d<best.d-.5)best={d,k};}heard-=12*best.k;f/=2**best.k;}
      const target=locked??STRINGS.reduce((best,s)=>Math.abs(heard-s.midi)<Math.abs(heard-best.midi)?s:best).midi;
      const cents=Math.round(window.FQPitch.cents(f,target)),ok=Math.abs(cents)<=5,far=Math.abs(cents)>150;
      $('#tn-note').textContent=far?K.noteName(Math.round(heard)):K.noteName(target).replace(/\d+$/,'');
@@ -48,7 +53,7 @@ function tuner(){
      $('#tn-hint').textContent=far?'ペグを大きく回して近づけよう':ok?'ぴったり！':cents<0?'低い → ペグを締めて音を上げる':'高い → ペグを緩めて音を下げる';
      document.querySelector('.tuner-face').classList.toggle('in-tune',ok&&!far);
      document.querySelectorAll('[data-tn]').forEach(x=>x.classList.toggle('active',Number(x.dataset.tn)===target));
-     if(ok&&!far){goodSince=goodSince||performance.now();if(performance.now()-goodSince>600&&!done.has(target)){done.add(target);document.querySelector('[data-tn="'+target+'"]')?.classList.add('done');if(done.size===6)F.notify('6本ともチューニングOK！');}}else goodSince=0;
+     if(ok&&!far){goodSince=goodSince||performance.now();if(performance.now()-goodSince>600&&!done.has(target)){done.add(target);document.querySelector('[data-tn="'+target+'"]')?.classList.add('done');if(done.size===STRINGS.length)F.notify(STRINGS.length+'本ともチューニングOK！');}}else goodSince=0;
     }
     session.raf=requestAnimationFrame(frame);
    };
@@ -96,7 +101,7 @@ function calibrate(back){
     offs.sort((a,b)=>a-b);
     const median=offs.length?offs[Math.floor(offs.length/2)]:0,spread=offs.length?offs.map(o=>Math.abs(o-median)).sort((a,b)=>a-b)[Math.floor(offs.length/2)]:1;
     btn.disabled=false;btn.textContent='もう一度測る';
-    if(offs.length<5){$('#cal-phase').textContent='音を拾えませんでした';$('#cal-sub').textContent=offs.length+' / '+TAPS+' 回だけ検出。ギターをマイクに近づけて、もう一度。';return;}
+    if(offs.length<5){$('#cal-phase').textContent='音を拾えませんでした';$('#cal-sub').textContent=offs.length+' / '+TAPS+' 回だけ検出。'+INST.name+'をマイクに近づけて、もう一度。';return;}
     if(spread>.04){$('#cal-phase').textContent='ばらつきが大きいです';$('#cal-sub').textContent='ずれの幅 ±'+Math.round(spread*1000)+'ms。ゆっくり正確に、もう一度。';return;}
     const value=Math.max(-.05,Math.min(.35,Math.round(median*100)/100));
     window.FQStage.setLatency(value);
@@ -107,7 +112,23 @@ function calibrate(back){
  });
 }
 
-const bind=()=>{$('#open-tuner')?.addEventListener('click',tuner);$('#open-calibrate')?.addEventListener('click',()=>calibrate(null));};
+/* ---------- Sound check ----------
+   Plays a test tone and shows the audio state, so a silent phone can be diagnosed (and a screenshot sent). */
+function soundCheck(){
+ F.show(el=>{
+  $('.modal-dialog').classList.add('is-stage');
+  el.innerHTML='<div class="tool-tuner"><div class="lesson-progress">TOOLS / SOUND CHECK</div><h2 id="modal-title">サウンドチェック</h2>'
+   +'<p>ボタンを押すと「ポーン」とテスト音が鳴ります。聞こえなければ、下の表示ごとスクリーンショットを送ってください。</p>'
+   +'<button type="button" class="action-button" id="sc-play">テスト音を鳴らす</button>'
+   +'<div class="sc-diag" id="sc-diag"></div>'
+   +'<ul class="sc-tips"><li>本体の音量ボタンで音量を上げる（消音スイッチとは別です）</li><li>Bluetoothイヤホンにつながっていないか確認</li><li>一度アプリを閉じて開き直す</li></ul></div>';
+  const show=()=>{const d=F.audioDiag(),ios=(/OS (\d+)_(\d+)/.exec(navigator.userAgent)||[]).slice(1).join('.');
+   $('#sc-diag').innerHTML=[['音声エンジン',d.state],['サンプルレート',d.rate?d.rate+' Hz':'—'],['オーディオセッション',d.session],['無音ループ（旧iOS用）',d.loop],['マイク使用中',d.mic?'はい':'いいえ'],['iOS',ios||'—']].map(([k,v])=>'<div><span>'+k+'</span><b>'+v+'</b></div>').join('');};
+  $('#sc-play').onclick=async()=>{await F.ensureAudio();const ok=await F.playTone(69,1.2);[0,.35].forEach((d,i)=>F.playTone(i?76:72,.9,.4+d));show();if(!ok)F.notify('音声エンジンが動いていません。開き直してもう一度試してください。');};
+  show();
+ });
+}
+const bind=()=>{$('#open-tuner')?.addEventListener('click',tuner);$('#open-soundcheck')?.addEventListener('click',soundCheck);$('#open-calibrate')?.addEventListener('click',()=>calibrate(null));};
 bind();
-window.FQTools={tuner,calibrate};
+window.FQTools={soundCheck,tuner,calibrate};
 })();

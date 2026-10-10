@@ -31,6 +31,7 @@ Melodies are public-domain tunes or original phrases written for this app. All e
 - Tempo survival: a count-in bar, then two judged bars of a chosen pattern. 85% or better raises the tempo by 5. Three misses end the game.
 - Just timing: strum quarter notes while the click plays, then keep going through 2, 4, 8, 12 and 16 silent bars. The player's own offset during the click bars is the baseline, so device latency does not count as drift. The average deviation and the rushing/dragging trend are reported.
 
+- Feel games, tapped on screen (or strummed with earphones, since clicks keep playing while judged): 裏拍キープ (tap the offbeats while the click thins out from every beat to beat 1 only, then 16th offbeats), 変拍子アクセント (tap group starts in 6/8, 5/8, 7/8 2+2+3 and 3+2+2, 9/8 after one accented bar) and ポリリズム (3 against 2 up to 5 against 4). One bar to listen, two to tap; two clean rounds raise the level, three misses end.
 - Weak-rhythm remix: eight rounds drawn from the rhythm book, weakest and most recent first, cycling three faces: hear and see the call, hear it only, or read it and play it straight away (Rhythm Heaven style remix). Rated ハイレベル / OK / もう一回.
 
 The rhythm book (`fretQuestRhythmBook`, this browser only) collects one-bar rhythms the player missed: call & response patterns, tempo-survival patterns at their tempo, and every 4/4 bar of a song or strum stage that contained a miss (identical rhythms are merged). A rhythm leaves the book after two clean passes in a row. Call & response results list the rhythms missed in that game with a one-tap review, and once the book holds three rhythms the daily menu's game becomes the remix.
@@ -44,6 +45,8 @@ While the player is judged, the backing is a soft attack-free pad, so speaker so
 - 指板ハンター: name a string and a note, the player finds it in frets 0–12. A note counts when the right pitch is heard with a fresh pick attack after the question appeared. 60 seconds; the score is notes found. Levels: strings 6 and 5, all strings, all strings with sharps and flats. The same pitch on another string cannot be told apart, so which string was used is not judged.
 - コードチェンジ・アタック: a four-bar progression (G–C–D–G, Em–C–G–D or C–Am–F–G), one chord per bar. On beat 1 of each bar the player picks the chord's lowest note (its root); the rest of the bar is free. A change counts when that pitch class (E2–E4) starts within 0.3 s of beat 1. Three of four on time raises the tempo by 8 from ♩60 up to ♩140; three misses end the game. The judged bars use an unpitched hi-hat as the beat so the backing is never heard as a root. The chord shape itself is not judged.
 - チョーキング・ジャッジ: eight bends on strings 3 and 2 (half, whole, or a mix up to 1.5 steps). A reference tone at the target pitch plays first. The bend must start within 70 cents of the fretted note (fretting the target directly does not count) and hold within ±25 cents of the target for 0.3 s; the score is 100 minus twice the mean deviation, at least 50 for a success. Misses report how many cents short or over.
+
+In bass mode the hunter uses the four bass strings (levels start on strings 4 and 3), chord changes take the root from the two lowest strings at the lowest fret and accept it from D1 up two octaves, and the bending drill is hidden (also from the daily menu).
 
 Each drill counts as the daily menu's game (the menu rotates rhythm games and drills) and earns 20 XP the first time that day. Best scores per level stay in this browser (`fretQuestDrills`) and travel with the JSON export. The result screen can share a one-line result (Web Share, or copied to the clipboard).
 
@@ -65,7 +68,11 @@ Missions are graded from the notes the microphone hears during a session: note c
 
 ## Off-guitar training
 
-`train.js` offers six screen-and-sound games for times without a guitar, five levels each. A run is ten questions; eight correct opens the next level, and faster answers and combos raise the score.
+`train.js` offers nine screen-and-sound games for times without a guitar, five levels each. A run is five quick questions and passes at four correct; three passing runs on a level (not necessarily in a row) open the next one, and the result and level buttons show the count. Levels opened before this rule stay open, and faster answers and combos raise the score.
+
+- メロディ耳コピ (solfège): hear a 3–5 note melody and reproduce it by tapping a six-string, frets 0–7 board; the first note is given and every tap sounds. C major steps up to A minor pentatonic and blues phrases.
+- 拍子当て: name the meter of a drum groove (4/4 and 3/4 up to 6/8, 5/4, 7/8, 9/8, 12/8).
+- ズレ探し: find the one click out of eight that is early or late (90 ms down to 18 ms).
 
 - 音程当て: intervals from 3rds/5ths/octave up to every interval, descending and harmonic.
 - コード聴き分け: major/minor up to 7th chords, diminished, augmented, sus4 and 6th.
@@ -76,9 +83,35 @@ Missions are graded from the notes the microphone hears during a session: note c
 
 Each mode played counts as the daily menu's game and earns 20 XP the first time that day. Progress is kept in this browser (`fretQuestTrain`).
 
+After a wrong answer in interval training, a review panel puts the root, the right interval and the chosen interval on one fretboard (the playable shape from a root on the lowest string), names each interval's character and how many semitones the answer was off, and plays both intervals from the same root for comparison.
+
 ## Skipping ahead
 
 Each course can be opened early in two ways: a skip challenge (play the course's last stage and reach ★1; only that stage counts as cleared) or opening it without a test. Experienced mode opens every course, makes the home card and daily menu follow the chosen course, and offers all sessions from the start. Skipped lessons are never marked cleared and earn no XP. Opened courses and the mode are part of the saved record and the export.
+
+## Bass mode
+
+A switch in the top bar chooses guitar or 4-string bass (E1 A1 D2 G2). The choice is kept in this browser and the page reloads so every screen follows it.
+
+- Stages: melody stages drop two octaves (one, if two would go below the low E) and are laid out on bass strings and frets. Strum stages become the chord's root on the same rhythm. The lobby says which conversion was applied. Quiz lessons, chord diagrams and the guitar-specific lesson texts are not converted.
+- Pitch detection searches down to 35 Hz with a 4096-sample window (guitar: 70 Hz, 2048). Because a phone microphone often reports a low bass note one octave high, a note one octave away from the target counts. The hit time is taken from the attack detector when one came just before the pitch settled, since the longer window settles later.
+- Tuner: E A D G; an octave-high reading is folded back to the nearest open string; the reference tone plays an octave up so a phone speaker can reproduce it.
+- Sessions: the band drops its bass line and the player is the bassist. Pitches down to E1 are scored (guitar mode ignores everything below E2, where the band's bass lives). Dojo missions add a goal type for roots on the downbeat.
+- Phrase dojo: the bass shows 8 bass-line modules instead of the guitar modules (root playing and boogie walk for blues; root eighths, root–fifth–octave and a syncopated line for pops; two-beat, walking bass and bossa nova for jazz), with their own mastery count.
+- Training: the fretboard map and the melody board use 4 strings, and melodies sit in the bass range.
+
+Not verified on a real bass. The low-frequency response of iPhone microphones varies, and the synthetic tests cannot show it.
+
+## Air practice (on-screen fretboard)
+
+For practising away from the instrument. The board shows the real strings and frets of the chosen instrument (6 or 4 strings), so positions learned on it are the ones played on the neck later. Taps sound immediately (bass an octave up, so a phone speaker can carry it).
+
+- Phrase modules (solo licks, bass lines, tab-based comping): 1 **trace**: an approach ring closes on each position; tap it on the beat (judged like a stage: position and timing; a wrong position costs points and leaves the note open). 2 **recall**: no guides; rebuild the phrase in order from the first note (the same pitch elsewhere is pointed out but not accepted). 3 **air session**: the module's session mission, played by tapping the board.
+- Chord modules: 1 **shapes**: place each form with the diagram in view (open and muted strings are marked at the nut). 2 **changes**: the progression plays and each form must be complete before its chord starts, without the diagram.
+- Sessions: the lobby offers "play on the screen fretboard" next to the microphone; the board colours the current chord's tones (with degrees) and the scale, and can be moved along the neck.
+- Progress is kept separately from the instrument steps (`fretQuestAir`): air steps never count as dojo mastery. Once a module is done on the board, the module screen points to the instrument steps.
+
+This trains positions, order, rhythm and chord-tone choice. It does not train the hands: fretting pressure, stretches, picking and muting still need the instrument.
 
 ## Actual assessment limits
 
@@ -88,9 +121,13 @@ Strum stages (microphone): only the timing of strum attacks is graded. Attacks t
 
 The microphone is opened as raw instrument input (no echo cancellation, noise suppression or automatic gain): iOS voice processing suppressed sustained guitar notes. Attack and pitch thresholds follow a noise floor measured between notes, so quiet sources such as an unplugged electric guitar register while steady room noise does not; the floor does not rise while notes ring. Meters use a decibel scale. If several notes are missed while almost nothing reaches the microphone, the stage suggests moving the phone closer.
 
-Tap mode is available on every stage and is labeled as screen-tap timing, not guitar grading. The microphone requests echo cancellation; headphones are still recommended. No audio is recorded or uploaded.
+Tap mode is available on every stage and is labeled as screen-tap timing, not guitar grading. Headphones are recommended, because the microphone input is raw and would also hear the backing. No audio is recorded or uploaded.
 
 Other lessons are unchanged: quizzes, fretboard quizzes, tap rhythm lessons (tolerance 150 ms or 30% of a subdivision) and locally generated ear-training triads.
+
+## Silent mode (iPhone)
+
+Sound plays even with the ring/silent switch on. The page declares its audio as media playback: `navigator.audioSession.type = 'playback'` where Safari supports it, otherwise (older iOS) a silent looping `<audio>` element started on the first tap. While the microphone is live the session is `play-and-record` (playback mode does not allow recording), and it returns to playback at the next sound start. If the audio context is left "interrupted" (iOS, after a call, the microphone or a session switch) it is resumed, and replaced if it will not come back. After an audio-session switch it waits briefly and resumes again, since iOS can interrupt a running context a moment later. Every play screen (stages, sessions, rhythm games, air practice) checks the clock each frame: if it stops mid-run it is resumed, and when iOS only allows that from a tap a "tap to resume" button appears (`tests/stall.cjs`). The practice tools include a sound check that plays a test tone and lists the audio state (context state, sample rate, audio session, fallback loop, microphone, iOS version) for diagnosing a silent phone. Only the switching is tested (`tests/silent.cjs`, with a stand-in `audioSession`); the effect on the silent switch has not been checked on a real iPhone.
 
 ## Records and installation
 
@@ -102,7 +139,7 @@ The manifest, PNG icons and a service worker support home-screen installation an
 
 `tests/stage-playthrough.cjs` drives the real page in headless Chromium and feeds synthetic plucked notes and strums in as the microphone. It checks that clean playing scores at least 95 (also at 1/20 level with room noise, which scored 0 before the adaptive thresholds), that silence and random strumming stay below the clear line, that the +0.2 s offset setting restores a delayed performance, and that tap mode works. `ALL=1` also plays every stage once. Serve the folder that contains `fretquest/` on port 8765 first (for example `python3 -m http.server 8765`).
 
-`tests/tools.cjs` checks tuner readings and that a player 0.2 s late scores 100 after measuring. `tests/train.cjs` checks that every training mode runs, a perfect run opens the next level, a poor run does not, wrong rhythm answers enter the rhythm book and XP counts. `tests/dojo.cjs` checks dojo steps, a failed and a passed session mission, mastery and a pop session. `tests/remix.cjs` checks that stage misses fill the rhythm book, that a perfect remix clears 8/8 and graduates the rhythm, and that call & response offers a review. `tests/skip.cjs` checks skip challenges, opening without a test and experienced mode. `tests/records.cjs` checks the daily menu, XP, bonus, streak, duplicate protection and export/import. `tests/drills.cjs` answers each drill with a synthetic guitar: clean answers score high (fretboard 30+ notes, chord changes reach ♩140, bends 85+), while wrong notes, late changes, under-bends and fretting the bent pitch directly score 0. `tests/jam-games.cjs` uses the same approach for sessions (chord-tone arpeggios score 100%, a chromatic line does not) and the three rhythm games (a perfect player clears them; a steadily drifting player fails the timing game).
+`tests/tools.cjs` checks tuner readings and that a player 0.2 s late scores 100 after measuring. `tests/feel.cjs` checks that perfect taps clear every feel-game level and silence does not. `tests/air.cjs` checks that every guitar and bass module fits its board window and every chord has a form, that trace scores 100 with the right positions on time and low on the wrong strings, recall, shapes and changes, a dojo session mission from board taps, a free board session and a bass trace on 4 strings. `tests/interval-review.cjs` checks that a wrong interval answer shows the root, the right note and the chosen note on a guitar and a bass board with both playback buttons, and that a right answer shows none. `tests/train.cjs` checks that every training mode runs, a perfect run counts one clear and the third opens the next level, earlier unlocks stay open, a poor run does not count, wrong rhythm answers enter the rhythm book and XP counts. `tests/dojo.cjs` checks dojo steps, a failed and a passed session mission, mastery and a pop session. `tests/remix.cjs` checks that stage misses fill the rhythm book, that a perfect remix clears 8/8 and graduates the rhythm, and that call & response offers a review. `tests/skip.cjs` checks skip challenges, opening without a test and experienced mode. `tests/records.cjs` checks the daily menu, XP, bonus, streak, duplicate protection and export/import. `tests/bass.cjs` runs in bass mode: every stage converts to valid bass positions and strum roots, a converted melody and a root line score 100 (also when every other note is heard an octave high), silence and the original guitar register score 0, the tuner reads E1, A1 and an octave-high E, a bass-line learn step and a root mission pass, and the training boards have 4 strings. `tests/jam-games.cjs` does the same for sessions (chord-tone arpeggios score 100%, a chromatic line does not) and the three rhythm games (a perfect player clears them; a steadily drifting player fails the timing game). `tests/drills.cjs` answers each drill with a synthetic guitar: clean answers score high (fretboard 30+ notes, chord changes reach ♩140, bends 85+), while wrong notes, late changes, under-bends and fretting the bent pitch directly score 0; in bass mode the hunter and root-on-beat-one changes clear and bending is not offered.
 
 These are synthetic signals. They do not establish accuracy with a real guitar, a real iPhone microphone or real Bluetooth latency; those still need device testing.
 
