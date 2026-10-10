@@ -218,3 +218,6 @@ circle.iv-wrong{fill:#ff8fb8;stroke:#ffd3e3;stroke-width:1.5}
 .chip-row button small{display:block;font-size:10px;opacity:.75;font-weight:600}
 .air-cell.open-mark>span,.air-cell.mute-mark>span{transform:scale(1);background:transparent;font-size:17px}
 .air-cell.open-mark>span{color:#c7ef75}.air-cell.mute-mark>span{color:#ff8fb8}
+.sc-diag{display:grid;gap:6px;margin:14px 0;padding:12px;border-radius:14px;background:#ffffff0a;border:1px solid #ffffff14}
+.sc-diag div{display:flex;justify-content:space-between;gap:10px;font-size:13px}.sc-diag span{color:#cfc9e6}.sc-diag b{color:#fff}
+.sc-tips{margin:0;padding-left:18px;color:#cfc9e6;font-size:13px;line-height:1.8}

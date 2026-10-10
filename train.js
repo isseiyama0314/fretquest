@@ -30,7 +30,8 @@ const SOLFA=['ド','ド♯','レ','ミ♭','ミ','ファ','ファ♯','ソ','ソ
 
 /* ---------- Sound ---------- */
 let audio=null,current=null;
-async function sound(){await F.ensureAudio();const ctx=F.audioContext();if(!ctx||ctx.state!=='running')return null;audio?.stop();audio=K.synth(ctx);return {ctx,a:audio};}
+/* One synth per audio context: a new sound (a tap, a replay) must not cut off one that is still playing. */
+async function sound(){await F.ensureAudio();const ctx=F.audioContext();if(!ctx||ctx.state!=='running')return null;if(!audio||audio.ctx!==ctx){audio?.stop();audio=K.synth(ctx);audio.ctx=ctx;}return {ctx,a:audio};}
 async function playNotes(seq){/* seq: [[offsetSec, midi[], dur]] */const s=await sound();if(!s)return false;const t=s.ctx.currentTime+.08;seq.forEach(([o,ms,d])=>ms.forEach(m=>s.a.pluck(t+o,m,d,ms.length>1?.09:.16)));return true;}
 const chordMidis=(root,shape)=>shape.map(i=>root+i);
 

@@ -112,7 +112,23 @@ function calibrate(back){
  });
 }
 
-const bind=()=>{$('#open-tuner')?.addEventListener('click',tuner);$('#open-calibrate')?.addEventListener('click',()=>calibrate(null));};
+/* ---------- Sound check ----------
+   Plays a test tone and shows the audio state, so a silent phone can be diagnosed (and a screenshot sent). */
+function soundCheck(){
+ F.show(el=>{
+  $('.modal-dialog').classList.add('is-stage');
+  el.innerHTML='<div class="tool-tuner"><div class="lesson-progress">TOOLS / SOUND CHECK</div><h2 id="modal-title">サウンドチェック</h2>'
+   +'<p>ボタンを押すと「ポーン」とテスト音が鳴ります。聞こえなければ、下の表示ごとスクリーンショットを送ってください。</p>'
+   +'<button type="button" class="action-button" id="sc-play">テスト音を鳴らす</button>'
+   +'<div class="sc-diag" id="sc-diag"></div>'
+   +'<ul class="sc-tips"><li>本体の音量ボタンで音量を上げる（消音スイッチとは別です）</li><li>Bluetoothイヤホンにつながっていないか確認</li><li>一度アプリを閉じて開き直す</li></ul></div>';
+  const show=()=>{const d=F.audioDiag(),ios=(/OS (\d+)_(\d+)/.exec(navigator.userAgent)||[]).slice(1).join('.');
+   $('#sc-diag').innerHTML=[['音声エンジン',d.state],['サンプルレート',d.rate?d.rate+' Hz':'—'],['オーディオセッション',d.session],['無音ループ（旧iOS用）',d.loop],['マイク使用中',d.mic?'はい':'いいえ'],['iOS',ios||'—']].map(([k,v])=>'<div><span>'+k+'</span><b>'+v+'</b></div>').join('');};
+  $('#sc-play').onclick=async()=>{await F.ensureAudio();const ok=await F.playTone(69,1.2);[0,.35].forEach((d,i)=>F.playTone(i?76:72,.9,.4+d));show();if(!ok)F.notify('音声エンジンが動いていません。開き直してもう一度試してください。');};
+  show();
+ });
+}
+const bind=()=>{$('#open-tuner')?.addEventListener('click',tuner);$('#open-soundcheck')?.addEventListener('click',soundCheck);$('#open-calibrate')?.addEventListener('click',()=>calibrate(null));};
 bind();
-window.FQTools={tuner,calibrate};
+window.FQTools={soundCheck,tuner,calibrate};
 })();
