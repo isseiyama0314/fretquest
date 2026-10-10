@@ -3,7 +3,8 @@
 (()=>{'use strict';
 const F=window.FretQuest,K=window.FQStage.kit,$=s=>document.querySelector(s);
 const pick=a=>a[Math.floor(Math.random()*a.length)],shuffle=a=>{const c=[...a];for(let i=c.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[c[i],c[j]]=[c[j],c[i]];}return c;};
-const QUESTIONS=5,PASS=4;
+/* A run is 5 questions and passes at 4. Three passing runs (not necessarily in a row) open the next level. */
+const QUESTIONS=5,PASS=4,CLEARS=3;
 
 /* ---------- Music data ---------- */
 const INTERVALS=[[1,'短2度'],[2,'長2度'],[3,'短3度'],[4,'長3度'],[5,'完全4度'],[6,'増4度・減5度'],[7,'完全5度'],[8,'短6度'],[9,'長6度'],[10,'短7度'],[11,'長7度'],[12,'オクターブ']];
@@ -130,7 +131,10 @@ const ORDER=['melody','interval','chord','prog','rhythm','meter','timing','fret'
 const KEY='fretQuestTrain';
 const load=()=>{try{return JSON.parse(localStorage.getItem(KEY))||{};}catch{return {};}};
 const saveMode=(id,patch)=>{const all=load();all[id]={...(all[id]||{unlocked:1,best:{}}),...patch};try{localStorage.setItem(KEY,JSON.stringify(all));}catch{}};
-const prog=id=>load()[id]||{unlocked:1,best:{}};
+const prog=id=>{const p=load()[id]||{unlocked:1,best:{}};p.clears=p.clears||{};return p;};
+/* Passing runs counted on a level; levels below the unlocked one count as done (records from before the clear count). */
+const clearsOn=(pr,lv)=>lv<pr.unlocked?CLEARS:Math.min(CLEARS,pr.clears[lv]||0);
+const pips=n=>'<span class="train-clears" aria-label="'+n+' / '+CLEARS+'回クリア">'+Array.from({length:CLEARS},(_,i)=>'<i class="'+(i<n?'on':'')+'"></i>').join('')+'</span>';
 
 /* ---------- Screens ---------- */
 /* Six strings by frets 0–7, high string on top; the first note's position is marked. */
@@ -147,9 +151,9 @@ function lobby(id,level){
  F.show(el=>{
   $('.modal-dialog').classList.add('is-stage');
   el.innerHTML='<div class="train-lobby"><div class="lesson-progress">'+INST.name+'なしトレーニング</div><h2 id="modal-title">'+m.title+'</h2><p>'+m.about+'</p>'
-   +'<div class="train-levels">'+m.levels.map((t,i)=>{const lv=i+1,open=lv<=pr.unlocked,b=pr.best[lv];return '<button type="button" data-lv="'+lv+'" '+(open?'':'disabled')+' aria-pressed="'+(lv===level)+'"><b>Lv'+lv+'</b><span>'+t+'</span><small>'+(open?(b!=null?'BEST '+b+' / '+QUESTIONS:'NEW'):'🔒 前のレベルで'+PASS+'問正解')+'</small></button>';}).join('')+'</div>'
+   +'<div class="train-levels">'+m.levels.map((t,i)=>{const lv=i+1,open=lv<=pr.unlocked,b=pr.best[lv];return '<button type="button" data-lv="'+lv+'" '+(open?'':'disabled')+' aria-pressed="'+(lv===level)+'"><b>Lv'+lv+'</b><span>'+t+'</span><small>'+(open?(lv<pr.unlocked||lv===5&&clearsOn(pr,lv)>=CLEARS?'CLEAR ・ BEST '+(b??0)+' / '+QUESTIONS:pips(clearsOn(pr,lv))+(b!=null?' BEST '+b+' / '+QUESTIONS:'')):'🔒 前のレベルを'+CLEARS+'回クリア')+'</small></button>';}).join('')+'</div>'
    +'<button type="button" class="action-button" id="train-start">Lv'+level+' をはじめる '+F.icon('arrow')+'</button>'
-   +'<p class="lesson-caption">'+QUESTIONS+'問中'+PASS+'問正解で次のレベルが開きます。早く答えるほどスコアが伸びます。'+INST.name+'もマイクも使いません。</p></div>';
+   +'<p class="lesson-caption">'+QUESTIONS+'問中'+PASS+'問正解で1クリア。'+CLEARS+'回クリアで次のレベルが開きます。早く答えるほどスコアが伸びます。'+INST.name+'もマイクも使いません。</p></div>';
   el.querySelectorAll('[data-lv]').forEach(b=>b.onclick=()=>lobby(id,Number(b.dataset.lv)));
   $('#train-start').onclick=()=>run(id,level);$('#train-start').focus();
  });
@@ -201,16 +205,19 @@ function run(id,level){
  F.setCleanup(()=>{audio?.stop();audio=null;});
 }
 function finish(id,level,st){
- const m=MODES_DEF[id],pr=prog(id),passed=st.correct>=PASS,newBest=st.correct>(pr.best[level]??-1),opened=passed&&level===pr.unlocked&&level<5;
- saveMode(id,{best:{...pr.best,[level]:Math.max(st.correct,pr.best[level]??0)},unlocked:opened?level+1:pr.unlocked});
+ const m=MODES_DEF[id],pr=prog(id),passed=st.correct>=PASS,newBest=st.correct>(pr.best[level]??-1);
+ const count=passed&&level===pr.unlocked?(pr.clears[level]||0)+1:pr.clears[level]||0,opened=passed&&level===pr.unlocked&&level<5&&count>=CLEARS;
+ saveMode(id,{best:{...pr.best,[level]:Math.max(st.correct,pr.best[level]??0)},clears:{...pr.clears,[level]:count},unlocked:opened?level+1:pr.unlocked});
+ const onTop=level===pr.unlocked,left=CLEARS-Math.min(CLEARS,count);
  const earned=F.recordActivity('game:train-'+id);render();
  F.show(el=>{
   $('.modal-dialog').classList.add('is-stage');
   el.innerHTML='<div class="stage-result'+(passed?' passed':'')+'">'+(opened?'<div class="confetti" aria-hidden="true">'+Array.from({length:20},(_,i)=>'<i style="--x:'+(5+i*4.5)+'%;--delay:'+(i%4*.07)+'s;--r:'+(i%2?200:-160)+'deg"></i>').join('')+'</div>':'')
-   +'<div class="lesson-progress">'+m.title+' / Lv'+level+'</div><h2 id="modal-title">'+(opened?'Lv'+(level+1)+' 解放！':passed?'クリア！':'あと少し！')+'</h2>'
+   +'<div class="lesson-progress">'+m.title+' / Lv'+level+'</div><h2 id="modal-title">'+(opened?'Lv'+(level+1)+' 解放！':passed?(onTop&&level<5?'クリア '+Math.min(CLEARS,count)+' / '+CLEARS:'クリア！'):'あと少し！')+'</h2>'
    +'<div class="result-score"><strong>'+st.correct+'</strong><small>/ '+QUESTIONS+'</small></div>'
    +'<div class="result-grid"><div><b>'+st.score+'</b><small>SCORE</small></div><div><b>'+st.best+'</b><small>MAX COMBO</small></div></div>'
-   +'<p>'+(passed?'':PASS+'問正解で次のレベルへ。')+(newBest&&!passed?'自己ベスト更新。':'')+'</p>'
+   +(onTop&&!opened&&level<5?'<div class="train-progress">'+pips(Math.min(CLEARS,count))+'<span>'+(left>0?'あと'+left+'回クリアで Lv'+(level+1):'')+'</span></div>':'')
+   +'<p>'+(passed?'':PASS+'問正解で1クリア。')+(newBest&&!passed?'自己ベスト更新。':'')+'</p>'
    +(earned?'<div class="success-xp">+'+earned+' XP</div>':'')
    +(opened?'<button type="button" class="action-button" id="train-up">Lv'+(level+1)+' へ進む '+F.icon('arrow')+'</button>':'')
    +'<button type="button" class="action-button '+(opened?'secondary-action':'')+'" id="train-again">もう一度</button><button type="button" class="action-button secondary-action" id="train-close">閉じる</button></div>';
@@ -219,7 +226,7 @@ function finish(id,level,st){
 }
 function render(){
  const el=$('#train-cards');if(!el)return;
- el.innerHTML=ORDER.map(id=>{const m=MODES_DEF[id],pr=prog(id);return '<button type="button" class="game-card train-card tc-'+id+'" data-train="'+id+'"><span class="jam-genre">Lv'+pr.unlocked+' / 5</span><strong>'+m.title+'</strong><span class="jam-changes">'+m.tag+'</span><span class="dojo-pips">'+[1,2,3,4,5].map(l=>'<i class="'+((pr.best[l]??0)>=PASS?'on':'')+'"></i>').join('')+'</span></button>';}).join('');
+ el.innerHTML=ORDER.map(id=>{const m=MODES_DEF[id],pr=prog(id);return '<button type="button" class="game-card train-card tc-'+id+'" data-train="'+id+'"><span class="jam-genre">Lv'+pr.unlocked+' / 5</span><strong>'+m.title+'</strong><span class="jam-changes">'+m.tag+'</span><span class="dojo-pips">'+[1,2,3,4,5].map(l=>'<i class="'+(clearsOn(pr,l)>=CLEARS?'on':'')+'"></i>').join('')+'</span></button>';}).join('');
  el.querySelectorAll('[data-train]').forEach(b=>b.onclick=()=>lobby(b.dataset.train));
 }
 render();

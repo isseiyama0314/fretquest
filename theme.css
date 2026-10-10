@@ -227,3 +227,6 @@ circle.iv-wrong{fill:#ff8fb8;stroke:#ffd3e3;stroke-width:1.5}
 /* Shown when the audio clock stops mid-run and iOS only resumes from a tap. */
 .audio-stall{position:fixed;left:50%;top:50%;transform:translate(-50%,-50%);z-index:9999;display:flex;flex-direction:column;align-items:center;gap:4px;padding:22px 28px;border-radius:20px;border:2px solid #ffc56b;background:#2a2446f2;color:#fff;font:800 16px "Noto Sans JP",sans-serif;box-shadow:0 20px 60px #0009}
 .audio-stall small{font-size:12px;color:#ffc56b}
+/* Training: passing runs toward the next level. */
+.train-clears{display:inline-flex;gap:3px;vertical-align:middle;margin-right:4px}.train-clears i{width:8px;height:8px;border-radius:50%;background:#ffffff26}.train-clears i.on{background:#c7ef75}
+.train-progress{display:flex;align-items:center;justify-content:center;gap:10px;margin:8px 0;font-weight:800;color:#c7ef75}.train-progress .train-clears i{width:12px;height:12px}
