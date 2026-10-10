@@ -1,12 +1,13 @@
 /* YIN-style difference estimator. Monophonic audio only. No audio leaves the device. */
 (function(root,factory){const api=factory();if(typeof module==='object'&&module.exports)module.exports=api;else root.FQPitch=api;})(typeof window!=='undefined'?window:globalThis,function(){'use strict';
 /* minRms gates out silence; callers pass a level relative to the measured noise floor. */
-function detect(input,sampleRate,minRms=.008){
+/* minHz sets the lowest pitch searched: 70 Hz covers the guitar's low E, 35 Hz the bass's. */
+function detect(input,sampleRate,minRms=.008,minHz=70){
   let energy=0,mean=0;for(let i=0;i<input.length;i++){energy+=input[i]*input[i];mean+=input[i];}
   const rms=Math.sqrt(energy/input.length);if(rms<minRms)return {frequency:null,rms,clarity:0};mean/=input.length;
   const stride=sampleRate>30000?2:1,rate=sampleRate/stride,buf=new Float32Array(Math.floor(input.length/stride));
   for(let i=0;i<buf.length;i++)buf[i]=input[i*stride]-mean;
-  const min=Math.max(2,Math.floor(rate/1400)),max=Math.min(Math.floor(rate/70),Math.floor(buf.length/2)-1),size=buf.length-max;
+  const min=Math.max(2,Math.floor(rate/1400)),max=Math.min(Math.floor(rate/minHz),Math.floor(buf.length/2)-1),size=buf.length-max;
   const diff=new Float32Array(max+1),norm=new Float32Array(max+1);norm[0]=1;let sum=0;
   for(let lag=1;lag<=max;lag++){let v=0;for(let j=0;j<size;j++){const d=buf[j]-buf[j+lag];v+=d*d;}diff[lag]=v;sum+=v;norm[lag]=sum? v*lag/sum:1;}
   let lag=-1;for(let i=min;i<max;i++){if(norm[i]<.13){while(i+1<max&&norm[i+1]<norm[i])i++;lag=i;break;}}

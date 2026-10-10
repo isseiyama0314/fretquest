@@ -16,7 +16,9 @@ const PROG_LEVELS=[['I','IV','V'],['I','IV','V','vi'],['I','ii','iii','IV','V','
 const KEYS={C:['C','D','E','F','G','A','B'],G:['G','A','B','C','D','E','F♯'],D:['D','E','F♯','G','A','B','C♯'],A:['A','B','C♯','D','E','F♯','G♯'],E:['E','F♯','G♯','A','B','C♯','D♯'],F:['F','G','A','B♭','C','D','E'],'B♭':['B♭','C','D','E♭','F','G','A'],'E♭':['E♭','F','G','A♭','B♭','C','D']};
 const SIGS={C:'なし',G:'♯1つ',D:'♯2つ',A:'♯3つ',E:'♯4つ',F:'♭1つ','B♭':'♭2つ','E♭':'♭3つ'};
 const ROMAN=['I','ii','iii','IV','V','vi','vii°'],TRIAD=['','m','m','','','m','dim'],MODES=['アイオニアン','ドリアン','フリジアン','リディアン','ミクソリディアン','エオリアン','ロクリアン'];
-const NOTE_NAMES=['C','C♯/D♭','D','D♯/E♭','E','F','F♯/G♭','G','G♯/A♭','A','A♯/B♭','B'],OPEN=[0,64,59,55,50,45,40];
+const NOTE_NAMES=['C','C♯/D♭','D','D♯/E♭','E','F','F♯/G♭','G','G♯/A♭','A','A♯/B♭','B'],OPEN=window.FQInst.get().open;
+/* Bass: 4 strings, and melodies sit two octaves lower (from E1 up). */
+const BASS=window.FQInst.isBass(),INST=window.FQInst.get(),TOP=OPEN.length-1;
 const flat=n=>n.endsWith('♯')?n.slice(0,-1):n+'♭';
 /* Meters as eighth-note bars: kick and snare positions give each meter its feel. */
 const METERS={'4/4':{n:8,kick:[0,4],snare:[2,6]},'3/4':{n:6,kick:[0],snare:[2,4]},'6/8':{n:6,kick:[0],snare:[3]},'5/4':{n:10,kick:[0,6],snare:[2,4,8]},'7/8':{n:7,kick:[0],snare:[2,4]},'9/8':{n:9,kick:[0],snare:[2,4,6]},'12/8':{n:12,kick:[0,6],snare:[3,9]}};
@@ -56,9 +58,9 @@ const MODES_DEF={
     const s=c.join('');if(s!==p&&s.includes('x'))wrongs.add(s);}
    const seq=[...[0,1,2,3].map(k=>[k*spb,[96],.05]),...p.split('').map((x,i)=>x==='x'?[4*spb+i*spb/4,[72],.12]:null).filter(Boolean)];
    return {prompt:'4カウントのあとのリズムは？',play:()=>playNotes(seq),choices:shuffle([p,...wrongs]),answer:p,grid:true,explain:'',onResult:ok=>K.rhythmBook.record(p,bpm,'リズム聴き取り',ok)};}},
- fret:{title:'指板マップ',tag:'音名から押さえる場所へ',icon:'fret',about:'「5弦でD」のように出た音を、その弦のどこで押さえるかタップします。指板が見えると、ソロでもコードでも迷いが減ります。',
-  levels:['6弦の幹音（♯♭なし）','5弦の幹音','6弦と5弦','全部の弦の幹音','♯・♭も含めて全部'],
-  make(lv){const strings=lv===1?[6]:lv===2?[5]:lv===3?[6,5]:[1,2,3,4,5,6],s=pick(strings),naturals=[0,2,4,5,7,9,11],pcs=lv===5?[...Array(12).keys()]:naturals,pc=pick(pcs);
+ fret:{title:'指板マップ',tag:'音名から押さえる場所へ',icon:'fret',about:(BASS?'「3弦でD」':'「5弦でD」')+'のように出た音を、その弦のどこで押さえるかタップします。指板が見えると、ソロでもコードでも迷いが減ります。',
+  levels:BASS?['4弦の幹音（♯♭なし）','3弦の幹音','4弦と3弦','全部の弦の幹音','♯・♭も含めて全部']:['6弦の幹音（♯♭なし）','5弦の幹音','6弦と5弦','全部の弦の幹音','♯・♭も含めて全部'],
+  make(lv){const strings=lv===1?[TOP]:lv===2?[TOP-1]:lv===3?[TOP,TOP-1]:OPEN.slice(1).map((_,i)=>i+1),s=pick(strings),naturals=[0,2,4,5,7,9,11],pcs=lv===5?[...Array(12).keys()]:naturals,pc=pick(pcs);
    const frets=[...Array(13).keys()].filter(f=>(OPEN[s]+f)%12===pc);
    return {prompt:s+'弦で「'+NOTE_NAMES[pc]+'」はどこ？',fretString:s,answerFrets:frets,answer:frets[0],explain:s+'弦 '+frets.join('・')+'フレット'};}},
 
@@ -66,9 +68,10 @@ const MODES_DEF={
   levels:['3音・となりの音へ','4音・3度の跳躍も','5音・Cメジャー','Aマイナーペンタのリック','ブルーノート入りのフレーズ'],
   make(lv){let notes;
    if(lv<=3){const len=lv+2,maxStep=lv===1?1:lv===2?2:4;let i=3+Math.floor(Math.random()*6);notes=[C_MAJOR[i]];
-    while(notes.length<len){const d=(Math.random()<.5?-1:1)*(1+Math.floor(Math.random()*maxStep)),j=i+d;if(j<0||j>=C_MAJOR.length)continue;i=j;notes.push(C_MAJOR[i]);}}
+    while(notes.length<len){const d=(Math.random()<.5?-1:1)*(1+Math.floor(Math.random()*maxStep)),j=i+d;if(j<(BASS?2:0)||j>=C_MAJOR.length)continue;i=j;notes.push(C_MAJOR[i]);}}
    else{const pool=lv===4?PENTA:BLUES,len=lv===4?4:5;let i=Math.floor(Math.random()*pool.length);notes=[pool[i]];
     while(notes.length<len){const j=i+(Math.random()<.5?-1:1)*(1+Math.floor(Math.random()*2));if(j<0||j>=pool.length)continue;i=j;notes.push(pool[i]);}}
+   if(BASS)notes=notes.map(m=>m-24);
    return {prompt:'聴いた'+notes.length+'音のメロディを指板で再現しよう',play:()=>playNotes(notes.map((m,k)=>[k*.55,[m],.5])),melody:notes,answer:notes,explain:notes.map(m=>SOLFA[m%12]).join(' ')};}},
  meter:{title:'拍子当て',tag:'グルーヴから拍子を聴き取る',icon:'rhythm',about:'ドラムのパターンを聴いて、何拍子かを当てます。3拍子と6/8拍子の違い、5拍子や7/8拍子の「あと1つ多い・少ない」感覚が身につきます。',
   levels:['4拍子と3拍子','6/8拍子を追加','5/4拍子も','7/8拍子も','9/8・12/8も'],
@@ -104,7 +107,7 @@ const prog=id=>load()[id]||{unlocked:1,best:{}};
 function melodyHtml(q){
  const first=q.melody[0];let marked=false;
  return '<div class="train-slots melody" id="train-slots">'+q.melody.map(()=>'<span></span>').join('')+'</div>'
-  +'<div class="train-board" role="group" aria-label="指板">'+[1,2,3,4,5,6].map(s=>'<div class="train-string"><b>'+s+'</b>'+[...Array(8).keys()].map(f=>{const m=OPEN[s]+f,mark=!marked&&m===first;if(mark)marked=true;return '<button type="button" data-midi="'+m+'" class="'+(mark?'start':'')+'" aria-label="'+s+'弦'+f+'フレット"></button>';}).join('')+'</div>').join('')
+  +'<div class="train-board" role="group" aria-label="指板">'+OPEN.slice(1).map((_,i)=>i+1).map(s=>'<div class="train-string"><b>'+s+'</b>'+[...Array(8).keys()].map(f=>{const m=OPEN[s]+f,mark=!marked&&m===first;if(mark)marked=true;return '<button type="button" data-midi="'+m+'" class="'+(mark?'start':'')+'" aria-label="'+s+'弦'+f+'フレット"></button>';}).join('')+'</div>').join('')
   +'<div class="train-frets"><b></b>'+[...Array(8).keys()].map(f=>'<span>'+f+'</span>').join('')+'</div></div>'
   +'<button type="button" class="train-undo" id="train-undo">1音もどす</button>';
 }
@@ -113,10 +116,10 @@ function lobby(id,level){
  const m=MODES_DEF[id],pr=prog(id);level=Math.min(level||pr.unlocked,pr.unlocked);
  F.show(el=>{
   $('.modal-dialog').classList.add('is-stage');
-  el.innerHTML='<div class="train-lobby"><div class="lesson-progress">ギターなしトレーニング</div><h2 id="modal-title">'+m.title+'</h2><p>'+m.about+'</p>'
+  el.innerHTML='<div class="train-lobby"><div class="lesson-progress">'+INST.name+'なしトレーニング</div><h2 id="modal-title">'+m.title+'</h2><p>'+m.about+'</p>'
    +'<div class="train-levels">'+m.levels.map((t,i)=>{const lv=i+1,open=lv<=pr.unlocked,b=pr.best[lv];return '<button type="button" data-lv="'+lv+'" '+(open?'':'disabled')+' aria-pressed="'+(lv===level)+'"><b>Lv'+lv+'</b><span>'+t+'</span><small>'+(open?(b!=null?'BEST '+b+' / '+QUESTIONS:'NEW'):'🔒 前のレベルで'+PASS+'問正解')+'</small></button>';}).join('')+'</div>'
    +'<button type="button" class="action-button" id="train-start">Lv'+level+' をはじめる '+F.icon('arrow')+'</button>'
-   +'<p class="lesson-caption">'+QUESTIONS+'問中'+PASS+'問正解で次のレベルが開きます。早く答えるほどスコアが伸びます。ギターもマイクも使いません。</p></div>';
+   +'<p class="lesson-caption">'+QUESTIONS+'問中'+PASS+'問正解で次のレベルが開きます。早く答えるほどスコアが伸びます。'+INST.name+'もマイクも使いません。</p></div>';
   el.querySelectorAll('[data-lv]').forEach(b=>b.onclick=()=>lobby(id,Number(b.dataset.lv)));
   $('#train-start').onclick=()=>run(id,level);$('#train-start').focus();
  });

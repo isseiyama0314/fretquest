@@ -45,13 +45,13 @@ function lobby(id){
  F.show(el=>{
   $('.modal-dialog').classList.add('is-stage');
   el.innerHTML='<div class="jam-lobby"><div class="lesson-progress">RHYTHM GAME / '+g.kicker+'</div><h2 id="modal-title">'+g.title+'</h2><div class="stage-meta"><span class="stage-best">'+bestLabel(id)+'</span></div><p>'+g.about+'</p>'
-   +(FEEL[id]?'<div class="game-howto"><b>おすすめ</b>画面タップで遊べます。クリックを鳴らしたまま判定するので、ギター（マイク）で遊ぶときはイヤホン必須です。</div>':'')
+   +(FEEL[id]?'<div class="game-howto"><b>おすすめ</b>画面タップで遊べます。クリックを鳴らしたまま判定するので、'+window.FQInst.get().name+'（マイク）で遊ぶときはイヤホン必須です。</div>':'')
    +'<div class="game-howto"><b>準備</b>左手で6本の弦に軽く触れて音を止め、右手でジャッと刻みます（ブラッシング）。音程は判定しません。</div>'
    +'<div class="stage-options">'
    +(id==='survival'?'<div class="chip-row three" role="group" aria-label="パターン">'+Object.entries(SURVIVAL).map(([k,v])=>'<button type="button" data-pat="'+k+'">'+v.label+'</button>').join('')+'</div>':'')
    +(id==='remix'?bookHtml():'')
    +(id==='clock'?'<div class="chip-row three" role="group" aria-label="テンポ">'+[60,80,100].map(b=>'<button type="button" data-cb="'+b+'">♩ '+b+'</button>').join('')+'</div>':'')
-   +'<div class="chip-row" role="group" aria-label="判定方法"><button type="button" data-in="mic">ギターで刻む（マイク）</button><button type="button" data-in="tap">画面タップで遊ぶ</button></div></div>'
+   +'<div class="chip-row" role="group" aria-label="判定方法"><button type="button" data-in="mic">'+window.FQInst.get().name+'で刻む（マイク）</button><button type="button" data-in="tap">画面タップで遊ぶ</button></div></div>'
    +'<button type="button" class="action-button" id="game-start">スタート '+F.icon('arrow')+'</button>'
    +'<p class="lesson-caption">マイクでは音の立ち上がりのタイミングだけを測ります。スタート前の「タイミング補正」は曲のステージと共通です。</p></div>';
   const sync=()=>{
@@ -331,7 +331,7 @@ function finish(r,res){
    +missedHtml(res.missed)
    +(res.history?res.history.map(h=>'<div class="clock-row"><b>'+h.silent+'小節</b><span>平均 '+Math.round(h.mean)+'ms</span><span>'+(Math.abs(h.drift)>=40?(h.drift<0?'走り気味':'もたり気味'):'安定')+'</span><span>'+(h.ok?'✓':'✗')+'</span></div>').join(''):'')
    +(earned?'<div class="success-xp">+'+earned+' XP</div>':'')
-   +'<p class="lesson-caption">'+(r.mic?'マイクで音の立ち上がりのタイミングを測りました。':'画面タップのタイミングを測りました。ギター演奏の判定ではありません。')+' ベスト記録はこの端末に保存されます。</p>'
+   +'<p class="lesson-caption">'+(r.mic?'マイクで音の立ち上がりのタイミングを測りました。':'画面タップのタイミングを測りました。'+window.FQInst.get().name+'演奏の判定ではありません。')+' ベスト記録はこの端末に保存されます。</p>'
    +'<button type="button" class="action-button" id="g-again">もう一度</button><button type="button" class="action-button secondary-action" id="g-close">閉じる</button></div>';
   $('#g-again').onclick=()=>lobby(id);$('#g-review')?.addEventListener('click',()=>{reviewSet=[...new Set(res.missed)].map(p=>K.rhythmBook.weak().find(w=>w.p===p)||{p,bpm:84,src:'今回のミス'});lobby('remix');});$('#g-close').onclick=F.close;$('#g-again').focus();
  });

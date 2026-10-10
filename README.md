@@ -75,6 +75,19 @@ Each mode played counts as the daily menu's game and earns 20 XP the first time 
 
 Each course can be opened early in two ways: a skip challenge (play the course's last stage and reach ★1; only that stage counts as cleared) or opening it without a test. Experienced mode opens every course, makes the home card and daily menu follow the chosen course, and offers all sessions from the start. Skipped lessons are never marked cleared and earn no XP. Opened courses and the mode are part of the saved record and the export.
 
+## Bass mode
+
+A switch in the top bar chooses guitar or 4-string bass (E1 A1 D2 G2). The choice is kept in this browser and the page reloads so every screen follows it.
+
+- Stages: melody stages drop two octaves (one, if two would go below the low E) and are laid out on bass strings and frets. Strum stages become the chord's root on the same rhythm. The lobby says which conversion was applied. Quiz lessons, chord diagrams and the guitar-specific lesson texts are not converted.
+- Pitch detection searches down to 35 Hz with a 4096-sample window (guitar: 70 Hz, 2048). Because a phone microphone often reports a low bass note one octave high, a note one octave away from the target counts. The hit time is taken from the attack detector when one came just before the pitch settled, since the longer window settles later.
+- Tuner: E A D G; an octave-high reading is folded back to the nearest open string; the reference tone plays an octave up so a phone speaker can reproduce it.
+- Sessions: the band drops its bass line and the player is the bassist. Pitches down to E1 are scored (guitar mode ignores everything below E2, where the band's bass lives). Dojo missions add a goal type for roots on the downbeat.
+- Phrase dojo: the bass shows 8 bass-line modules instead of the guitar modules (root playing and boogie walk for blues; root eighths, root–fifth–octave and a syncopated line for pops; two-beat, walking bass and bossa nova for jazz), with their own mastery count.
+- Training: the fretboard map and the melody board use 4 strings, and melodies sit in the bass range.
+
+Not verified on a real bass. The low-frequency response of iPhone microphones varies, and the synthetic tests cannot show it.
+
 ## Actual assessment limits
 
 Melody stages (microphone): a YIN-style detector must hear the exact target pitch (nearest semitone) for two consecutive frames inside the note's window. A repeated pitch only counts if a new pick attack is detected, so a ringing note cannot pass the next identical note. This does not grade chords, fingering or tone.
@@ -83,7 +96,7 @@ Strum stages (microphone): only the timing of strum attacks is graded. Attacks t
 
 The microphone is opened as raw instrument input (no echo cancellation, noise suppression or automatic gain): iOS voice processing suppressed sustained guitar notes. Attack and pitch thresholds follow a noise floor measured between notes, so quiet sources such as an unplugged electric guitar register while steady room noise does not; the floor does not rise while notes ring. Meters use a decibel scale. If several notes are missed while almost nothing reaches the microphone, the stage suggests moving the phone closer.
 
-Tap mode is available on every stage and is labeled as screen-tap timing, not guitar grading. The microphone requests echo cancellation; headphones are still recommended. No audio is recorded or uploaded.
+Tap mode is available on every stage and is labeled as screen-tap timing, not guitar grading. Headphones are recommended, because the microphone input is raw and would also hear the backing. No audio is recorded or uploaded.
 
 Other lessons are unchanged: quizzes, fretboard quizzes, tap rhythm lessons (tolerance 150 ms or 30% of a subdivision) and locally generated ear-training triads.
 
@@ -97,7 +110,7 @@ The manifest, PNG icons and a service worker support home-screen installation an
 
 `tests/stage-playthrough.cjs` drives the real page in headless Chromium and feeds synthetic plucked notes and strums in as the microphone. It checks that clean playing scores at least 95 (also at 1/20 level with room noise, which scored 0 before the adaptive thresholds), that silence and random strumming stay below the clear line, that the +0.2 s offset setting restores a delayed performance, and that tap mode works. `ALL=1` also plays every stage once. Serve the folder that contains `fretquest/` on port 8765 first (for example `python3 -m http.server 8765`).
 
-`tests/tools.cjs` checks tuner readings and that a player 0.2 s late scores 100 after measuring. `tests/feel.cjs` checks that perfect taps clear every feel-game level and silence does not. `tests/train.cjs` checks that every training mode runs, a perfect run opens the next level, a poor run does not, wrong rhythm answers enter the rhythm book and XP counts. `tests/dojo.cjs` checks dojo steps, a failed and a passed session mission, mastery and a pop session. `tests/remix.cjs` checks that stage misses fill the rhythm book, that a perfect remix clears 8/8 and graduates the rhythm, and that call & response offers a review. `tests/skip.cjs` checks skip challenges, opening without a test and experienced mode. `tests/records.cjs` checks the daily menu, XP, bonus, streak, duplicate protection and export/import. `tests/jam-games.cjs` does the same for sessions (chord-tone arpeggios score 100%, a chromatic line does not) and the three rhythm games (a perfect player clears them; a steadily drifting player fails the timing game).
+`tests/tools.cjs` checks tuner readings and that a player 0.2 s late scores 100 after measuring. `tests/feel.cjs` checks that perfect taps clear every feel-game level and silence does not. `tests/train.cjs` checks that every training mode runs, a perfect run opens the next level, a poor run does not, wrong rhythm answers enter the rhythm book and XP counts. `tests/dojo.cjs` checks dojo steps, a failed and a passed session mission, mastery and a pop session. `tests/remix.cjs` checks that stage misses fill the rhythm book, that a perfect remix clears 8/8 and graduates the rhythm, and that call & response offers a review. `tests/skip.cjs` checks skip challenges, opening without a test and experienced mode. `tests/records.cjs` checks the daily menu, XP, bonus, streak, duplicate protection and export/import. `tests/bass.cjs` runs in bass mode: every stage converts to valid bass positions and strum roots, a converted melody and a root line score 100 (also when every other note is heard an octave high), silence and the original guitar register score 0, the tuner reads E1, A1 and an octave-high E, a bass-line learn step and a root mission pass, and the training boards have 4 strings. `tests/jam-games.cjs` does the same for sessions (chord-tone arpeggios score 100%, a chromatic line does not) and the three rhythm games (a perfect player clears them; a steadily drifting player fails the timing game).
 
 These are synthetic signals. They do not establish accuracy with a real guitar, a real iPhone microphone or real Bluetooth latency; those still need device testing.
 

@@ -2,6 +2,8 @@
    Only the chord progressions are used. No melodies are included. Microphone audio stays on this device. */
 (()=>{'use strict';
 const F=window.FretQuest,K=window.FQStage.kit,$=s=>document.querySelector(s);
+/* On bass the player is the band's bassist: the backing drops its bass line. */
+const INST=window.FQInst.get(),BASS=window.FQInst.isBass();
 const ROOT={C:0,'C#':1,Db:1,D:2,'D#':3,Eb:3,E:4,F:5,'F#':6,Gb:6,G:7,'G#':8,Ab:8,A:9,'A#':10,Bb:10,B:11};
 const PC=['C','C♯','D','E♭','E','F','F♯','G','A♭','A','B♭','B'];
 /* Chord tones and the scale suggested over each chord quality. */
@@ -42,7 +44,7 @@ let run=null,current=null;
 function band(ctx,a){
  const m=n=>440*Math.pow(2,(n-69)/12);
  return {
-  bass(t,midi,dur){const o=ctx.createOscillator(),f=ctx.createBiquadFilter(),g=ctx.createGain();o.type='triangle';o.frequency.value=m(midi);f.type='lowpass';f.frequency.value=600;g.gain.setValueAtTime(.0001,t);g.gain.exponentialRampToValueAtTime(.42,t+.012);g.gain.exponentialRampToValueAtTime(.0001,t+Math.max(.15,dur));o.connect(f);f.connect(g);g.connect(a.master);o.start(t);o.stop(t+dur+.05);},
+  bass(t,midi,dur){if(BASS)return;const o=ctx.createOscillator(),f=ctx.createBiquadFilter(),g=ctx.createGain();o.type='triangle';o.frequency.value=m(midi);f.type='lowpass';f.frequency.value=600;g.gain.setValueAtTime(.0001,t);g.gain.exponentialRampToValueAtTime(.42,t+.012);g.gain.exponentialRampToValueAtTime(.0001,t+Math.max(.15,dur));o.connect(f);f.connect(g);g.connect(a.master);o.start(t);o.stop(t+dur+.05);},
   keys(t,notes,dur,vol=.045){notes.forEach(n=>{const o=ctx.createOscillator(),o2=ctx.createOscillator(),g=ctx.createGain();o.type='sine';o2.type='triangle';o.frequency.value=m(n);o2.frequency.value=m(n)*2.001;g.gain.setValueAtTime(.0001,t);g.gain.exponentialRampToValueAtTime(vol,t+.008);g.gain.exponentialRampToValueAtTime(.0001,t+dur);o.connect(g);o2.connect(g);g.connect(a.master);o.start(t);o2.start(t);o.stop(t+dur+.05);o2.stop(t+dur+.05);});},
   ride(t,v=.05){a.burst(t,'highpass',5200,v,.22);},
   rim(t){a.burst(t,'bandpass',2600,.11,.035);},
@@ -80,14 +82,14 @@ function scheduleBeat(r,beat){
 }
 
 /* ---------- Fretboard map of usable notes ---------- */
-const OPEN=[64,59,55,50,45,40];
+const OPEN=INST.open.slice(1);
 function fretboard(s,ch,heard){
- const W=360,H=118,x=f=>f===0?12:28+(f-.5)*25.5,y=i=>14+i*18;
+ const W=360,H=28+(OPEN.length-1)*18,x=f=>f===0?12:28+(f-.5)*25.5,y=i=>14+i*18;
  let svg='<svg viewBox="0 0 '+W+' '+H+'" class="jam-board" role="img" aria-label="'+pretty(ch.sym)+'で使える音"><rect x="22" y="8" width="'+(W-24)+'" height="'+(H-16)+'" rx="6" fill="#ffffff08"/>';
  for(let f=1;f<=13;f++)svg+='<line x1="'+(22+f*25.5)+'" x2="'+(22+f*25.5)+'" y1="10" y2="'+(H-10)+'" stroke="#ffffff'+(f===12?'40':'14')+'"/>';
  [3,5,7,9].forEach(f=>svg+='<circle cx="'+x(f)+'" cy="'+(H-4)+'" r="2" fill="#ffffff40"/>');svg+='<circle cx="'+(x(12)-4)+'" cy="'+(H-4)+'" r="2" fill="#ffffff40"/><circle cx="'+(x(12)+4)+'" cy="'+(H-4)+'" r="2" fill="#ffffff40"/>';
  svg+='<rect x="20" y="10" width="3" height="'+(H-20)+'" fill="#ffffff66"/>';
- OPEN.forEach((open,i)=>{svg+='<line x1="22" x2="'+W+'" y1="'+y(i)+'" y2="'+y(i)+'" stroke="#ffffff'+(i>2?'38':'26')+'" stroke-width="'+(1+i*.25)+'"/>';
+ OPEN.forEach((open,i)=>{svg+='<line x1="22" x2="'+W+'" y1="'+y(i)+'" y2="'+y(i)+'" stroke="#ffffff'+(i>2||BASS?'38':'26')+'" stroke-width="'+(1+(BASS?i+2:i)*.25)+'"/>';
   for(let f=0;f<=13;f++){const midi=open+f,pc=(midi%12-ch.root+12)%12,keyPc=(midi%12-s.key+12)%12,isTone=ch.tones.includes(pc),inKey=s.keyScale.includes(keyPc)||ch.scale.includes(pc),hit=heard===midi;
    if(isTone)svg+='<circle cx="'+x(f)+'" cy="'+y(i)+'" r="7.5" class="tone d'+pc+(hit?' hit':'')+'"/><text x="'+x(f)+'" y="'+(y(i)+3)+'" text-anchor="middle">'+DEGREE[pc]+'</text>';
    else if(inKey)svg+='<circle cx="'+x(f)+'" cy="'+y(i)+'" r="3.4" class="scale'+(hit?' hit':'')+'"/>';
@@ -104,7 +106,7 @@ function evalGoal(g,log){
  else if(g.type==='inSet'){const v=ratio(x=>g.pcs.includes(x.midi%12));ok=v>=g.ratio;shown=pct(v)+' / '+pct(g.ratio);}
  else if(g.type==='tones'){const v=ratio(x=>x.tone);ok=v>=g.ratio;shown=pct(v)+' / '+pct(g.ratio);}
  else if(g.type==='range'){const v=ratio(x=>x.midi>=g.lo&&x.midi<=g.hi);ok=v>=g.ratio;shown=pct(v)+' / '+pct(g.ratio);}
- else{const v=log.filter(g.type==='guide'?x=>[3,4,10,11].includes(x.rel):g.type==='pc'?x=>x.midi%12===g.pc:x=>x.down&&(g.pcs?g.pcs.includes(x.midi%12):x.tone)).length;ok=v>=g.min;shown=v+' / '+g.min;}
+ else{const v=log.filter(g.type==='roots'?x=>x.down&&x.rel===0:g.type==='guide'?x=>[3,4,10,11].includes(x.rel):g.type==='pc'?x=>x.midi%12===g.pc:x=>x.down&&(g.pcs?g.pcs.includes(x.midi%12):x.tone)).length;ok=v>=g.min;shown=v+' / '+g.min;}
  return {label:g.label,ok,shown};
 }
 function goalsHtml(m,log,live){return (live?'<div class="mission-title">MISSION</div>':'')+m.goals.map(g=>{const e=evalGoal(g,log);return '<div class="goal '+(e.ok?'ok':'')+'"><i>'+(e.ok?'✓':'・')+'</i><span>'+e.label+'</span><b>'+e.shown+'</b></div>';}).join('');}
@@ -127,10 +129,10 @@ function lobby(s,opts={}){
    +'<div class="stage-meta"><span>'+s.chart.length+'小節</span><span>'+({swing:'スウィング',shuffle:'シャッフル',slow:'スロー',bossa:'ボサノバ',pop:'8ビート'})[s.feel]+'</span><span class="stage-best">'+(best(s.id)?'BEST '+best(s.id):'NEW')+'</span></div>'
    +(opts.mission?missionHtml(opts.mission):'<p>'+s.about+'</p>')
    +'<div class="jam-chart lobby-chart">'+s.chart.map(bar=>'<span>'+bar.map(c=>pretty(c.sym)).join(' ')+'</span>').join('')+'</div>'
-   +'<p class="jam-key">使える音：<b>'+s.keyName+'</b>。演奏中は、今のコードの音を大きい丸で表示します。</p>'
+   +'<p class="jam-key">'+(BASS?'伴奏はベース抜き。あなたがベーシストです。小節の頭はルート（R）、あとはコードの音（大きい丸）でつなごう。':'使える音：<b>'+s.keyName+'</b>。演奏中は、今のコードの音を大きい丸で表示します。')+'</p>'
    +'<div class="stage-options"><label class="jam-tempo">テンポ <b id="jam-bpm-label">'+bpm+'</b><input type="range" id="jam-bpm" min="'+Math.round(s.bpm*.6)+'" max="'+Math.round(s.bpm*1.3)+'" value="'+bpm+'"></label>'
    +'<div class="chip-row three" role="group" aria-label="長さ"><button type="button" data-ch="1">1コーラス</button><button type="button" data-ch="2">2コーラス</button><button type="button" data-ch="4">4コーラス</button></div>'
-   +(opts.mission?'':'<div class="chip-row" role="group" aria-label="採点"><button type="button" data-mic="1">ギターで採点（マイク）</button><button type="button" data-mic="0">伴奏だけ流す</button></div>')+'</div>'
+   +(opts.mission?'':'<div class="chip-row" role="group" aria-label="採点"><button type="button" data-mic="1">'+INST.name+'で採点（マイク）</button><button type="button" data-mic="0">伴奏だけ流す</button></div>')+'</div>'
    +'<button type="button" class="action-button" id="jam-start">セッション開始 '+F.icon('arrow')+'</button>'
    +'<p class="lesson-caption">コード進行のみを収録し、メロディは含みません。採点は「今のコードに合う音を弾いたか」のゆるい目安で、間違いはありません。伴奏をスピーカーで鳴らすとマイクが拾うことがあるため、イヤホン推奨。音声は録音・送信しません。</p></div>';
   const sync=()=>{document.querySelectorAll('[data-ch]').forEach(b=>b.setAttribute('aria-pressed',String(Number(b.dataset.ch)===prefs.choruses)));document.querySelectorAll('[data-mic]').forEach(b=>b.setAttribute('aria-pressed',String((b.dataset.mic==='1')===prefs.mic)));};
@@ -176,12 +178,12 @@ async function start(){
   const now=ctx.currentTime-r.t0,view=now-(ctx.outputLatency||ctx.baseLatency||0),beatIndex=Math.floor(view/spb),barIndex=Math.floor(beatIndex/4),bar=s.chart[((barIndex%s.chart.length)+s.chart.length)%s.chart.length];
   const per=4/bar.length,ch=view<0?s.chart[0][0]:bar[Math.min(bar.length-1,Math.floor((beatIndex%4)/per))];
   if(mic){
-   const at=now-r.comp;mic.an.getFloatTimeDomainData(mic.buf);if(r.onset(mic.buf,at)){r.lastOnset=at;r.stable=0;}const d=window.FQPitch.detect(mic.buf,ctx.sampleRate,r.onset.gate());level=level*.6+d.rms*.4;
+   const at=now-r.comp;mic.an.getFloatTimeDomainData(mic.buf);if(r.onset(mic.buf,at)){r.lastOnset=at;r.stable=0;}const d=window.FQPitch.detect(mic.buf,ctx.sampleRate,r.onset.gate(),INST.minHz);level=level*.6+d.rms*.4;
    const midi=d.frequency?Math.round(window.FQPitch.midi(d.frequency)):null;
-   /* Ignore anything below the guitar's low E: the backing bass lives there. */
-   if(midi===null||midi<40){r.stable=0;r.lastMidi=null;}
+   /* Guitar: ignore anything below the low E, where the backing bass lives. Bass: the backing has no bass line. */
+   if(midi===null||midi<(BASS?26:40)){r.stable=0;r.lastMidi=null;}
    else{if(midi!==r.lastMidi)r.stable=0;r.lastMidi=midi;r.stable++;
-    if(r.stable===2&&at>=0&&(midi!==r.scoredMidi||r.lastOnset>r.scoredAt))judge(r,midi,ch,at);}
+    if(r.stable===2&&at>=0&&(midi!==r.scoredMidi||r.lastOnset>r.scoredAt))judge(r,midi,ch,BASS&&at-r.lastOnset<.25&&r.lastOnset>=0?r.lastOnset:at);}
    r.heard=midi;
   }
   if(barIndex!==r.shownBar){r.shownBar=barIndex;
@@ -228,7 +230,7 @@ function finish(r){
    +(scored?'<div class="result-score"><strong>'+r.points+'</strong><small>PTS</small></div>'
     +'<div class="result-grid"><div><b>'+r.notes+'</b><small>NOTES</small></div><div><b>'+Math.round(r.tones/r.notes*100)+'%</b><small>CHORD TONES</small></div><div><b>'+Math.round(r.inside/r.notes*100)+'%</b><small>IN KEY</small></div><div><b>'+r.maxCombo+'</b><small>MAX COMBO</small></div></div>'
     +'<p>'+(r.tones/r.notes>=.4?'コードの音をしっかり狙えています。次はテンポを上げてみよう。':'まずは大きい丸（コードの音）を、コードが変わった瞬間に1音だけ狙ってみよう。')+'</p>'
-    :'<p>'+(r.mic?'音が検出されませんでした。ギターをマイクに近づけて、1音ずつはっきり弾いてみよう。':'伴奏だけのセッションでした。マイクをオンにすると、コードに合う音を弾けたかを表示します。')+'</p>')
+    :'<p>'+(r.mic?'音が検出されませんでした。'+INST.name+'をマイクに近づけて、1音ずつはっきり弾いてみよう。':'伴奏だけのセッションでした。マイクをオンにすると、コードに合う音を弾けたかを表示します。')+'</p>')
    +(earned?'<div class="success-xp">+'+earned+' XP</div>':'')
    +'<p class="lesson-caption">'+(r.mic?'単音の音の高さだけを見ています。和音、リズム、フレーズの良し悪しは判定しません。':'')+'</p>'
    +'<button type="button" class="action-button" id="jam-again">もう一度セッション</button><button type="button" class="action-button secondary-action" id="jam-back">閉じる</button></div>';
