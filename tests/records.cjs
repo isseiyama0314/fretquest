@@ -7,6 +7,8 @@ const b=await chromium.launch({args:['--autoplay-policy=no-user-gesture-required
 const p=await b.newPage({viewport:{width:390,height:844},deviceScaleFactor:2});
 const errs=[];let failed=0;p.on('pageerror',e=>errs.push('pageerror '+e.message));p.on('console',m=>{if(m.type()==='error')errs.push(m.text())});
 const check=(name,ok,detail)=>{if(!ok)failed++;console.log(ok?'ok  ':'FAIL',name,'=>',detail);};
+/* A silent microphone, so a pitch-judged drill picked by the menu still runs to its end. */
+await p.addInitScript(()=>{navigator.mediaDevices.getUserMedia=async()=>window.FretQuest.audioContext().createMediaStreamDestination().stream;});
 await p.goto(BASE,{waitUntil:'networkidle'});
 const state=()=>p.evaluate(()=>{const s=window.FretQuest.getState(),d=s.history[window.FretQuest.today()]||{};return {xp:s.xp,extra:d.extra||[],lessons:d.lessons||[],bonus:!!d.bonus,streak:document.querySelector('#streak-value').textContent,menu:document.querySelector('#menu-count').textContent,daily:document.querySelector('#daily-start').textContent.trim()};});
 let s=await state();
@@ -19,11 +21,12 @@ await p.waitForSelector('.stage-result',{timeout:120000});
 const jamXp=await p.$eval('.stage-result',e=>e.querySelector('.success-xp')?.textContent||'');await p.click('#jam-back');
 s=await state();check('session counted',jamXp==='+20 XP'&&s.extra.some(x=>x.startsWith('jam:'))&&s.xp===20&&s.streak==='1'&&s.menu==='1 / 3',jamXp+' '+JSON.stringify(s));
 
-// Rhythm game from the menu in tap mode with no taps: three misses end it.
-await p.click('#menu-grid [data-menu="2"]');await p.click('[data-in="tap"]');await p.click('#game-start');
+// Game from the menu with no input: a rhythm game in tap mode ends after three misses, a drill runs out its time.
+await p.click('#menu-grid [data-menu="2"]');const drill=!(await p.$('[data-in="tap"]'));
+if(drill)await p.click('#drill-start');else{await p.click('[data-in="tap"]');await p.click('#game-start');}
 await p.waitForSelector('.stage-result',{timeout:180000});
-const gameXp=await p.$eval('.stage-result',e=>e.querySelector('.success-xp')?.textContent||'');await p.click('#g-close');
-s=await state();check('game counted',gameXp==='+20 XP'&&s.xp===40&&s.menu==='2 / 3',gameXp+' '+JSON.stringify(s));
+const gameXp=await p.$eval('.stage-result',e=>e.querySelector('.success-xp')?.textContent||'');await p.click(drill?'#d-close':'#g-close');
+s=await state();check('game counted'+(drill?' (drill)':''),gameXp==='+20 XP'&&s.xp===40&&s.menu==='2 / 3',gameXp+' '+JSON.stringify(s));
 
 // A lesson clear completes the menu: 40 for the lesson + 40 bonus.
 const earned=await p.evaluate(()=>window.FretQuest.recordLesson('first-1',100,'quiz'));

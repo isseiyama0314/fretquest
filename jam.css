@@ -219,6 +219,32 @@
 .train-feedback small{display:block;color:#b9b2d6;font-size:11px}
 .train-feedback .mini-grid{margin-top:6px}
 @media (max-width:420px){.train-fret button{height:56px}.train-fret span{font-size:9px}}
+/* Guitar drills (drills.js) */
+.drill-hunt:before{background:radial-gradient(circle,#6fe3d2 0%,transparent 65%)}
+.drill-change:before{background:radial-gradient(circle,#ffb347 0%,transparent 65%)}
+.drill-bend:before{background:radial-gradient(circle,#ff8fb8 0%,transparent 65%)}
+.drill-target{display:grid;justify-items:center;gap:2px;min-height:76px;text-align:center;color:#fff}
+.drill-target b{font:900 52px/1 "DM Sans","Noto Sans JP",sans-serif;letter-spacing:.01em}
+.drill-string,.drill-next{font:800 13px "Noto Sans JP",sans-serif;color:#ffc56b}
+.drill-next{color:#b9b2d6;margin-top:6px}
+.drill-extra{width:100%;max-width:420px}
+.drill-heard{font:800 10px "DM Sans",sans-serif;letter-spacing:.14em;color:#8f88ad}
+.drill-heard b{display:inline-block;min-width:42px;margin-left:6px;color:#fff;font-size:14px;letter-spacing:.02em}
+.change-chips{display:grid;grid-template-columns:repeat(4,1fr);gap:6px}
+.change-chips span{display:grid;justify-items:center;gap:2px;padding:8px 4px;border-radius:12px;background:#ffffff0d;box-shadow:inset 0 0 0 1px #ffffff14}
+.change-chips b{font:900 16px "DM Sans",sans-serif;color:#fff}
+.change-chips small{font:800 10px "DM Sans",sans-serif;color:#8f88ad}
+.change-chips .now{box-shadow:inset 0 0 0 2px #ffc56b}
+.change-chips .great{background:#c7ef7533}.change-chips .great small{color:#c7ef75}
+.change-chips .ok{background:#6fe3d226}.change-chips .ok small{color:#6fe3d2}
+.change-chips .miss{background:#ff8fb826}.change-chips .miss small{color:#ff8fb8}
+.bend-gauge{position:relative;height:26px;border-radius:13px;background:#ffffff12;box-shadow:inset 0 0 0 1px #ffffff1a;overflow:hidden}
+.bend-gauge i{position:absolute;top:0;bottom:0}
+.bend-band{background:#c7ef7540}
+.bend-target{width:2px;margin-left:-1px;background:#c7ef75}
+.bend-needle{width:6px;margin-left:-3px;border-radius:3px;background:#ffc56b;box-shadow:0 0 12px #ffc56b}
+.bend-scale{position:relative;height:14px;margin-top:5px;font:700 10px "Noto Sans JP",sans-serif;color:#8f88ad}
+.bend-scale span{position:absolute;left:0;white-space:nowrap}.bend-scale span+span{transform:translateX(-50%);color:#c7ef75}
 
 /* Melody ear-copy board */
 .tc-melody:before{background:radial-gradient(circle,#ffc56b 0%,transparent 65%)}
