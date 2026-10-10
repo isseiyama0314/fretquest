@@ -36,6 +36,7 @@ const r=await play('rhythm',i=>i<2,OUT);const after=await p.evaluate(()=>window.
 const lv=await p.evaluate(()=>JSON.parse(localStorage.getItem('fretQuestTrain')).rhythm.unlocked);
 check('poor rhythm run stays at Lv1 and fills the rhythm book',r.title==='あと少し！'&&lv===1&&after>before,JSON.stringify(r)+' book '+before+'→'+after);
 const st=await p.evaluate(()=>{const s=window.FretQuest.getState(),d=s.history[window.FretQuest.today()];return {xp:s.xp,extra:d.extra,menu:document.querySelector('#menu-count').textContent};});
-check('xp and daily menu',st.xp===180&&st.extra.length===9&&st.menu==='1 / 3',JSON.stringify(st));
+/* 9 modes × 20 XP, plus 20 for reaching today's goal (one item). */
+check('xp and daily menu',st.xp===200&&st.extra.length===9&&st.menu==='達成',JSON.stringify(st));
 if(errs.length){failed++;console.log('page errors',JSON.stringify(errs));}
 console.log(failed?failed+' failed':'all passed');await b.close();process.exit(failed?1:0);})();
