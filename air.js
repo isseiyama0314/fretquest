@@ -60,6 +60,7 @@ async function playPhrase(notes,bpm){const k=await sound();if(!k)return;const sp
 function strumShape(name){sound().then(k=>{if(!k)return;const ms=K.chordMidis(name),t=k.ctx.currentTime+.02;ms.forEach((m,i)=>k.a.pluck(t+i*.018,m,.9,.07));});}
 
 /* ---------- Shared screens ---------- */
+const pretty=c=>String(c).replace(/^([A-G])b/,'$1♭').replace('m7b5','m7♭5');
 const head=(kicker,title)=>'<div class="lesson-progress">'+kicker+'</div><h2 id="modal-title">'+title+'</h2>';
 function popup(text,cls,sub){const el=$('#air-judge');if(!el)return;el.className='stage-judge air-judge '+cls;el.innerHTML=text+(sub?'<small>'+sub+'</small>':'');void el.offsetWidth;el.classList.add('show');}
 function resultScreen({kicker,title,score,passed,lines,again,back,next}){
@@ -150,7 +151,7 @@ async function traceStart(spec,prefs){
   root.querySelectorAll('.air-cell.target').forEach(b=>{if(!upcoming.some(it=>cell(root,it.string,it.fret)===b))b.classList.remove('target','soon');});
   upcoming.forEach((it,k)=>{const b=cell(root,it.string,it.fret);if(!b)return;const p=1-(it.time-view)/lead;if(p<0){if(k===0)b.classList.add('soon');return;}
    b.classList.add('target');b.classList.toggle('second',k===1);b.style.setProperty('--ap',Math.min(1,p).toFixed(3));});
-  const next=upcoming[0];$('#air-next').innerHTML=next?'<span>NEXT</span><b>'+next.string+'弦 '+next.fret+'フレット</b><em>'+K.noteName(next.midi)+'</em>':'&nbsp;';
+  const next=upcoming[0];$('#air-next').innerHTML=next?'<span>NEXT</span>'+(next.chord?'<i class="air-chord">'+pretty(next.chord)+'</i>':'')+'<b>'+next.string+'弦 '+next.fret+'フレット</b><em>'+K.noteName(next.midi)+'</em>':'&nbsp;';
   $('#air-score').textContent=Math.max(0,Math.round((r.points-r.extra*EXTRA_PENALTY)/r.items.length));$('#air-combo').textContent=r.combo;
   $('#air-progress').style.width=Math.max(0,Math.min(100,view/length*100))+'%';
   if(judgeAt>length+.5&&r.items.every(i=>i.grade)){traceFinish(spec,r,speed);return;}
@@ -180,12 +181,15 @@ function recall(spec){
   $('.modal-dialog').classList.add('is-stage');
   el.innerHTML='<div class="air-recall">'+head(spec.kicker,spec.title)
    +'<p>ガイドなしで、フレーズを再現しよう。光っている1音目から弾き始めて、'+notes.length+'音。<b>同じ音なら、どの弦で押さえてもOK</b>。音はタップするたびに鳴ります。</p>'
-   +'<div class="train-slots air-slots" id="air-slots">'+notes.map(()=>'<span>？</span>').join('')+'</div>'
+   +(notes[0].chord?'<div class="air-now-chord" id="air-now-chord"></div>':'')
+   +'<div class="train-slots air-slots" id="air-slots">'+notes.map((n,i)=>(n.chord&&(i===0||notes[i-1].chord!==n.chord||Math.floor(notes[i-1].beat/4)!==Math.floor(n.beat/4))?'<b class="air-slot-chord">'+pretty(n.chord)+'</b>':'')+'<span>？</span>').join('')+'</div>'
    +'<div class="air-board-wrap">'+boardHtml(spec.w)+'</div>'
    +'<div class="air-msg" id="air-msg" aria-live="polite">&nbsp;</div>'
    +'<div class="iv-play"><button type="button" id="air-listen">▶ フレーズを聴く</button><button type="button" id="air-hint">ヒント（次の場所）</button></div>'
    +'<button type="button" class="action-button secondary-action" id="air-back">戻る</button></div>';
   const root=el.querySelector('.air-recall'),slots=root.querySelectorAll('#air-slots span');
+  /* The chord under the next note, so an arpeggio is recalled as chord tones rather than a list of frets. */
+  const nowChord=()=>{const box=$('#air-now-chord');if(!box||idx>=notes.length)return;const n=notes[idx],nx=notes.slice(idx).find(x=>x.chord!==n.chord);box.innerHTML='<small>いまのコード</small><b>'+pretty(n.chord)+'</b>'+(nx?'<span>次 → '+pretty(nx.chord)+'</span>':'');};nowChord();
   cell(root,notes[0].string,notes[0].fret)?.classList.add('first');
   $('#air-listen').onclick=()=>playPhrase(notes,spec.bpm);$('#air-back').onclick=()=>{stopKit();spec.back();};
   const reveal=()=>{const n=notes[idx];cell(root,n.string,n.fret)?.classList.add('hint');};
@@ -195,7 +199,7 @@ function recall(spec){
    if(n.midi===midi){
     if(idx===0)root.querySelectorAll('.air-cell.first').forEach(x=>x.classList.remove('first'));
     else if(!wrongHere)clean++;root.querySelectorAll('.air-cell.hint').forEach(x=>x.classList.remove('hint'));
-    flashCell(b,'hit');slots[idx].textContent=s+'-'+f;slots[idx].classList.add('filled',wrongHere?'ng':'ok');$('#air-msg').textContent=n.string!==s?'OK！ タブ譜では '+n.string+'弦'+n.fret+'フレット。':' ';idx++;wrongHere=0;
+    flashCell(b,'hit');slots[idx].textContent=s+'-'+f;slots[idx].classList.add('filled',wrongHere?'ng':'ok');$('#air-msg').textContent=n.string!==s?'OK！ タブ譜では '+n.string+'弦'+n.fret+'フレット。':' ';idx++;wrongHere=0;nowChord();
     if(idx>=notes.length){const score=Math.round(clean/(notes.length-1)*100),passed=score>=PASS;spec.onResult?.(score,passed);
      setTimeout(()=>{playPhrase(notes,spec.bpm);resultScreen({kicker:spec.kicker,title:'何も見ずに再現できた！',score,passed,next:spec.next,
       lines:'<div class="result-grid"><div><b>'+clean+' / '+(notes.length-1)+'</b><small>一発で正解</small></div><div><b>'+mistakes+'</b><small>まちがい</small></div></div>',
@@ -320,7 +324,9 @@ function specFor(m,step){
   return {kicker,title:m.title+'（'+info[step-1][0]+'）',back,next,onResult,chords:[...new Set(seq.map(c=>c.chord))],seq,bpm:ex.bpm,beats:ex.beats};
  }
  const ex=window.FQDojo.chartFor(m,1).exercise;
- return {kicker,title:m.title+'（'+info[step-1][0]+'）',back,next,onResult,notes:ex.notes,bpm:ex.bpm,beats:ex.beats,w:windowFor(ex.notes)};
+ /* Chord-based phrases carry the chord of each note's bar, shown while tracing and recalling. */
+ const notes=m.chords?ex.notes.map(n=>({...n,chord:m.chords[Math.floor(n.beat/4+1e-9)%m.chords.length]})):ex.notes;
+ return {kicker,title:m.title+'（'+info[step-1][0]+'）',back,next,onResult,notes,bpm:ex.bpm,beats:ex.beats,w:windowFor(ex.notes)};
 }
 function start(m,step){
  const spec=specFor(m,step);

@@ -49,6 +49,14 @@ await p.click('#air-back');await p.waitForSelector('.dojo-module');
  for(const n of notes){const a=altOf(n,w,open);if(a){alts++;await tap(p,a.string,a.fret,'.air-recall');if(!msg)msg=await p.$eval('#air-msg',e=>e.textContent);}else await tap(p,n.string,n.fret,'.air-recall');}
  await p.waitForSelector('.stage-result',{timeout:10000});const sc=Number(await p.$eval('.result-score strong',e=>e.textContent));
  check('recall: the same pitch on another string counts',sc===100&&alts>=5&&msg.includes('タブ譜では'),sc+' alts '+alts+' | '+msg);
+ await p.click('#air-back');await p.waitForSelector('.dojo-module');
+ /* Chord-based phrases show their chords (by bar in recall); scale phrases do not. */
+ await p.evaluate(()=>window.FQAir.start(window.FQDojo.modules.find(m=>m.id==='arp-251'),2));await p.waitForSelector('.air-recall');
+ const arp=await p.evaluate(()=>({now:document.querySelector('#air-now-chord')?.innerText.replace(/\n/g,' '),bars:[...document.querySelectorAll('.air-slot-chord')].map(x=>x.textContent).join(' ')}));
+ await p.click('#air-back');await p.waitForSelector('.dojo-module');
+ await p.evaluate(()=>window.FQAir.start(window.FQDojo.modules.find(m=>m.id==='pent-box1'),2));await p.waitForSelector('.air-recall');
+ const box=await p.evaluate(()=>document.querySelectorAll('#air-now-chord,.air-slot-chord').length);
+ check('recall shows the chord of each bar',arp.now.startsWith('いまのコード Dm7')&&arp.bars==='Dm7 G7 Cmaj7 Cmaj7'&&box===0,JSON.stringify(arp)+' box '+box);
  await p.click('#air-back');await p.waitForSelector('.dojo-module');}
 score=await playTrace(p,'bb-box',{wrong:true});check('trace: wrong strings score low',score<60,score);
 await p.click('#air-back');await p.waitForSelector('.dojo-module');

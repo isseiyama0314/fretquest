@@ -166,6 +166,11 @@ const BASS_MODULES=[
  use:{session:'bossa',text:'Blue Bossa のベースを担当。付点4分のパターンで、1拍目はルート。',goals:[{type:'notes',min:32,label:'32音以上弾く'},{type:'roots',min:10,label:'小節の頭でルートを10回'},{type:'tones',ratio:.6,label:'コードの音が60%以上'}]}}
 ];
 BASS_MODULES.forEach(m=>m.inst='bass');
+/* The chord under each bar of a chord-based phrase (learn chart), shown while practising it. Scale and box phrases have none. */
+const PHRASE_CHORDS={'arp-251':'Dm7 G7 Cmaj7 Cmaj7','guide-tones':'Dm7 G7 Cmaj7 Cmaj7','enclosure':'Cmaj7 Cmaj7','lick-251':'Dm7 G7 Cmaj7','minor-251':'Am7b5 D7 Gm',
+ 'turnaround':'A7 E7','sing-line':'Fmaj7 G Em Am','arpeggio':'C G Am Em',
+ 'b-root':'A7 D7 A7 E7','b-boogie':'A7 A7 D7 D7','b-eighth':'Fmaj7 G Em Am','b-octave':'C G Am Em','b-sync':'C Am F G','b-two':'Dm7 G7 Cmaj7 Cmaj7','b-walk':'Dm7 G7 Cmaj7 Cmaj7','b-bossa':'Cm7 Fm7 Dm7b5 G7'};
+[...MODULES,...BASS_MODULES].forEach(m=>{if(PHRASE_CHORDS[m.id])m.chords=PHRASE_CHORDS[m.id].split(' ');});
 /* Comping modules without their own full form reuse the groove chart twice. */
 MODULES.forEach(m=>{if(m.kind==='comp'&&m.use.form&&!m.use.src)m.use.src=m.groove.src+' | '+m.groove.src;});
 const GENRES=[['BLUES','ブルース'],['JAZZ','ジャズ'],['POPS','ポップス']];

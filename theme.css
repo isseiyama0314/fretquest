@@ -238,3 +238,8 @@ circle.iv-wrong{fill:#ff8fb8;stroke:#ffd3e3;stroke-width:1.5}
 .menu-card.main:not(.done){box-shadow:inset 0 0 0 2px #c7ef7588}
 #menu-count em{font-style:normal;font-size:.6em;color:#c7ef75;margin-left:4px}
 .menu-bonus.half{border-color:#c7ef7566}
+/* Chord names in phrase practice. */
+.air-chord{font-style:normal;font:900 13px "DM Sans",sans-serif;color:#1c1930;background:#c69cff;border-radius:8px;padding:2px 8px}
+.air-now-chord{display:flex;align-items:baseline;gap:10px;margin:4px 0 8px}.air-now-chord small{font:800 11px "Noto Sans JP",sans-serif;color:#ffffff90}.air-now-chord b{font:900 28px "DM Sans",sans-serif;color:#c69cff}.air-now-chord span{font:700 13px "DM Sans",sans-serif;color:#cfc9e6}
+.air-slot-chord{flex-basis:100%;font:900 12px "DM Sans",sans-serif;color:#c69cff;margin-top:4px}
+.train-slots.air-slots{justify-content:flex-start}
