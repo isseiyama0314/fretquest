@@ -118,3 +118,58 @@
 .cal-stage{min-height:190px}
 .cal-dots i{width:12px;height:12px}
 @media (max-width:620px){.tool-links{grid-template-columns:1fr}}
+
+/* Rhythm book and remix */
+.game-remix:before{background:radial-gradient(circle,#ffd166 0%,transparent 65%)}
+.g-src{display:inline-block;margin-top:4px;padding:4px 10px;border-radius:99px;background:#ffffff12;font:700 11px "Noto Sans JP",sans-serif;color:#ddd7f5}
+.book{margin:12px 0;padding:12px;border-radius:16px;background:#ffffff0a;box-shadow:inset 0 0 0 1px #ffffff14;text-align:left}
+.book-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;font:800 12px "Noto Sans JP",sans-serif;color:#fff}
+.book-head span{color:#8f88ad;font-size:10px}
+.book-row{display:grid;grid-template-columns:minmax(0,1fr) auto;grid-template-areas:"grid rate" "src src";gap:4px 10px;padding:8px 0;border-top:1px solid #ffffff10}
+.book-row .mini-grid{grid-area:grid}
+.mini-grid{display:grid;grid-template-columns:repeat(16,1fr);gap:2px}
+.mini-grid i{height:14px;border-radius:3px;background:#ffffff10}
+.mini-grid i.beat{background:#ffffff1f}
+.mini-grid i.on{background:#ffc56b}
+.book-src{grid-area:src;font:600 10px "Noto Sans JP",sans-serif;color:#b9b2d6}
+.book-rate{grid-area:rate;font:800 10px "Noto Sans JP",sans-serif;color:#ff8fb8;align-self:center}
+.book-more,.book-empty{font:600 11px/1.7 "Noto Sans JP",sans-serif;color:#b9b2d6;padding-top:6px}
+.book .action-button{margin-top:10px}
+
+/* Phrase dojo */
+.genre-pops:before{background:radial-gradient(circle,#ff8fb8 0%,transparent 65%)}
+.dojo-tabs{margin-bottom:14px}
+.dojo-tabs small{display:block;font:800 9px "DM Sans",sans-serif;opacity:.7}
+.dojo-group h3{font:900 14px "Noto Sans JP",sans-serif;color:var(--ink);margin:14px 2px 8px}
+.dojo-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:10px}
+.dojo-card{display:flex;flex-direction:column;align-items:flex-start;gap:6px;text-align:left;border:0;border-radius:18px;padding:16px;min-height:132px;background:linear-gradient(160deg,#2c2548,#1b1829);color:#f4f1ff;cursor:pointer;box-shadow:0 6px 0 #00000040,inset 0 0 0 1px #ffffff14;transition:transform .14s}
+.dojo-card:hover{transform:translateY(-2px)}
+.dojo-card:focus-visible{outline:3px solid #c7ef75;outline-offset:3px}
+.dojo-card strong{font:900 16px/1.35 "Noto Sans JP",sans-serif;color:#fff}
+.dojo-card.mastered{background:linear-gradient(160deg,#4a3d14,#1b1829);box-shadow:0 6px 0 #00000040,inset 0 0 0 1px #ffd16666}
+.dojo-card.mastered .jam-genre{color:#ffd166}
+.dojo-pips{display:flex;gap:5px;margin-top:auto}
+.dojo-pips i{width:26px;height:6px;border-radius:3px;background:#ffffff1f}
+.dojo-pips i.on{background:#c7ef75}
+.mastered .dojo-pips i.on{background:#ffd166}
+.dojo-steps{display:grid;gap:8px;margin:16px 0 8px}
+.dojo-step{display:grid;grid-template-columns:auto 1fr auto;align-items:center;gap:12px;text-align:left;border:0;border-radius:16px;padding:12px 14px;background:#ffffff0d;color:#f4f1ff;cursor:pointer;box-shadow:inset 0 0 0 1px #ffffff1a}
+.dojo-step b{display:block;font:900 14px "Noto Sans JP",sans-serif}
+.dojo-step small{font:600 11px "Noto Sans JP",sans-serif;color:#b9b2d6}
+.dojo-step:disabled{opacity:.45;cursor:default}
+.dojo-pip{display:grid;place-items:center;width:34px;height:34px;border-radius:11px;background:#ffffff14;font:900 14px "DM Sans",sans-serif;color:#c7ef75}
+.dojo-step.done .dojo-pip{background:#c7ef75;color:#1c1930}
+.dojo-go{font:900 12px "Noto Sans JP",sans-serif;color:#c7ef75;white-space:nowrap}
+.dojo-chords{display:grid;grid-template-columns:repeat(auto-fill,minmax(96px,1fr));gap:8px;margin:12px 0}
+.dojo-chords>div{background:#f4f1ff;border-radius:12px;padding:6px 4px 2px;text-align:center}
+.dojo-chords b{font:900 13px "DM Sans",sans-serif;color:#1c1930}
+.jam-board .fret-no{font:700 8px "DM Sans",sans-serif;fill:#8f88ad}
+.lg.dojo-root{width:10px;height:10px;background:#c7ef75}
+.mission-box{margin:12px 0;padding:12px 14px;border-radius:16px;background:#ffd16614;box-shadow:inset 0 0 0 1px #ffd16640;text-align:left}
+.mission-box.live{margin-top:10px;padding:10px 12px}
+.mission-title{font:900 10px "DM Sans",sans-serif;letter-spacing:.18em;color:#ffd166;margin-bottom:6px}
+.mission-box p{margin:0 0 8px}
+.goal{display:grid;grid-template-columns:16px 1fr auto;gap:8px;align-items:center;padding:4px 0;font:700 12px "Noto Sans JP",sans-serif;color:#ddd7f5}
+.goal i{font-style:normal;color:#8f88ad}
+.goal b{font:800 11px "DM Sans",sans-serif;color:#b9b2d6}
+.goal.ok i,.goal.ok b{color:#c7ef75}

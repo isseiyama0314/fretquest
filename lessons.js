@@ -8,6 +8,8 @@ const OPEN=[0,64,59,55,50,45,40];
 const tab=src=>{let beat=0;const notes=[];for(const token of src.trim().split(/\s+/)){if(token==='|')continue;const [body,len='1']=token.split(':'),beats=Number(len);if(body!=='-'){const [string,fret]=body.split('.').map(Number);notes.push({beat,len:beats,string,fret,midi:OPEN[string]+fret});}beat+=beats;}return {notes,beats:beat};};
 /* Strum: "Chord[:beats]" is a downstroke, "^Chord" an upstroke, "-" a rest. */
 const strum=src=>{let beat=0;const strums=[];for(const token of src.trim().split(/\s+/)){if(token==='|')continue;const [body,len='1']=token.split(':'),beats=Number(len);if(body!=='-')strums.push({beat,len:beats,chord:body.replace('^',''),up:body.startsWith('^')});beat+=beats;}return {strums,beats:beat};};
+/* Chart helpers are shared with the phrase dojo. */
+window.FQChart={tab,strum};
 window.FQCourses=[
 {id:'first',title:'初めの一音',subtitle:'ギターと仲良くなって、最初の1曲まで。',icon:'pick',color:'lime',level:'入門',lessons:[
 lesson('first-1','弦とチューニング','quiz',2,'6本の弦と、標準チューニングを覚えよう。',[
