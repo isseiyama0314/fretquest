@@ -53,6 +53,19 @@ Today's menu replaces the retired daily quests (35-second chord change, note-nam
 
 Missions are graded from the notes the microphone hears during a session: note count, share of notes in a scale, share of chord tones, 3rds and 7ths, a specific pitch (such as the blue note), register (B.B. box range) and chord tones landed on downbeats. Register is used as a proxy for position; fingering itself is not judged. Licks are original or common idioms; no song melodies are used. Pop sessions (王道進行, カノン進行, ballad) use a straight 8-beat groove. Progress is kept in this browser (`fretQuestLicks`).
 
+## Off-guitar training
+
+`train.js` offers six screen-and-sound games for times without a guitar, five levels each. A run is ten questions; eight correct opens the next level, and faster answers and combos raise the score.
+
+- 音程当て: intervals from 3rds/5ths/octave up to every interval, descending and harmonic.
+- コード聴き分け: major/minor up to 7th chords, diminished, augmented, sus4 and 6th.
+- 進行聴き取り: after the tonic, name three chords by degree (I–IV–V up to ii7–V7–Imaj7 and minor keys).
+- リズム聴き取り: pick the heard one-bar rhythm from four charts; wrong answers go to the rhythm book.
+- 指板マップ: tap where a named note sits on a given string (low strings first, then all strings with sharps and flats).
+- 理論ドリル: diatonic chords, chord tones, relative minors and pentatonics, key signatures, modes over each chord.
+
+Each mode played counts as the daily menu's game and earns 20 XP the first time that day. Progress is kept in this browser (`fretQuestTrain`).
+
 ## Skipping ahead
 
 Each course can be opened early in two ways: a skip challenge (play the course's last stage and reach ★1; only that stage counts as cleared) or opening it without a test. Experienced mode opens every course, makes the home card and daily menu follow the chosen course, and offers all sessions from the start. Skipped lessons are never marked cleared and earn no XP. Opened courses and the mode are part of the saved record and the export.
@@ -79,7 +92,7 @@ The manifest, PNG icons and a service worker support home-screen installation an
 
 `tests/stage-playthrough.cjs` drives the real page in headless Chromium and feeds synthetic plucked notes and strums in as the microphone. It checks that clean playing scores at least 95 (also at 1/20 level with room noise, which scored 0 before the adaptive thresholds), that silence and random strumming stay below the clear line, that the +0.2 s offset setting restores a delayed performance, and that tap mode works. `ALL=1` also plays every stage once. Serve the folder that contains `fretquest/` on port 8765 first (for example `python3 -m http.server 8765`).
 
-`tests/tools.cjs` checks tuner readings and that a player 0.2 s late scores 100 after measuring. `tests/dojo.cjs` checks dojo steps, a failed and a passed session mission, mastery and a pop session. `tests/remix.cjs` checks that stage misses fill the rhythm book, that a perfect remix clears 8/8 and graduates the rhythm, and that call & response offers a review. `tests/skip.cjs` checks skip challenges, opening without a test and experienced mode. `tests/records.cjs` checks the daily menu, XP, bonus, streak, duplicate protection and export/import. `tests/jam-games.cjs` does the same for sessions (chord-tone arpeggios score 100%, a chromatic line does not) and the three rhythm games (a perfect player clears them; a steadily drifting player fails the timing game).
+`tests/tools.cjs` checks tuner readings and that a player 0.2 s late scores 100 after measuring. `tests/train.cjs` checks that every training mode runs, a perfect run opens the next level, a poor run does not, wrong rhythm answers enter the rhythm book and XP counts. `tests/dojo.cjs` checks dojo steps, a failed and a passed session mission, mastery and a pop session. `tests/remix.cjs` checks that stage misses fill the rhythm book, that a perfect remix clears 8/8 and graduates the rhythm, and that call & response offers a review. `tests/skip.cjs` checks skip challenges, opening without a test and experienced mode. `tests/records.cjs` checks the daily menu, XP, bonus, streak, duplicate protection and export/import. `tests/jam-games.cjs` does the same for sessions (chord-tone arpeggios score 100%, a chromatic line does not) and the three rhythm games (a perfect player clears them; a steadily drifting player fails the timing game).
 
 These are synthetic signals. They do not establish accuracy with a real guitar, a real iPhone microphone or real Bluetooth latency; those still need device testing.
 

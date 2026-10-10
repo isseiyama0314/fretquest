@@ -1,0 +1,148 @@
+/* FRET QUEST off-guitar training: ear, rhythm, fretboard and theory games playable with only the screen and sound.
+   Six modes, five levels each. A run is ten questions; eight correct opens the next level. */
+(()=>{'use strict';
+const F=window.FretQuest,K=window.FQStage.kit,$=s=>document.querySelector(s);
+const pick=a=>a[Math.floor(Math.random()*a.length)],shuffle=a=>{const c=[...a];for(let i=c.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[c[i],c[j]]=[c[j],c[i]];}return c;};
+const QUESTIONS=10,PASS=8;
+
+/* ---------- Music data ---------- */
+const INTERVALS=[[1,'短2度'],[2,'長2度'],[3,'短3度'],[4,'長3度'],[5,'完全4度'],[6,'増4度・減5度'],[7,'完全5度'],[8,'短6度'],[9,'長6度'],[10,'短7度'],[11,'長7度'],[12,'オクターブ']];
+const INTERVAL_LEVELS=[[3,4,7,12],[2,3,4,5,7,9,12],[1,2,3,4,5,7,8,9,10,11,12],[1,2,3,4,5,6,7,8,9,10,11,12],[1,2,3,4,5,6,7,8,9,10,11,12]];
+const CHORDS={maj:['メジャー',[0,4,7]],min:['マイナー',[0,3,7]],dom7:['セブンス（7）',[0,4,7,10]],maj7:['メジャー7th',[0,4,7,11]],m7:['マイナー7th',[0,3,7,10]],dim:['ディミニッシュ',[0,3,6]],m7b5:['マイナー7th♭5',[0,3,6,10]],aug:['オーギュメント',[0,4,8]],sus4:['サス4',[0,5,7]],six:['シックス（6）',[0,4,7,9]]};
+const CHORD_LEVELS=[['maj','min'],['maj','min','dom7'],['maj7','m7','dom7','min'],['maj7','m7','dom7','m7b5','dim','aug'],['maj7','m7','dom7','m7b5','dim','aug','sus4','six']];
+/* Degrees in a major key (semitones from the tonic and chord shape). */
+const DEG={I:[0,'maj'],ii:[2,'min'],iii:[4,'min'],IV:[5,'maj'],V:[7,'maj'],vi:[9,'min'],Imaj7:[0,'maj7'],ii7:[2,'m7'],V7:[7,'dom7'],vi7:[9,'m7'],i:[0,'min'],iv:[5,'min'],bVI:[8,'maj'],bVII:[10,'maj']};
+const PROG_LEVELS=[['I','IV','V'],['I','IV','V','vi'],['I','ii','iii','IV','V','vi'],['Imaj7','ii7','V7','vi7','IV'],['i','iv','V','bVI','bVII']];
+const KEYS={C:['C','D','E','F','G','A','B'],G:['G','A','B','C','D','E','F♯'],D:['D','E','F♯','G','A','B','C♯'],A:['A','B','C♯','D','E','F♯','G♯'],E:['E','F♯','G♯','A','B','C♯','D♯'],F:['F','G','A','B♭','C','D','E'],'B♭':['B♭','C','D','E♭','F','G','A'],'E♭':['E♭','F','G','A♭','B♭','C','D']};
+const SIGS={C:'なし',G:'♯1つ',D:'♯2つ',A:'♯3つ',E:'♯4つ',F:'♭1つ','B♭':'♭2つ','E♭':'♭3つ'};
+const ROMAN=['I','ii','iii','IV','V','vi','vii°'],TRIAD=['','m','m','','','m','dim'],MODES=['アイオニアン','ドリアン','フリジアン','リディアン','ミクソリディアン','エオリアン','ロクリアン'];
+const NOTE_NAMES=['C','C♯/D♭','D','D♯/E♭','E','F','F♯/G♭','G','G♯/A♭','A','A♯/B♭','B'],OPEN=[0,64,59,55,50,45,40];
+const flat=n=>n.endsWith('♯')?n.slice(0,-1):n+'♭';
+
+/* ---------- Sound ---------- */
+let audio=null,current=null;
+async function sound(){await F.ensureAudio();const ctx=F.audioContext();if(!ctx||ctx.state!=='running')return null;audio?.stop();audio=K.synth(ctx);return {ctx,a:audio};}
+async function playNotes(seq){/* seq: [[offsetSec, midi[], dur]] */const s=await sound();if(!s)return false;const t=s.ctx.currentTime+.08;seq.forEach(([o,ms,d])=>ms.forEach(m=>s.a.pluck(t+o,m,d,ms.length>1?.09:.16)));return true;}
+const chordMidis=(root,shape)=>shape.map(i=>root+i);
+
+/* ---------- Question generators per mode and level ---------- */
+const MODES_DEF={
+ interval:{title:'音程当て',tag:'2つの音の距離を聴き分ける',icon:'music',about:'2つの音を聴いて、何度離れているかを答えます。ソロで「次に弾く音」を耳で選べるようになる、いちばんの基礎です。',
+  levels:['3度・5度・オクターブ','4度・6度・2度を追加','7度・半音まで','増4度（トライトーン）も','下降と同時に鳴る音も'],
+  make(lv){const n=pick(INTERVAL_LEVELS[lv-1]),root=52+Math.floor(Math.random()*12),mode=lv===5?pick(['up','down','both']):'up';
+   const lo=mode==='down'?root+n:root,hi=mode==='down'?root:root+n,seq=mode==='both'?[[0,[root,root+n],1.4]]:[[0,[lo],.7],[.75,[hi],.9]];
+   const opts=INTERVAL_LEVELS[lv-1];return {prompt:mode==='both'?'同時に鳴った2音の音程は？':mode==='down'?'下がった音程は？':'上がった音程は？',play:()=>playNotes(seq),choices:opts.map(i=>INTERVALS.find(x=>x[0]===i)[1]),answer:INTERVALS.find(x=>x[0]===n)[1],explain:INTERVALS.find(x=>x[0]===n)[1]+'（半音'+n+'つ分）'};}},
+ chord:{title:'コード聴き分け',tag:'響きでコードの種類を当てる',icon:'fret',about:'鳴ったコードの「種類」を当てます。セッションで次のコードを耳で予想したり、聴いた曲をコピーしたりする力になります。',
+  levels:['メジャーとマイナー','セブンスを追加','7thコード4種','ディミニッシュ・オーギュメントも','サス4・6thも'],
+  make(lv){const set=CHORD_LEVELS[lv-1],k=pick(set),root=48+Math.floor(Math.random()*12),ms=chordMidis(root,CHORDS[k][1]);
+   return {prompt:'このコードの種類は？',play:()=>playNotes([...ms.map((m,i)=>[i*.22,[m],.9]),[ms.length*.22+.15,ms,1.6]]),choices:set.map(x=>CHORDS[x][0]),answer:CHORDS[k][0],explain:CHORDS[k][0]+'：'+CHORDS[k][1].map(i=>['R','♭2','2','♭3','3','4','♭5','5','♯5','6','♭7','7'][i]).join('・')};}},
+ prog:{title:'進行聴き取り',tag:'コード進行を度数で聴く',icon:'map',about:'最初に鳴るのがキーの I（主和音）。そのあとの3つのコードが、キーの何番目のコードかを順番に答えます。セッションで初見の曲についていく力です。',
+  levels:['I・IV・V','vi を追加','ii・iii も','7thコードの進行（ii7–V7–Imaj7）','マイナー・キー（i・iv・V・♭VI・♭VII）'],
+  make(lv){const set=PROG_LEVELS[lv-1],tonic=48+Math.floor(Math.random()*7),home=set[0],seq=[home,...Array.from({length:3},()=>pick(set.slice(1).concat(set[0])))];
+   const sounds=seq.map((d,i)=>{const [off,shape]=DEG[d];return [i*1.1,[tonic+off-12,...chordMidis(tonic+off,CHORDS[shape][1])],1];});
+   return {prompt:'最初が '+home+'。続く3つのコードは？',play:()=>playNotes(sounds),choices:set,answer:seq.slice(1),multi:3,explain:seq.join(' → ')};}},
+ rhythm:{title:'リズム聴き取り',tag:'1小節を聴いて譜面を選ぶ',icon:'rhythm',about:'4カウントのあとに鳴る1小節のリズムを、4つの譜面から選びます。間違えたリズムは「苦手リズム帳」に入り、リミックスで復習できます。',
+  levels:['4分音符と8分音符','裏拍・休符','シンコペーション','16分音符','16分のシンコペーション'],
+  make(lv){const pools=window.FQGames.calls,pool=pools[Math.min(pools.length-1,lv-1)],p=pick(pool),bpm=84,spb=60/bpm;
+   const wrongs=new Set();let guard=0;while(wrongs.size<3&&guard++<200){const c=[...p],h=c.map((x,i)=>x==='x'?i:-1).filter(i=>i>=0),r=Math.random();
+    if(r<.5&&h.length>1){const i=pick(h.slice(1)),j=Math.max(1,Math.min(15,i+pick([-2,-1,1,2])));if(c[j]==='.'){c[i]='.';c[j]='x';}}else if(r<.75){const j=1+Math.floor(Math.random()*15);c[j]=c[j]==='x'&&h.length>2?'.':'x';}else{const alt=pick(pool.concat(pools[Math.min(pools.length-1,lv)]));alt.split('').forEach((x,i)=>c[i]=x);}
+    const s=c.join('');if(s!==p&&s.includes('x'))wrongs.add(s);}
+   const seq=[...[0,1,2,3].map(k=>[k*spb,[96],.05]),...p.split('').map((x,i)=>x==='x'?[4*spb+i*spb/4,[72],.12]:null).filter(Boolean)];
+   return {prompt:'4カウントのあとのリズムは？',play:()=>playNotes(seq),choices:shuffle([p,...wrongs]),answer:p,grid:true,explain:'',onResult:ok=>K.rhythmBook.record(p,bpm,'リズム聴き取り',ok)};}},
+ fret:{title:'指板マップ',tag:'音名から押さえる場所へ',icon:'fret',about:'「5弦でD」のように出た音を、その弦のどこで押さえるかタップします。指板が見えると、ソロでもコードでも迷いが減ります。',
+  levels:['6弦の幹音（♯♭なし）','5弦の幹音','6弦と5弦','全部の弦の幹音','♯・♭も含めて全部'],
+  make(lv){const strings=lv===1?[6]:lv===2?[5]:lv===3?[6,5]:[1,2,3,4,5,6],s=pick(strings),naturals=[0,2,4,5,7,9,11],pcs=lv===5?[...Array(12).keys()]:naturals,pc=pick(pcs);
+   const frets=[...Array(13).keys()].filter(f=>(OPEN[s]+f)%12===pc);
+   return {prompt:s+'弦で「'+NOTE_NAMES[pc]+'」はどこ？',fretString:s,answerFrets:frets,answer:frets[0],explain:s+'弦 '+frets.join('・')+'フレット'};}},
+ theory:{title:'理論ドリル',tag:'キー・コード・スケールの基礎知識',icon:'star',about:'ダイアトニック・コード、コードの構成音、調号、コードに合うモード。セッションで「今どこにいるか」を頭で理解するための知識です。',
+  levels:['キーのダイアトニック・コード','コードの3度・5度・7度','マイナーとペンタトニック','調号','コードに合うモード'],
+  make(lv){const key=pick(Object.keys(KEYS)),sc=KEYS[key];
+   if(lv===1){const d=1+Math.floor(Math.random()*6),ans=sc[d]+TRIAD[d],opts=shuffle([ans,...shuffle(sc.map((n,i)=>n+TRIAD[i]).filter(x=>x!==ans)).slice(0,3)]);return {prompt:key+'メジャー・キーの '+ROMAN[d]+'（'+(d+1)+'番目）のコードは？',choices:opts,answer:ans,explain:key+'のダイアトニック：'+sc.map((n,i)=>n+TRIAD[i]).join(' ')};}
+   if(lv===2){const kind=pick(['3度','5度','♭7度']),ans=kind==='3度'?sc[2]:kind==='5度'?sc[4]:flat(sc[6]),name=key+(kind==='♭7度'?'7':''),opts=shuffle([ans,...shuffle(sc.filter(n=>n!==ans)).slice(0,3)]);return {prompt:name+' コードの '+kind+'の音は？',choices:opts,answer:ans,explain:name+'＝'+sc[0]+'・'+sc[2]+'・'+sc[4]+(kind==='♭7度'?'・'+flat(sc[6]):'')};}
+   if(lv===3){const minor=sc[5],pent=[sc[5],sc[0],sc[1],sc[2],sc[4]],out=pick([sc[3],sc[6]]),q=pick(['pent','rel']);
+    if(q==='rel'){const opts=shuffle([minor+'m',...shuffle(sc.filter(n=>n!==minor)).slice(0,3).map(n=>n+'m')]);return {prompt:key+'メジャーの平行調（同じ音を使うマイナー・キー）は？',choices:opts,answer:minor+'m',explain:key+'メジャーの6番目の音 '+minor+' から始まるマイナー'};}
+    return {prompt:minor+'マイナー・ペンタトニックに含まれない音は？',choices:shuffle([out,...shuffle(pent).slice(0,3)]),answer:out,explain:minor+'マイナー・ペンタ＝'+pent.join('・')};}
+   if(lv===4){const ans=SIGS[key],opts=shuffle([ans,...shuffle(Object.values(SIGS).filter(x=>x!==ans)).slice(0,3)]);return {prompt:key+'メジャー・キーの調号は？',choices:opts,answer:ans,explain:key+'メジャー＝'+sc.join(' ')};}
+   const d=Math.floor(Math.random()*7),chord=sc[d]+['maj7','m7','m7','maj7','7','m7','m7♭5'][d];return {prompt:key+'メジャー・キーで、'+chord+'（'+ROMAN[d]+'）の上で使うモードは？',choices:shuffle([MODES[d],...shuffle(MODES.filter(m=>m!==MODES[d])).slice(0,3)]),answer:MODES[d],explain:ROMAN[d]+'の上では、キーの'+(d+1)+'番目の音から始まる '+MODES[d]};}}
+};
+const ORDER=['interval','chord','prog','rhythm','fret','theory'];
+
+/* ---------- Progress ---------- */
+const KEY='fretQuestTrain';
+const load=()=>{try{return JSON.parse(localStorage.getItem(KEY))||{};}catch{return {};}};
+const saveMode=(id,patch)=>{const all=load();all[id]={...(all[id]||{unlocked:1,best:{}}),...patch};try{localStorage.setItem(KEY,JSON.stringify(all));}catch{}};
+const prog=id=>load()[id]||{unlocked:1,best:{}};
+
+/* ---------- Screens ---------- */
+const gridHtml=p=>'<div class="mini-grid big">'+[...p].map((c,i)=>'<i class="'+(c==='x'?'on':'')+(i%4===0?' beat':'')+'"></i>').join('')+'</div>';
+function lobby(id,level){
+ const m=MODES_DEF[id],pr=prog(id);level=Math.min(level||pr.unlocked,pr.unlocked);
+ F.show(el=>{
+  $('.modal-dialog').classList.add('is-stage');
+  el.innerHTML='<div class="train-lobby"><div class="lesson-progress">ギターなしトレーニング</div><h2 id="modal-title">'+m.title+'</h2><p>'+m.about+'</p>'
+   +'<div class="train-levels">'+m.levels.map((t,i)=>{const lv=i+1,open=lv<=pr.unlocked,b=pr.best[lv];return '<button type="button" data-lv="'+lv+'" '+(open?'':'disabled')+' aria-pressed="'+(lv===level)+'"><b>Lv'+lv+'</b><span>'+t+'</span><small>'+(open?(b!=null?'BEST '+b+' / '+QUESTIONS:'NEW'):'🔒 前のレベルで'+PASS+'問正解')+'</small></button>';}).join('')+'</div>'
+   +'<button type="button" class="action-button" id="train-start">Lv'+level+' をはじめる '+F.icon('arrow')+'</button>'
+   +'<p class="lesson-caption">'+QUESTIONS+'問中'+PASS+'問正解で次のレベルが開きます。早く答えるほどスコアが伸びます。ギターもマイクも使いません。</p></div>';
+  el.querySelectorAll('[data-lv]').forEach(b=>b.onclick=()=>lobby(id,Number(b.dataset.lv)));
+  $('#train-start').onclick=()=>run(id,level);$('#train-start').focus();
+ });
+}
+function run(id,level){
+ const m=MODES_DEF[id],st={i:0,correct:0,score:0,combo:0,best:0};
+ const next=()=>{
+  if(st.i>=QUESTIONS){finish(id,level,st);return;}
+  const q=m.make(level),picked=[];let answered=false,shownAt=0;current=q;
+  const el=$('#modal-inner');
+  el.innerHTML='<div class="train-play"><div class="stage-hud"><div><small>QUESTION</small><strong>'+(st.i+1)+'<span class="hud-of"> / '+QUESTIONS+'</span></strong></div><div class="stage-title"><small>Lv'+level+'</small><b id="modal-title">'+m.title+'</b></div><div class="stage-combo'+(st.combo>=5?' hot':'')+'"><small>COMBO</small><strong>'+st.combo+'</strong></div></div>'
+   +'<div class="train-prompt">'+q.prompt+'</div>'
+   +(q.multi?'<div class="train-slots" id="train-slots">'+Array.from({length:q.multi},(_,k)=>'<span>'+(k+1)+'</span>').join('')+'</div>':'')
+   +(q.play?'<button type="button" class="train-listen" id="train-listen">'+F.icon('music')+' もう一度聴く</button>':'')
+   +(q.fretString?'<div class="train-fret" role="group" aria-label="フレット">'+[...Array(13).keys()].map(f=>'<button type="button" data-fret="'+f+'"><span>'+f+'</span>'+([3,5,7,9].includes(f)?'<i></i>':f===12?'<i></i><i></i>':'')+'</button>').join('')+'</div>':'')
+   +(q.choices?'<div class="train-choices'+(q.grid?' grids':'')+'">'+q.choices.map((c,k)=>'<button type="button" data-choice="'+k+'">'+(q.grid?gridHtml(c):c)+'</button>').join('')+'</div>':'')
+   +'<div class="train-feedback" id="train-feedback" aria-live="polite"></div><button type="button" class="action-button" id="train-next" hidden>次へ '+F.icon('arrow')+'</button></div>';
+  const done=ok=>{
+   answered=true;st.i++;const fast=Math.max(0,Math.round((6000-(performance.now()-shownAt))/60));
+   if(ok){st.correct++;st.combo++;st.best=Math.max(st.best,st.combo);st.score+=100+fast+Math.min(50,st.combo*5);}else st.combo=0;
+   q.onResult?.(ok);
+   const fb=$('#train-feedback');fb.className='train-feedback '+(ok?'ok':'ng');fb.innerHTML='<b>'+(ok?'正解！':'ざんねん')+'</b> '+(q.grid?(ok?'':'正解は下の譜面')+(ok?'':gridHtml(q.answer)):'正解：'+(Array.isArray(q.answer)?q.answer.join(' → '):q.fretString?q.explain:q.answer))+(q.explain&&!q.fretString&&!q.grid?'<small>'+q.explain+'</small>':'');
+   el.querySelectorAll('[data-choice],[data-fret]').forEach(b=>b.disabled=true);
+   const nx=$('#train-next');nx.hidden=false;nx.onclick=next;nx.focus();
+  };
+  el.querySelectorAll('[data-choice]').forEach(b=>b.onclick=()=>{
+   if(answered)return;const c=q.choices[Number(b.dataset.choice)];
+   if(q.multi){picked.push(c);const slots=el.querySelectorAll('#train-slots span');slots[picked.length-1].textContent=c;slots[picked.length-1].classList.add(c===q.answer[picked.length-1]?'ok':'ng');if(picked.length<q.multi)return;done(picked.every((x,k)=>x===q.answer[k]));return;}
+   const ok=c===q.answer;b.classList.add(ok?'correct':'wrong');if(!ok)el.querySelectorAll('[data-choice]').forEach(x=>{if(q.choices[Number(x.dataset.choice)]===q.answer)x.classList.add('correct');});done(ok);});
+  el.querySelectorAll('[data-fret]').forEach(b=>b.onclick=()=>{if(answered)return;const f=Number(b.dataset.fret),ok=q.answerFrets.includes(f);b.classList.add(ok?'correct':'wrong');el.querySelectorAll('[data-fret]').forEach(x=>{if(q.answerFrets.includes(Number(x.dataset.fret)))x.classList.add('correct');});done(ok);});
+  const listen=$('#train-listen');if(listen)listen.onclick=()=>q.play();
+  if(q.play)q.play().then(ok=>{if(!ok)F.notify('音が出せません。消音設定と音量を確認してください。');});
+  shownAt=performance.now()+(q.play?1500:0);
+ };
+ F.show(()=>{$('.modal-dialog').classList.add('is-stage');next();});
+ F.setCleanup(()=>{audio?.stop();audio=null;});
+}
+function finish(id,level,st){
+ const m=MODES_DEF[id],pr=prog(id),passed=st.correct>=PASS,newBest=st.correct>(pr.best[level]??-1),opened=passed&&level===pr.unlocked&&level<5;
+ saveMode(id,{best:{...pr.best,[level]:Math.max(st.correct,pr.best[level]??0)},unlocked:opened?level+1:pr.unlocked});
+ const earned=F.recordActivity('game:train-'+id);render();
+ F.show(el=>{
+  $('.modal-dialog').classList.add('is-stage');
+  el.innerHTML='<div class="stage-result'+(passed?' passed':'')+'">'+(opened?'<div class="confetti" aria-hidden="true">'+Array.from({length:20},(_,i)=>'<i style="--x:'+(5+i*4.5)+'%;--delay:'+(i%4*.07)+'s;--r:'+(i%2?200:-160)+'deg"></i>').join('')+'</div>':'')
+   +'<div class="lesson-progress">'+m.title+' / Lv'+level+'</div><h2 id="modal-title">'+(opened?'Lv'+(level+1)+' 解放！':passed?'クリア！':'あと少し！')+'</h2>'
+   +'<div class="result-score"><strong>'+st.correct+'</strong><small>/ '+QUESTIONS+'</small></div>'
+   +'<div class="result-grid"><div><b>'+st.score+'</b><small>SCORE</small></div><div><b>'+st.best+'</b><small>MAX COMBO</small></div></div>'
+   +'<p>'+(passed?'':PASS+'問正解で次のレベルへ。')+(newBest&&!passed?'自己ベスト更新。':'')+'</p>'
+   +(earned?'<div class="success-xp">+'+earned+' XP</div>':'')
+   +(opened?'<button type="button" class="action-button" id="train-up">Lv'+(level+1)+' へ進む '+F.icon('arrow')+'</button>':'')
+   +'<button type="button" class="action-button '+(opened?'secondary-action':'')+'" id="train-again">もう一度</button><button type="button" class="action-button secondary-action" id="train-close">閉じる</button></div>';
+  $('#train-up')?.addEventListener('click',()=>run(id,level+1));$('#train-again').onclick=()=>run(id,level);$('#train-close').onclick=F.close;($('#train-up')||$('#train-again')).focus();
+ });
+}
+function render(){
+ const el=$('#train-cards');if(!el)return;
+ el.innerHTML=ORDER.map(id=>{const m=MODES_DEF[id],pr=prog(id);return '<button type="button" class="game-card train-card tc-'+id+'" data-train="'+id+'"><span class="jam-genre">Lv'+pr.unlocked+' / 5</span><strong>'+m.title+'</strong><span class="jam-changes">'+m.tag+'</span><span class="dojo-pips">'+[1,2,3,4,5].map(l=>'<i class="'+((pr.best[l]??0)>=PASS?'on':'')+'"></i>').join('')+'</span></button>';}).join('');
+ el.querySelectorAll('[data-train]').forEach(b=>b.onclick=()=>lobby(b.dataset.train));
+}
+render();
+/* current() exposes the open question for automated tests. */
+window.FQTrain={modes:MODES_DEF,lobby,run,current:()=>current};
+})();
