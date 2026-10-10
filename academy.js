@@ -36,16 +36,18 @@ function renderHero(state){
  $('#hero-streak').textContent=F.streak();
 }
 /* Today's menu: the next lesson, a session and a rhythm game. Picks rotate by date so every day differs. */
-const MENU_JAMS=['blues-a','ii-v-i','chicago','autumn','bossa','billie','thrill','fly'],MENU_GAMES=['call','survival','clock'];
+const MENU_JAMS=['blues-a','ii-v-i','chicago','autumn','bossa','billie','thrill','fly'],MENU_GAMES=['call','hunt','survival','change','clock','bend'];
+/* Games come from the rhythm games or the pitch-judged drills. */
+const gameHost=id=>window.FQDrills?.games[id]?window.FQDrills:window.FQGames;
 function renderMenu(state){
  const grid=$('#menu-grid');if(!grid||!window.FQJam||!window.FQGames)return;
  const st=F.menuStatus(),dayNo=Math.floor(new Date(F.today()+'T12:00:00').getTime()/864e5),{c,l}=heroPick(state);
  /* Beginners rotate through the easier sessions until they have cleared 12 lessons. */
- const pool=!state.experienced&&all.filter(x=>state.courses?.[x.id]).length<12?MENU_JAMS.slice(0,3):MENU_JAMS,jam=FQJam.sessions.find(x=>x.id===pool[dayNo%pool.length]),gameId=FS().kit.rhythmBook.weak().length>=3?'remix':MENU_GAMES[dayNo%MENU_GAMES.length],game=FQGames.games[gameId];
+ const pool=!state.experienced&&all.filter(x=>state.courses?.[x.id]).length<12?MENU_JAMS.slice(0,3):MENU_JAMS,jam=FQJam.sessions.find(x=>x.id===pool[dayNo%pool.length]),gameId=FS().kit.rhythmBook.weak().length>=3?'remix':MENU_GAMES[dayNo%MENU_GAMES.length],game=gameHost(gameId).games[gameId];
  const items=[
   {kind:'LESSON',label:'レッスン',title:l.title,sub:c.title+' ・ '+labels[l.type],done:st.lesson,doneText:'今日1レッスンクリア',go:()=>{selected=c;render();open(c,l);}},
   {kind:'SESSION',label:'セッション',title:jam.title,sub:jam.genre+' ・ ♩ '+jam.bpm,done:st.jam,doneText:'今日セッション済み',go:()=>FQJam.lobby(jam)},
-  {kind:'GAME',label:'リズムゲーム',title:game.title,sub:game.tag,done:st.game,doneText:'今日ゲーム済み',go:()=>FQGames.lobby(gameId)}
+  {kind:'GAME',label:'ゲーム',title:game.title,sub:game.tag,done:st.game,doneText:'今日ゲーム済み',go:()=>gameHost(gameId).lobby(gameId)}
  ];
  const count=items.filter(x=>x.done).length;
  grid.innerHTML=items.map((x,i)=>'<button type="button" class="menu-card'+(x.done?' done':'')+'" data-menu="'+i+'"><span class="menu-num">'+(x.done?F.icon('check'):'0'+(i+1))+'</span><span class="menu-copy"><small>'+x.label+'</small><strong>'+x.title+'</strong><span>'+(x.done?x.doneText:x.sub)+'</span></span><span class="menu-go">'+(x.done?'もう一度':i?'+20 XP':state.courses?.[l.id]?'★を更新':'+40 XP')+' '+F.icon('arrow')+'</span></button>').join('');
