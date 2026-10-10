@@ -31,6 +31,7 @@ Melodies are public-domain tunes or original phrases written for this app. All e
 - Tempo survival: a count-in bar, then two judged bars of a chosen pattern. 85% or better raises the tempo by 5. Three misses end the game.
 - Just timing: strum quarter notes while the click plays, then keep going through 2, 4, 8, 12 and 16 silent bars. The player's own offset during the click bars is the baseline, so device latency does not count as drift. The average deviation and the rushing/dragging trend are reported.
 
+- Feel games, tapped on screen (or strummed with earphones, since clicks keep playing while judged): 裏拍キープ (tap the offbeats while the click thins out from every beat to beat 1 only, then 16th offbeats), 変拍子アクセント (tap group starts in 6/8, 5/8, 7/8 2+2+3 and 3+2+2, 9/8 after one accented bar) and ポリリズム (3 against 2 up to 5 against 4). One bar to listen, two to tap; two clean rounds raise the level, three misses end.
 - Weak-rhythm remix: eight rounds drawn from the rhythm book, weakest and most recent first, cycling three faces: hear and see the call, hear it only, or read it and play it straight away (Rhythm Heaven style remix). Rated ハイレベル / OK / もう一回.
 
 The rhythm book (`fretQuestRhythmBook`, this browser only) collects one-bar rhythms the player missed: call & response patterns, tempo-survival patterns at their tempo, and every 4/4 bar of a song or strum stage that contained a miss (identical rhythms are merged). A rhythm leaves the book after two clean passes in a row. Call & response results list the rhythms missed in that game with a one-tap review, and once the book holds three rhythms the daily menu's game becomes the remix.
@@ -55,7 +56,11 @@ Missions are graded from the notes the microphone hears during a session: note c
 
 ## Off-guitar training
 
-`train.js` offers six screen-and-sound games for times without a guitar, five levels each. A run is ten questions; eight correct opens the next level, and faster answers and combos raise the score.
+`train.js` offers nine screen-and-sound games for times without a guitar, five levels each. A run is five quick questions; four correct opens the next level, and faster answers and combos raise the score.
+
+- メロディ耳コピ (solfège): hear a 3–5 note melody and reproduce it by tapping a six-string, frets 0–7 board; the first note is given and every tap sounds. C major steps up to A minor pentatonic and blues phrases.
+- 拍子当て: name the meter of a drum groove (4/4 and 3/4 up to 6/8, 5/4, 7/8, 9/8, 12/8).
+- ズレ探し: find the one click out of eight that is early or late (90 ms down to 18 ms).
 
 - 音程当て: intervals from 3rds/5ths/octave up to every interval, descending and harmonic.
 - コード聴き分け: major/minor up to 7th chords, diminished, augmented, sus4 and 6th.
@@ -92,7 +97,7 @@ The manifest, PNG icons and a service worker support home-screen installation an
 
 `tests/stage-playthrough.cjs` drives the real page in headless Chromium and feeds synthetic plucked notes and strums in as the microphone. It checks that clean playing scores at least 95 (also at 1/20 level with room noise, which scored 0 before the adaptive thresholds), that silence and random strumming stay below the clear line, that the +0.2 s offset setting restores a delayed performance, and that tap mode works. `ALL=1` also plays every stage once. Serve the folder that contains `fretquest/` on port 8765 first (for example `python3 -m http.server 8765`).
 
-`tests/tools.cjs` checks tuner readings and that a player 0.2 s late scores 100 after measuring. `tests/train.cjs` checks that every training mode runs, a perfect run opens the next level, a poor run does not, wrong rhythm answers enter the rhythm book and XP counts. `tests/dojo.cjs` checks dojo steps, a failed and a passed session mission, mastery and a pop session. `tests/remix.cjs` checks that stage misses fill the rhythm book, that a perfect remix clears 8/8 and graduates the rhythm, and that call & response offers a review. `tests/skip.cjs` checks skip challenges, opening without a test and experienced mode. `tests/records.cjs` checks the daily menu, XP, bonus, streak, duplicate protection and export/import. `tests/jam-games.cjs` does the same for sessions (chord-tone arpeggios score 100%, a chromatic line does not) and the three rhythm games (a perfect player clears them; a steadily drifting player fails the timing game).
+`tests/tools.cjs` checks tuner readings and that a player 0.2 s late scores 100 after measuring. `tests/feel.cjs` checks that perfect taps clear every feel-game level and silence does not. `tests/train.cjs` checks that every training mode runs, a perfect run opens the next level, a poor run does not, wrong rhythm answers enter the rhythm book and XP counts. `tests/dojo.cjs` checks dojo steps, a failed and a passed session mission, mastery and a pop session. `tests/remix.cjs` checks that stage misses fill the rhythm book, that a perfect remix clears 8/8 and graduates the rhythm, and that call & response offers a review. `tests/skip.cjs` checks skip challenges, opening without a test and experienced mode. `tests/records.cjs` checks the daily menu, XP, bonus, streak, duplicate protection and export/import. `tests/jam-games.cjs` does the same for sessions (chord-tone arpeggios score 100%, a chromatic line does not) and the three rhythm games (a perfect player clears them; a steadily drifting player fails the timing game).
 
 These are synthetic signals. They do not establish accuracy with a real guitar, a real iPhone microphone or real Bluetooth latency; those still need device testing.
 
