@@ -12,13 +12,17 @@ await p.addInitScript(()=>{
   const ctx=window.FretQuest.audioContext(),dest=ctx.createMediaStreamDestination(),plan=window.__plan||{};
   const pluck=(t,m,d)=>{const o=ctx.createOscillator(),g=ctx.createGain(),f=ctx.createBiquadFilter();o.type='sawtooth';o.frequency.value=440*Math.pow(2,(m-69)/12);f.type='lowpass';f.frequency.value=2500;g.gain.setValueAtTime(.0001,t);g.gain.exponentialRampToValueAtTime(.3,t+.005);g.gain.exponentialRampToValueAtTime(.001,t+d);o.connect(f);f.connect(g);g.connect(dest);o.start(t);o.stop(t+d+.05);};
   /* Session missions: one note per beat, the downbeat note on beat 1 of every bar. */
+  /* Lick steps: each note plucked on time; a bend starts at the fretted pitch and glides up in 0.15 s (or stays there when plan.flat). */
+  if(plan.kind==='lick'){const spb=60/plan.bpm,t0=ctx.currentTime+.35+4*spb;plan.notes.forEach(n=>{const t=t0+n.beat*spb,d=Math.max(.2,n.len*spb*.95),o=ctx.createOscillator(),g=ctx.createGain(),f=ctx.createBiquadFilter(),hz=m=>440*Math.pow(2,(m-69)/12),from=n.midi-(n.bend||0);
+   o.type='sawtooth';o.frequency.setValueAtTime(hz(from),t);if(n.bend&&!plan.flat)o.frequency.linearRampToValueAtTime(hz(n.midi),t+.15);f.type='lowpass';f.frequency.value=2500;g.gain.setValueAtTime(.0001,t);g.gain.exponentialRampToValueAtTime(.3,t+.005);g.gain.exponentialRampToValueAtTime(.001,t+d);o.connect(f);f.connect(g);g.connect(dest);o.start(t);o.stop(t+d+.05);});}
   if(plan.kind==='mission')setTimeout(()=>{const T=ctx.currentTime,spb=60/plan.bpm,t0=T+.4+4*spb;for(let beat=0;beat<plan.bars*4;beat++)pluck(t0+beat*spb+.03,beat%4===0?plan.down:plan.others[beat%plan.others.length],spb*.7);},0);
   return dest.stream;};
 });
 await p.goto(BASE,{waitUntil:'networkidle'});
 await p.evaluate(()=>window.FretQuest.ensureAudio());await p.waitForTimeout(600);
 const cards=await p.$$eval('#dojo [data-module]',e=>e.length),tabs=await p.$$eval('#dojo-tabs [data-genre]',e=>e.map(x=>x.textContent).join(','));
-check('dojo renders',cards===7&&tabs.includes('ジャズ'),cards+' cards, tabs '+tabs);
+const artists=await p.$$eval('#dojo [data-artist]',e=>e.length);
+check('dojo renders the blues basics with artist groups',cards===9&&artists===13&&tabs.includes('ジャズ'),cards+' cards, '+artists+' artists, tabs '+tabs);
 if(OUT){await p.evaluate(()=>document.querySelector('#dojo-section').scrollIntoView());await p.waitForTimeout(300);await p.screenshot({path:OUT+'/dojo.png'});}
 
 async function tapStep(id,step){
@@ -54,7 +58,32 @@ r=await mission({kind:'mission',bpm:84,bars:12,down:69,others:[71,72,74,76],shot
 const mastered=await p.evaluate(()=>window.FQDojo.status(window.FQDojo.modules.find(m=>m.id==='bb-box')).every(Boolean));
 check('mission passes and masters the lick',r.title==='ミッション達成！'&&mastered,JSON.stringify(r));
 await p.click('#modal-close');await p.waitForTimeout(300);
-const rank=await p.$eval('#dojo-count',e=>e.textContent);check('mastery count',rank==='1 / 21',rank);
+const rank=await p.$eval('#dojo-count',e=>e.textContent);check('mastery count',rank==='1 / 105',rank);
+
+// Artist groups: switching shows that artist's licks and is remembered.
+await p.click('[data-artist="アルバート・キング"]');
+const ak=await p.evaluate(()=>({ids:[...document.querySelectorAll('#dojo [data-module]')].map(b=>b.dataset.module),saved:localStorage.getItem('fretQuestDojoArtist')}));
+check('artist filter',ak.ids.length===8&&ak.ids.every(id=>id.startsWith('ak-'))&&ak.saved==='アルバート・キング',JSON.stringify(ak));
+if(OUT){await p.evaluate(()=>document.querySelector('#dojo-section').scrollIntoView());await p.waitForTimeout(200);await p.screenshot({path:OUT+'/dojo-artist.png'});}
+const bend=await p.evaluate(()=>window.FQDojo.chartFor(window.FQDojo.modules.find(m=>m.id==='ak-big'),1).exercise.notes[0]);
+check('bend notation',bend.fret===8&&bend.bend===3&&bend.midi===75,JSON.stringify(bend));
+
+// Bends are judged at the bent pitch: a gliding bend clears the learn step, the unbent fret pitch does not.
+async function micStep(id,flat){
+ const ex=await p.evaluate(id=>window.FQDojo.chartFor(window.FQDojo.modules.find(m=>m.id===id),1).exercise,id);
+ await p.evaluate(pl=>{window.__plan=pl;},{kind:'lick',notes:ex.notes,bpm:ex.bpm,flat});
+ await p.click('[data-step="1"]');await p.waitForSelector('#stage-start');
+ await p.click('[data-input="mic"]');await p.click('[data-speed="1"]');await p.click('#stage-start');
+ await p.waitForSelector('.stage-result',{timeout:120000});
+ const r=await p.evaluate(()=>({score:Number(document.querySelector('.result-score strong').textContent),miss:Number([...document.querySelectorAll('.stage-result small')].find(x=>x.textContent==='MISS').previousElementSibling.textContent)}));
+ await p.click('#stage-back');await p.waitForSelector('.dojo-module');return {...r,bends:ex.notes.filter(n=>n.bend).length};
+}
+await p.click('[data-module="ak-big"]');await p.waitForSelector('.dojo-module');
+if(OUT)await p.screenshot({path:OUT+'/dojo-bend-module.png'});
+const bent=await micStep('ak-big',false),flat=await micStep('ak-big',true);
+check('bends hit at the bent pitch',bent.score>=95&&bent.miss===0,JSON.stringify(bent));check('every unbent bend is a miss',flat.miss===flat.bends&&flat.bends===3&&flat.score<bent.score,JSON.stringify(flat));
+await p.click('#modal-close');await p.waitForTimeout(300);
+await p.click('[data-artist="基礎"]');
 
 // A comping module and a pop session.
 await p.click('[data-genre="JAZZ"]');await p.click('[data-module="shells"]');await p.waitForSelector('.dojo-chords');

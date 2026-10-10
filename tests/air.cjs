@@ -30,7 +30,7 @@ let p=await page('guitar');
 const data=await p.evaluate(()=>{const bad=[];for(const m of window.FQDojo.modules)for(let st=1;st<=Math.min(2,window.FQAir.steps(m));st++){const s=window.FQAir.specFor(m,st);
  if(s.notes)s.notes.forEach(n=>{if(n.fret<s.w.lo||n.fret>s.w.hi)bad.push(m.id+' '+n.string+'.'+n.fret);});
  if(s.chords)s.chords.forEach(c=>{if(!window.FretQuest.chordShape(c))bad.push(m.id+' '+c);});}return {bad,n:window.FQDojo.modules.length};});
-check('every guitar module fits its board',data.bad.length===0&&data.n===21,JSON.stringify(data));
+check('every guitar module fits its board',data.bad.length===0&&data.n===105,JSON.stringify(data));
 const cards=await p.$$eval('#air-cards .air-card',x=>x.length);check('training cards',cards===2,cards);
 if(OUT){await p.evaluate(()=>document.querySelector('#air-cards').scrollIntoView({block:'center'}));await p.screenshot({path:OUT+'/air-cards.png'});}
 
