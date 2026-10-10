@@ -141,3 +141,80 @@ body{background:radial-gradient(120% 60% at 50% -10%,#2a2147 0%,var(--bg) 55%) f
 #skip-challenge{background:#ffd166;color:#1c1930;box-shadow:0 4px 0 #b88a00}
 #skip-unlock{background:#ffffff12;color:var(--ink);box-shadow:inset 0 0 0 1px #ffffff26}
 #experienced[aria-pressed="true"]{background:#c7ef75;color:#1c1930;border-color:#c7ef75}
+/* Instrument switch (guitar / bass) in the top bar. */
+.top-actions{display:flex;align-items:center;gap:10px}
+.inst-switch{display:flex;padding:3px;border-radius:999px;background:#2a2446;border:1px solid #ffffff26}
+.inst-switch button{appearance:none;border:0;background:none;color:#cfc9e6;font:800 12px/1 "Noto Sans JP",sans-serif;padding:8px 12px;border-radius:999px;cursor:pointer;white-space:nowrap}
+.inst-switch button[aria-pressed="true"]{background:#c7ef75;color:#1c1930}
+@media(max-width:480px){.inst-switch button{padding:7px 9px;font-size:11px}}
+/* Interval review after a wrong answer: root, the right note and the chosen note on one board. */
+.interval-review{margin-top:12px;padding:12px;border-radius:16px;background:#ffffff0a;border:1px solid #ffffff14;color:#e9e5f7;font-weight:500}
+.interval-review p{margin:10px 0 0;font-size:13px;line-height:1.7;color:#cfc9e6}
+.train-feedback .interval-review p b{color:#fff;margin:0;font-size:inherit}
+.iv-legend{display:flex;gap:14px;font-size:12px;font-weight:800;margin-bottom:6px}
+.iv-legend span{display:flex;align-items:center;gap:6px}
+.iv-legend i{width:12px;height:12px;border-radius:50%;display:inline-block}
+.interval-board{width:100%;height:auto;display:block}
+circle.iv-root,.iv-legend i.iv-root{fill:#ffffff;stroke:none}
+circle.iv-right,.iv-legend i.iv-right{fill:#c7ef75;background:#c7ef75}
+circle.iv-wrong{fill:#ff8fb8;stroke:#ffd3e3;stroke-width:1.5}
+.iv-legend i.iv-wrong{background:#ff8fb8}
+.iv-root-t,.iv-right-t{fill:#1c1930;font:900 11px "DM Sans",sans-serif}
+.iv-wrong-t{fill:#1c1930;font:900 11px "DM Sans",sans-serif}
+.interval-review .iv-legend span{color:#e9e5f7}
+.iv-play{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:10px}
+.iv-play button{appearance:none;border:1px solid #ffffff26;background:#2a2446;color:#fff;border-radius:12px;padding:11px 6px;font:800 13px "Noto Sans JP",sans-serif;cursor:pointer}
+.iv-play button[data-iv="right"]{border-color:#c7ef7588;color:#c7ef75}
+.iv-play button[data-iv="wrong"]{border-color:#ff8fb888;color:#ff8fb8}
+/* ---------- Air practice: the on-screen fretboard ---------- */
+.air-board-wrap{position:relative;margin:12px 0 6px;padding:10px 6px 4px;border-radius:16px;background:linear-gradient(180deg,#3a2a24,#2b201c);box-shadow:inset 0 0 0 1px #ffffff14}
+.air-board{display:flex;flex-direction:column;gap:0;user-select:none;-webkit-user-select:none;touch-action:manipulation}
+.air-row{display:grid;grid-template-columns:18px repeat(var(--cols),1fr);align-items:center}
+.air-sn{font:800 9px "DM Sans",sans-serif;color:#ffffff70;text-align:center}
+.air-sn.open-mark::after,.air-sn.mute-mark::after{margin-left:1px;font-size:10px}
+.air-sn.open-mark::after{content:'○';color:#c7ef75}.air-sn.mute-mark::after{content:'×';color:#ff8fb8}
+.air-cell{position:relative;height:38px;border:0;padding:0;background:none;cursor:pointer;border-right:2px solid #d9cfc066;-webkit-tap-highlight-color:transparent}
+.air-board.bass .air-cell{height:46px}
+.air-cell.nut{border-right:5px solid #efe6d6}
+.air-cell::before{content:'';position:absolute;left:0;right:0;top:50%;height:var(--sw,1.5px);transform:translateY(-50%);background:linear-gradient(90deg,#d8d2c4,#a9a294)}
+.air-row.s1{--sw:1px}.air-row.s2{--sw:1.3px}.air-row.s3{--sw:1.7px}.air-row.s4{--sw:2.1px}.air-row.s5{--sw:2.5px}.air-row.s6{--sw:3px}
+.air-board.bass .air-row.s1{--sw:2.2px}.air-board.bass .air-row.s2{--sw:2.8px}.air-board.bass .air-row.s3{--sw:3.4px}.air-board.bass .air-row.s4{--sw:4px}
+.air-cell>span{position:absolute;left:50%;top:50%;width:26px;height:26px;margin:-13px 0 0 -13px;border-radius:50%;display:flex;align-items:center;justify-content:center;font:900 10px "DM Sans",sans-serif;color:#1c1930;transform:scale(0);transition:transform .12s}
+.air-cell:active>span{transform:scale(.7);background:#ffffff55}
+.air-frets{margin-top:2px}.air-frets span{text-align:center;font:700 9px "DM Sans",sans-serif;color:#ffffff60}.air-frets span.inlay{color:#c7ef75}
+.air-cell.preview>span{transform:scale(.62);background:#ffffff40}
+.air-cell.first>span,.air-cell.hint>span{transform:scale(1);background:#ffc56b}
+.air-cell.hint>span{animation:air-pulse .8s ease-in-out infinite}
+.air-cell.placed>span{transform:scale(1);background:#c7ef75}
+.air-cell.ready>span{background:#6fe3d2}
+.air-cell.hit>span{animation:air-hit .45s ease-out}
+.air-cell.wrong>span{animation:air-wrong .45s ease-out}
+.air-cell.missed>span{animation:air-missed .45s ease-out}
+.air-cell.soon>span{transform:scale(.5);background:#ffffff38}
+.air-cell.target>span{transform:scale(1);background:#c7ef75}
+.air-cell.target.second>span{background:#c7ef7566}
+.air-cell.target::after{content:'';position:absolute;left:50%;top:50%;width:26px;height:26px;margin:-13px 0 0 -13px;border-radius:50%;border:3px solid #c7ef75;transform:scale(calc(1 + 1.6*(1 - var(--ap,0))));opacity:calc(.35 + .65*var(--ap,0));pointer-events:none}
+.air-cell.target.second::after{border-color:#c7ef7555}
+.air-cell.tone>span{transform:scale(1);background:#c69cff}.air-cell.tone.root>span{background:#ffc56b}
+.air-cell.scale>span{transform:scale(.42);background:#ffffff70}
+@keyframes air-hit{0%{transform:scale(1.5);background:#fff}100%{transform:scale(1)}}
+@keyframes air-wrong{0%,100%{transform:scale(1);background:#ff8fb8}25%{transform:translateX(-5px) scale(1);background:#ff8fb8}75%{transform:translateX(5px) scale(1);background:#ff8fb8}}
+@keyframes air-missed{0%{transform:scale(1);background:#9a90b0}100%{transform:scale(.4);background:#9a90b0}}
+@keyframes air-pulse{50%{transform:scale(.75)}}
+.air-judge{position:absolute;left:0;right:0;top:-6px;pointer-events:none}
+.air-next{display:flex;align-items:baseline;gap:10px;min-height:28px;margin-top:10px;color:#fff}
+.air-next span{font:800 10px "DM Sans",sans-serif;letter-spacing:.12em;color:#c7ef75}.air-next b{font-size:18px}.air-next em{font-style:normal;color:#ffffff90}
+.air-msg{min-height:22px;font-size:13px;color:#ffc56b;font-weight:700}
+.air-slots span{min-width:44px}
+.air-steps{margin-top:16px;padding:14px;border-radius:18px;background:#ffffff08;border:1px dashed #c7ef7555}
+.air-steps-head{display:flex;flex-direction:column;margin-bottom:8px}.air-steps-head b{color:#c7ef75;font-size:15px}.air-steps-head small{color:#cfc9e6}
+.air-home{margin:10px 0 0;color:#c7ef75;font-weight:700;font-size:13px}
+.dojo-air{align-self:flex-start;margin-top:6px;font:800 10px "Noto Sans JP",sans-serif;color:#1c1930;background:#6fe3d2;border-radius:999px;padding:3px 8px}
+.air-shape-top{display:flex;align-items:center;gap:16px}.air-chord-name{font:900 34px "DM Sans",sans-serif;color:#fff;display:flex;flex-direction:column}.air-chord-name small{font-size:11px;color:#ffffff80}
+.air-diagram{width:110px}
+.air-change{display:flex;justify-content:space-between;align-items:flex-end;margin-top:12px}.air-change small{display:block;font:800 10px "Noto Sans JP",sans-serif;color:#ffffff80}.air-change b{font:900 34px "DM Sans",sans-serif;color:#fff}.air-timer b{font-size:22px;color:#ffc56b}
+.air-shift{display:flex;align-items:center;justify-content:center;gap:12px;margin:4px 0}.air-shift button{appearance:none;border:1px solid #ffffff26;background:#2a2446;color:#fff;border-radius:10px;width:44px;height:34px;font-size:14px}.air-shift span{font:700 12px "Noto Sans JP",sans-serif;color:#cfc9e6}
+.air-picker h3{margin:18px 0 8px;color:#fff}
+.chip-row button small{display:block;font-size:10px;opacity:.75;font-weight:600}
+.air-cell.open-mark>span,.air-cell.mute-mark>span{transform:scale(1);background:transparent;font-size:17px}
+.air-cell.open-mark>span{color:#c7ef75}.air-cell.mute-mark>span{color:#ff8fb8}

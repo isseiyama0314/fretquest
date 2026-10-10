@@ -14,10 +14,12 @@ let prefs={speed:1,input:'mic',backing:true,latency:0},run=null;
 try{Object.assign(prefs,JSON.parse(localStorage.getItem('fretQuestStage'))||{});}catch{}
 const savePrefs=()=>{try{localStorage.setItem('fretQuestStage',JSON.stringify(prefs));}catch{}};
 
+/* On bass every chart becomes a single-note line (see FQInst.adapt). */
+const I=window.FQInst,BASS=I.isBass(),INST=I.get(),LANES=INST.open.length-1;
 function chart(l,speed){
- const e=l.exercise,spb=60/(e.bpm*speed),meter=e.meter||4,song=l.type==='song';
+ const a=BASS?I.adapt(l):{type:l.type,exercise:l.exercise},e=a.exercise,spb=60/(e.bpm*speed),meter=e.meter||4,song=a.type==='song';
  const items=(song?e.notes:e.strums).map((n,i)=>({...n,i,time:n.beat*spb,dur:n.len*spb,grade:null,hitAt:null}));
- return {song,spb,meter,beats:e.beats,items,length:e.beats*spb,bpm:Math.round(e.bpm*speed)};
+ return {song,fromStrum:!!a.fromStrum,spb,meter,beats:e.beats,items,length:e.beats*spb,bpm:Math.round(e.bpm*speed)};
 }
 const chordMidis=name=>(F.chordShape(name)||[]).map((fret,i)=>fret<0?null:OPEN[6-i]+fret).filter(m=>m!==null);
 /* How long after its time a note can still be caught. */
@@ -62,8 +64,8 @@ function schedule(r){
 
 async function openMic(ctx){
  /* Raw instrument input: iOS voice processing (echo cancellation) treats a sustained guitar note as noise and suppresses it. */
- const stream=await navigator.mediaDevices.getUserMedia({audio:{echoCancellation:false,noiseSuppression:false,autoGainControl:false}});
- const src=ctx.createMediaStreamSource(stream),an=ctx.createAnalyser();an.fftSize=2048;src.connect(an);
+ const stream=await F.openMicStream({audio:{echoCancellation:false,noiseSuppression:false,autoGainControl:false}});
+ const src=ctx.createMediaStreamSource(stream),an=ctx.createAnalyser();an.fftSize=INST.fft;src.connect(an);
  return {stream,src,an,buf:new Float32Array(an.fftSize)};
 }
 
@@ -109,7 +111,7 @@ function mark(r,it,grade,at){
  it.grade=grade;it.hitAt=at;r.counts[grade]++;r.points+=GRADE[grade].pts;
  if(grade==='miss'){r.combo=0;r.missRun=(r.missRun||0)+1;
   /* Several misses while the microphone hears almost nothing: the guitar is too far or too quiet. */
-  if(r.mic&&!r.warned&&r.missRun>=3&&(r.peak||0)<.006){r.warned=true;F.notify('ギターの音がほとんど届いていません。iPhoneを弦から10〜20cmに近づけてみて。');}
+  if(r.mic&&!r.warned&&r.missRun>=3&&(r.peak||0)<.006){r.warned=true;F.notify(INST.name+'の音がほとんど届いていません。iPhoneを'+(BASS?'弦やアンプのスピーカーに':'弦から10〜20cmに')+'近づけてみて。');}
  }else{r.missRun=0;r.combo++;r.maxCombo=Math.max(r.maxCombo,r.combo);burst(r,it);}
  popup(r,GRADE[grade].label,grade,grade==='miss'||grade==='perfect'?'':at<it.time?'EARLY':'LATE');
 }
@@ -146,8 +148,9 @@ function onsetDetector(){
 }
 /* Input level on a decibel scale (-60 dB to -10 dB), so quiet playing still moves the meter. */
 const meterPct=rms=>Math.max(0,Math.min(100,(20*Math.log10(Math.max(rms,1e-6))+60)*2));
+const same=(a,b)=>a===b||BASS&&Math.abs(a-b)===12;
 function listen(r,now){
- const m=r.mic;m.an.getFloatTimeDomainData(m.buf);const at=now-r.comp,onset=r.onset(m.buf,at),d=window.FQPitch.detect(m.buf,r.ctx.sampleRate,r.onset.gate());
+ const m=r.mic;m.an.getFloatTimeDomainData(m.buf);const at=now-r.comp,onset=r.onset(m.buf,at),d=window.FQPitch.detect(m.buf,r.ctx.sampleRate,r.onset.gate(),INST.minHz);
  r.level=r.level*.6+d.rms*.4;r.peak=Math.max((r.peak||0)*.995,d.rms);
  if(onset){r.lastOnset=at;r.stable=0;if(!r.c.song)strike(r,at);}
  if(!r.c.song)return;
@@ -156,12 +159,15 @@ function listen(r,now){
  if(midi!==r.lastMidi||r.stable===0){r.firstMatch=at;r.stable=0;}
  r.lastMidi=midi;r.stable++;
  if(r.stable<2)return;
- const it=r.c.items.find(x=>!x.grade&&x.midi===midi&&r.firstMatch>=x.time-.28&&r.firstMatch<=x.time+lateWindow(r.c,x));
+ /* Bass: a phone microphone often hears the low notes an octave high, so the same note name an octave away counts.
+    The long analysis window settles late, so the attack time comes from the onset detector when there is one. */
+ const at0=BASS&&r.lastOnset<=r.firstMatch&&r.firstMatch-r.lastOnset<.25?r.lastOnset:r.firstMatch;
+ const it=r.c.items.find(x=>!x.grade&&same(x.midi,midi)&&at0>=x.time-.28&&at0<=x.time+lateWindow(r.c,x));
  if(!it)return;
  /* A repeated pitch only counts when the string is picked again. */
  const prev=r.c.items[it.i-1];
- if(prev&&prev.midi===midi&&prev.hitAt!==null&&r.lastOnset<=prev.hitAt+.04)return;
- judge(r,it,r.firstMatch);
+ if(prev&&same(prev.midi,midi)&&prev.hitAt!==null&&r.lastOnset<=prev.hitAt+.04)return;
+ judge(r,it,at0);
 }
 
 /* ---------- Drawing ---------- */
@@ -173,7 +179,7 @@ const laneY=(r,string)=>r.top+(string-1)*r.gap;
 function sizeCanvas(r){
  const cv=r.cv,dpr=Math.min(2,window.devicePixelRatio||1),w=cv.clientWidth,h=cv.clientHeight;
  if(cv.width!==Math.round(w*dpr)||cv.height!==Math.round(h*dpr)){cv.width=Math.round(w*dpr);cv.height=Math.round(h*dpr);}
- r.g.setTransform(dpr,0,0,dpr,0,0);r.W=w;r.H=h;r.hitX=Math.min(78,w*.2);r.top=24;r.gap=(h-48)/5;r.laneMid=h*.56;
+ r.g.setTransform(dpr,0,0,dpr,0,0);r.W=w;r.H=h;r.hitX=Math.min(78,w*.2);r.top=24;r.gap=(h-48)/(LANES-1);r.laneMid=h*.56;
 }
 function pill(g,x,y,w,h,rad){g.beginPath();g.moveTo(x+rad,y);g.arcTo(x+w,y,x+w,y+h,rad);g.arcTo(x+w,y+h,x,y+h,rad);g.arcTo(x,y+h,x,y,rad);g.arcTo(x,y,x+w,y,rad);g.closePath();}
 function draw(r,t,dt){
@@ -181,7 +187,7 @@ function draw(r,t,dt){
  g.clearRect(0,0,W,H);
  for(let b=Math.floor((t-hitX/pps)/c.spb);b<=c.beats;b++){const bx=x(b*c.spb);if(bx>W)break;if(b<0)continue;g.fillStyle=b%c.meter===0?'rgba(255,255,255,.16)':'rgba(255,255,255,.05)';g.fillRect(bx,8,b%c.meter===0?2:1,H-16);}
  if(c.song){
-  for(let s=1;s<=6;s++){const y=laneY(r,s);g.fillStyle='rgba(255,255,255,'+(.13+s*.02)+')';g.fillRect(0,y-(.5+s*.25),W,1+s*.5);g.fillStyle='rgba(255,255,255,.38)';g.font='700 9px "DM Sans",sans-serif';g.fillText(String(s),6,y+3);}
+  for(let s=1;s<=LANES;s++){const y=laneY(r,s),w=BASS?s+1:s;g.fillStyle='rgba(255,255,255,'+(.13+w*.02)+')';g.fillRect(0,y-(.5+w*.25),W,1+w*.5);g.fillStyle='rgba(255,255,255,.38)';g.font='700 9px "DM Sans",sans-serif';g.fillText(String(s),6,y+3);}
  }else{
   g.fillStyle='rgba(255,255,255,.08)';g.fillRect(0,r.laneMid-22,W,44);
  }
@@ -220,7 +226,7 @@ function hud(r,t){
  const next=r.c.items.find(i=>!i.grade);
  if(r.c.song){
   const heard=$('#stage-heard');if(heard)heard.textContent=r.mic?(r.heard!=null?noteName(r.heard):'—'):'TAP';
-  if(next&&next!==r.shownNext){r.shownNext=next;$('#stage-next').innerHTML='<span>NEXT</span><b>'+next.string+'弦 '+next.fret+'フレット</b><em>'+noteName(next.midi)+'</em>';}
+  if(next&&next!==r.shownNext){r.shownNext=next;$('#stage-next').innerHTML='<span>NEXT'+(next.chord?' ・ '+next.chord+' のルート':'')+'</span><b>'+next.string+'弦 '+next.fret+'フレット</b><em>'+noteName(next.midi)+'</em>';}
  }else{
   const chord=(next||r.c.items[r.c.items.length-1]).chord;
   if(chord!==r.shownChord){r.shownChord=chord;$('#stage-chord').innerHTML=F.chordDiagram(chord);}
@@ -235,9 +241,9 @@ function lobby(session,hooks){
  $('#modal-inner').innerHTML='<div class="stage-lobby"><div class="lesson-progress">'+session.course.title+' / STAGE</div><h2 id="modal-title">'+l.title+'</h2>'
   +'<div class="stage-meta"><span>♩ '+l.exercise.bpm+'</span><span>'+c.items.length+(c.song?'音':'ストローク')+'</span><span>約'+Math.round(c.length)+'秒</span><span class="stage-best">'+(bestStars!==null?'BEST '+starText(bestStars):'NEW')+'</span></div>'
   +'<div class="stage-screen preview"><canvas id="stage-canvas" aria-hidden="true"></canvas></div>'
-  +'<p class="stage-howto">'+(c.song?'数字が光る線に重なったら、その<b>弦</b>の<b>フレット</b>を弾く。上が細い1弦、0は開放弦。':'矢印が光る線に重なったら、上のコードでストローク。<b>↓</b>はダウン、<b>↑</b>はアップ。')+'</p>'
+  +'<p class="stage-howto">'+(BASS?(c.fromStrum?'ベース用に、コードの<b>ルート音</b>を同じリズムで弾く譜面にしています。':'ベース用に、メロディを低い音域に移した譜面です。')+'数字が光る線に重なったら、その<b>弦</b>の<b>フレット</b>を弾く。上が1弦（G）、下が4弦（E）、0は開放弦。':c.song?'数字が光る線に重なったら、その<b>弦</b>の<b>フレット</b>を弾く。上が細い1弦、0は開放弦。':'矢印が光る線に重なったら、上のコードでストローク。<b>↓</b>はダウン、<b>↑</b>はアップ。')+'</p>'
   +'<div class="stage-options"><div class="chip-row" role="group" aria-label="テンポ"><button type="button" data-speed="0.75">ゆっくり</button><button type="button" data-speed="1">ふつう</button></div>'
-  +'<div class="chip-row" role="group" aria-label="判定方法"><button type="button" data-input="mic">ギターで弾く（マイク）</button><button type="button" data-input="tap">画面タップで遊ぶ</button></div>'
+  +'<div class="chip-row" role="group" aria-label="判定方法"><button type="button" data-input="mic">'+INST.name+'で弾く（マイク）</button><button type="button" data-input="tap">画面タップで遊ぶ</button></div>'
   +'<div class="chip-row three" role="group" aria-label="タイミング補正"><button type="button" data-latency="0">補正なし</button><button type="button" data-latency="0.1">+0.1秒</button><button type="button" data-latency="0.2">+0.2秒<small>Bluetooth</small></button></div>'
   +'<button type="button" class="stage-measure" id="stage-measure">'+(prefs.latency&&![0,.1,.2].includes(prefs.latency)?'測定値 '+(prefs.latency>0?'+':'')+prefs.latency.toFixed(2)+'秒を使用中 ・ ':'')+'ずれを自動で測る →</button>'
   +'<button type="button" class="stage-measure" id="stage-tune">弾く前にチューニング →</button>'
@@ -250,8 +256,8 @@ function lobby(session,hooks){
   document.querySelectorAll('[data-latency]').forEach(b=>b.setAttribute('aria-pressed',String(Number(b.dataset.latency)===prefs.latency)));
   $('#stage-backing').checked=prefs.backing;
   $('#stage-caption').textContent=(prefs.input==='mic'
-   ?(c.song?'マイクで音の高さとタイミングを判定します。和音や運指は判定しません。':'マイクでストロークのタイミングを判定します。押さえたコードが正しいかは判定しません。')+' 音声はこの端末内で処理し、録音・送信はしません。'
-   :'タップのタイミングを判定します。ギター演奏の判定ではありません。お手本の音が一緒に鳴ります。')
+   ?(c.song?'マイクで音の高さとタイミングを判定します。'+(BASS?'低い音はオクターブ違いでも正解にします。':'和音や運指は判定しません。'):'マイクでストロークのタイミングを判定します。押さえたコードが正しいかは判定しません。')+' 音声はこの端末内で処理し、録音・送信はしません。'
+   :'タップのタイミングを判定します。'+INST.name+'演奏の判定ではありません。お手本の音が一緒に鳴ります。')
    +' ★1（'+PASS+'点）でクリア。「ゆっくり」は★2まで。';
  };
  document.querySelectorAll('[data-speed]').forEach(b=>b.onclick=()=>{prefs.speed=Number(b.dataset.speed);savePrefs();sync();});
@@ -331,7 +337,7 @@ function finish(r){
    +'<div class="result-grid"><div><b>'+r.counts.perfect+'</b><small>PERFECT</small></div><div><b>'+r.counts.great+'</b><small>GREAT</small></div><div><b>'+r.counts.ok+'</b><small>OK</small></div><div><b>'+r.counts.miss+'</b><small>MISS</small></div><div><b>'+r.maxCombo+'</b><small>MAX COMBO</small></div>'+(r.extra?'<div><b>'+r.extra+'</b><small>EXTRA</small></div>':'')+'</div>'
    +(earned?'<div class="success-xp">+'+earned+' XP</div>':'')+drift
    +'<p>'+(passed?'':'★1（'+PASS+'点）でクリア。「ゆっくり」にすると、ずっと弾きやすくなります。')+(slow&&passed?'「ゆっくり」でのクリアです。★3は「ふつう」で狙えます。':'')+'</p>'
-   +'<p class="lesson-caption">'+(r.input==='mic'?(r.c.song?'マイクで音の高さとタイミングを判定しました。':'マイクでストロークのタイミングを判定しました。コードの押さえ方は判定していません。'):'画面タップのタイミングを判定しました。ギター演奏の判定ではありません。')+'</p>'
+   +'<p class="lesson-caption">'+(r.input==='mic'?(r.c.song?'マイクで音の高さとタイミングを判定しました。':'マイクでストロークのタイミングを判定しました。コードの押さえ方は判定していません。'):'画面タップのタイミングを判定しました。'+INST.name+'演奏の判定ではありません。')+'</p>'
    +(passed&&hooks.next?'<button type="button" class="action-button" id="stage-next-lesson">次のレッスンへ '+F.icon('arrow')+'</button>':'')
    +'<button type="button" class="action-button '+(passed&&hooks.next?'secondary-action':'')+'" id="stage-retry">もう一度弾く</button>'
    +'<button type="button" class="action-button secondary-action" id="stage-back">コースに戻る</button></div>';

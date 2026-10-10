@@ -117,7 +117,7 @@ async function microphone(target){
  try{
   context=new (window.AudioContext||window.webkitAudioContext)();await context.resume();
   if(cancelled||generation!==F.generation()){stop();return;}
-  stream=await navigator.mediaDevices.getUserMedia({audio:{echoCancellation:false,noiseSuppression:false,autoGainControl:false},video:false});
+  stream=await F.openMicStream({audio:{echoCancellation:false,noiseSuppression:false,autoGainControl:false},video:false});
   if(cancelled||generation!==F.generation()){stop();return;}
   source=context.createMediaStreamSource(stream);analyser=context.createAnalyser();analyser.fftSize=4096;source.connect(analyser);
   const samples=new Float32Array(analyser.fftSize);let previousText='';session.mode='mic';$('#mic-state').textContent='MIC / LISTENING';button.disabled=false;button.textContent='■ マイクを停止';$('#pitch-listen').disabled=true;
