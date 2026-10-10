@@ -64,7 +64,7 @@ function schedule(r){
 
 async function openMic(ctx){
  /* Raw instrument input: iOS voice processing (echo cancellation) treats a sustained guitar note as noise and suppresses it. */
- const stream=await navigator.mediaDevices.getUserMedia({audio:{echoCancellation:false,noiseSuppression:false,autoGainControl:false}});
+ const stream=await F.openMicStream({audio:{echoCancellation:false,noiseSuppression:false,autoGainControl:false}});
  const src=ctx.createMediaStreamSource(stream),an=ctx.createAnalyser();an.fftSize=INST.fft;src.connect(an);
  return {stream,src,an,buf:new Float32Array(an.fftSize)};
 }

@@ -102,6 +102,10 @@ Tap mode is available on every stage and is labeled as screen-tap timing, not gu
 
 Other lessons are unchanged: quizzes, fretboard quizzes, tap rhythm lessons (tolerance 150 ms or 30% of a subdivision) and locally generated ear-training triads.
 
+## Silent mode (iPhone)
+
+Sound plays even with the ring/silent switch on. The page declares its audio as media playback: `navigator.audioSession.type = 'playback'` where Safari supports it, otherwise (older iOS) a silent looping `<audio>` element started on the first tap. While the microphone is live the session is `play-and-record` (playback mode does not allow recording), and it returns to playback at the next sound start. Only the switching is tested (`tests/silent.cjs`, with a stand-in `audioSession`); the effect on the silent switch has not been checked on a real iPhone.
+
 ## Records and installation
 
 The existing `fretQuestV1` localStorage key is retained. Course activity counts toward practice days and streaks. JSON export/import merges daily activity and course completions, protecting against duplicate XP. This is manual transfer, not account-based cloud synchronization. Automated account sync requires an authenticated backend; none is configured in this static site.
