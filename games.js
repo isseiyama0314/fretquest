@@ -280,6 +280,6 @@ function finish(r,res){
 }
 
 window.addEventListener('fq:progress',()=>{try{prefs.best=JSON.parse(localStorage.getItem('fretQuestGames'))?.best||prefs.best;}catch{}renderCards();});
-window.FQGames={games:GAMES,renderCards,lobby};
+window.FQGames={games:GAMES,calls:CALLS,renderCards,lobby};
 renderCards();
 })();
