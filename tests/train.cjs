@@ -1,4 +1,4 @@
-/* Browser checks for off-guitar training: every mode runs, a perfect Lv1 run opens Lv2, a poor run does not,
+/* Browser checks for off-guitar training: every mode runs, a passing run counts toward the next level and the third opens it, a poor run does not,
    wrong rhythm answers enter the rhythm book, and XP is counted. Usage is the same as stage-playthrough.cjs. */
 const { chromium } = require(process.env.PW||'playwright');
 const BASE=process.env.BASE||'http://localhost:8765/fretquest/',OUT=process.env.OUT;
@@ -25,7 +25,12 @@ async function play(id,right,shot){
  if(shot)await p.screenshot({path:OUT+'/train-result.png'});
  await p.click('#train-close');await p.waitForTimeout(200);return r;
 }
-for(const id of ['melody','interval','chord','prog','meter','timing','fret','theory']){const r=await play(id,()=>true,OUT&&(id==='melody'||id==='timing'));check(id+' perfect run opens Lv2',r.title==='Lv2 解放！'&&r.score==='5',JSON.stringify(r));}
+/* One passing run counts 1 of 3; the third opens the next level. */
+for(const id of ['melody','interval','chord','prog','meter','timing','fret','theory']){const r=await play(id,()=>true,OUT&&(id==='melody'||id==='timing'));check(id+' perfect run counts 1 of 3',r.title==='クリア 1 / 3'&&r.score==='5',JSON.stringify(r));}
+{const r2=await play('theory',()=>true),r3=await play('theory',()=>true),lv=await p.evaluate(()=>JSON.parse(localStorage.getItem('fretQuestTrain')).theory.unlocked);
+ check('third passing run opens Lv2',r2.title==='クリア 2 / 3'&&r3.title==='Lv2 解放！'&&lv===2,JSON.stringify([r2,r3,lv]));}
+{const opened=await p.evaluate(()=>{const all=JSON.parse(localStorage.getItem('fretQuestTrain'));all.chord={unlocked:3,best:{1:5,2:4}};localStorage.setItem('fretQuestTrain',JSON.stringify(all));window.FQTrain.lobby('chord');return [...document.querySelectorAll('[data-lv]')].map(b=>b.disabled?'x':'o').join('');});
+ check('levels unlocked before the change stay open',opened==='oooxx',opened);await p.evaluate(()=>window.FretQuest.close());}
 const before=await p.evaluate(()=>window.FQStage.kit.rhythmBook.weak().length);
 const r=await play('rhythm',i=>i<2,OUT);const after=await p.evaluate(()=>window.FQStage.kit.rhythmBook.weak().length);
 const lv=await p.evaluate(()=>JSON.parse(localStorage.getItem('fretQuestTrain')).rhythm.unlocked);

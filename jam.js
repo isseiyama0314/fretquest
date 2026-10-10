@@ -177,7 +177,7 @@ async function start(){
  if(air)airBoard(r,typeof currentOpts.air==='object'?currentOpts.air:null);
  let level=0;
  const frame=()=>{
-  if(run!==r)return;
+  if(run!==r)return;F.keepAudio(ctx);
   while(r.nextBeat<r.beats&&r.t0+r.nextBeat*spb<ctx.currentTime+1)scheduleBeat(r,r.nextBeat++);
   const now=ctx.currentTime-r.t0,view=now-(ctx.outputLatency||ctx.baseLatency||0),beatIndex=Math.floor(view/spb),barIndex=Math.floor(beatIndex/4),bar=s.chart[((barIndex%s.chart.length)+s.chart.length)%s.chart.length];
   const per=4/bar.length,ch=view<0?s.chart[0][0]:bar[Math.min(bar.length-1,Math.floor((beatIndex%4)/per))];

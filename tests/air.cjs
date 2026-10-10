@@ -45,11 +45,16 @@ await p.click('#air-back');await p.waitForSelector('.dojo-module');
 // Recall: the right positions in order, one wrong tap on the way.
 await p.evaluate(()=>window.FQAir.start(window.FQDojo.modules.find(m=>m.id==='bb-box'),2));await p.waitForSelector('.air-recall');
 {const {notes,w}=await p.evaluate(()=>window.FQAir.specFor(window.FQDojo.modules.find(m=>m.id==='bb-box'),2));
+ /* A miss before starting is only a pointer to the lit note; one miss after the start costs one note. */
+ await tap(p,6,w.lo,'.air-recall');const pre=await p.$eval('#air-msg',e=>e.textContent);
+ await tap(p,notes[0].string,notes[0].fret,'.air-recall');await tap(p,notes[1].string,notes[1].fret,'.air-recall');
  await tap(p,6,w.lo,'.air-recall');
  const msg=await p.$eval('#air-msg',e=>e.textContent);
- for(const n of notes.slice(1))await tap(p,n.string,n.fret,'.air-recall');
+ for(const n of notes.slice(2))await tap(p,n.string,n.fret,'.air-recall');
  await p.waitForSelector('.stage-result',{timeout:10000});const s=Number(await p.$eval('.result-score strong',e=>e.textContent)),expect=Math.round((notes.length-2)/(notes.length-1)*100);
- check('recall: one mistake costs one note',s===expect&&msg.includes('ちがう'),s+' expected '+expect+' | '+msg);}
+ check('recall: start from the lit note, one mistake costs one note',s===expect&&msg.includes('ちがう')&&pre.includes('光っている'),s+' expected '+expect+' | '+pre+' | '+msg);}
+{const desc=await p.evaluate(()=>window.FQAir.specFor(window.FQDojo.modules.find(m=>m.id==='pent-box1'),2).notes.slice(-3).map(n=>n.string+'.'+n.fret).join(' '));
+ check('pent box 1 comes down through every note of the box',desc==='5.5 6.8 6.5',desc);}
 await p.click('#air-back');await p.waitForSelector('.dojo-module');
 
 // Session mission on the board: A on every downbeat, then B, C, D in the B.B. box.

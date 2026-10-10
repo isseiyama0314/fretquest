@@ -305,7 +305,7 @@ async function start(mode){
  if(input==='tap'){const tap=e=>{e.preventDefault();if(run!==r)return;strike(r,r.ctx.currentTime-r.t0-r.comp);const pad=$('#stage-pad');pad.classList.remove('hit');void pad.offsetWidth;pad.classList.add('hit');};$('#stage-pad').addEventListener('pointerdown',tap);$('#stage-screen').addEventListener('pointerdown',tap);}
  $('#stage-quit').onclick=()=>{stop();lobby(session,current.hooks);};
  const frame=()=>{
-  if(run!==r)return;const nowMs=performance.now(),dt=Math.min(.05,(nowMs-r.last)/1000);r.last=nowMs;
+  if(run!==r)return;F.keepAudio(ctx);const nowMs=performance.now(),dt=Math.min(.05,(nowMs-r.last)/1000);r.last=nowMs;
   const now=ctx.currentTime-r.t0,judgeAt=now-r.comp;
   if(mode!=='demo'){
    if(mic)listen(r,now);
