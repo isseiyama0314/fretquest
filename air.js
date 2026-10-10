@@ -170,14 +170,15 @@ function traceFinish(spec,r,speed){
 
 /* ---------- Game 2: recall ----------
    No guides: rebuild the phrase position by position. The first note is given; "listen" plays it as sound only.
-   The same pitch somewhere else is pointed out but not accepted, since the point is the shape on the neck. */
+   The same pitch somewhere else is pointed out but not accepted, since the point is the shape on the neck.
+   The player taps the lit first note too, so starting from it is never a mistake; only notes 2.. are scored. */
 function recall(spec){
- const notes=spec.notes;let idx=1,clean=0,wrongHere=0,mistakes=0;
+ const notes=spec.notes;let idx=0,clean=0,wrongHere=0,mistakes=0;
  F.show(el=>{
   $('.modal-dialog').classList.add('is-stage');
   el.innerHTML='<div class="air-recall">'+head(spec.kicker,spec.title)
-   +'<p>ガイドなしで、フレーズを<b>同じ場所</b>で再現しよう。1音目は光っています。音はタップするたびに鳴ります。</p>'
-   +'<div class="train-slots air-slots" id="air-slots">'+notes.map((n,i)=>'<span class="'+(i===0?'filled':'')+'">'+(i===0?n.string+'-'+n.fret:'？')+'</span>').join('')+'</div>'
+   +'<p>ガイドなしで、フレーズを<b>同じ場所</b>で再現しよう。光っている1音目から弾き始めて、'+notes.length+'音。音はタップするたびに鳴ります。</p>'
+   +'<div class="train-slots air-slots" id="air-slots">'+notes.map(()=>'<span>？</span>').join('')+'</div>'
    +'<div class="air-board-wrap">'+boardHtml(spec.w)+'</div>'
    +'<div class="air-msg" id="air-msg" aria-live="polite">&nbsp;</div>'
    +'<div class="iv-play"><button type="button" id="air-listen">▶ フレーズを聴く</button><button type="button" id="air-hint">ヒント（次の場所）</button></div>'
@@ -190,14 +191,15 @@ function recall(spec){
   bindBoard(root,({s,f,midi,el:b})=>{
    if(idx>=notes.length)return;tapSound(midi);const n=notes[idx];
    if(n.string===s&&n.fret===f){
-    if(!wrongHere)clean++;root.querySelectorAll('.air-cell.hint').forEach(x=>x.classList.remove('hint'));
+    if(idx===0)root.querySelectorAll('.air-cell.first').forEach(x=>x.classList.remove('first'));
+    else if(!wrongHere)clean++;root.querySelectorAll('.air-cell.hint').forEach(x=>x.classList.remove('hint'));
     flashCell(b,'hit');slots[idx].textContent=s+'-'+f;slots[idx].classList.add('filled',wrongHere?'ng':'ok');idx++;wrongHere=0;$('#air-msg').textContent=' ';
     if(idx>=notes.length){const score=Math.round(clean/(notes.length-1)*100),passed=score>=PASS;spec.onResult?.(score,passed);
      setTimeout(()=>{playPhrase(notes,spec.bpm);resultScreen({kicker:spec.kicker,title:'何も見ずに再現できた！',score,passed,next:spec.next,
       lines:'<div class="result-grid"><div><b>'+clean+' / '+(notes.length-1)+'</b><small>一発で正解</small></div><div><b>'+mistakes+'</b><small>まちがい</small></div></div>',
       again:()=>recall(spec),back:()=>{stopKit();spec.back();}});},500);}
     return;}
-   flashCell(b,'wrong');wrongHere++;mistakes++;
+   flashCell(b,'wrong');if(idx===0){$('#air-msg').textContent='光っている場所から始めよう。';return;}wrongHere++;mistakes++;
    $('#air-msg').textContent=midi===n.midi?'音は合っています。でも、このフレーズでは別の場所で弾きます。':wrongHere>=2?'正しい場所を光らせました。':'ちがう場所です。もう一度。';
    if(wrongHere>=2)reveal();
   });
