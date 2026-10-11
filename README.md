@@ -133,6 +133,8 @@ Sound plays even with the ring/silent switch on. The page declares its audio as 
 
 The existing `fretQuestV1` localStorage key is retained. Course activity counts toward practice days and streaks. JSON export/import merges daily activity and course completions, protecting against duplicate XP. This is manual transfer, not account-based cloud synchronization. Automated account sync requires an authenticated backend; none is configured in this static site.
 
+Opening the app always starts at the top (My Studio): the manifest's start_url is `./`, and a leftover `#section` in the URL or a restored scroll position is dropped on load. `tests/start.cjs` checks this.
+
 The manifest, PNG icons and a service worker support home-screen installation and cached offline lessons. The service worker is limited to `/fretquest/`, caches only app assets, and never handles microphone audio. This is a PWA, not an App Store native iOS application. iPhone hardware microphone accuracy and Safari installation require device verification.
 
 ## Validation
