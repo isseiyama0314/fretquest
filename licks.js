@@ -139,20 +139,22 @@ const lick=artist=>([id,title,tag,about,src,o={}])=>{
 const pc=(p,min,label)=>({type:'pc',pc:p,min,label});
 const few=max=>({type:'maxNotes',max,label:'弾きすぎない（'+max+'音以下）'});
 const high=(lo,ratio,label)=>({type:'range',lo,hi:90,ratio,label});
+/* Each artist: name, what to study, and reference listening as [YouTube search words, title, what to listen for].
+   Links open a YouTube search rather than a fixed video, so a removed upload never breaks them. */
 const ARTISTS=[
  ['基礎','ブルース・ソロの土台。ボックス、チョーキング、ブルーノート、3連。'],
- ['B.B.キング','少ない音と、2弦10フレット周辺の「B.B.ボックス」。1音で泣かせる。'],
- ['フレディ・キング','開放弦と12フレット、メジャーとマイナーの往復。明るく跳ねるブルース。'],
- ['エリック・クラプトン','3連のリピート、ボックスの拡張、太く長いチョーキング。'],
- ['アルバート・キング','大きく、ゆっくり、1音半まで持ち上げるチョーキング。音数より1音の説得力。'],
- ['スティーヴィー・レイ・ヴォーン','開放Eの3連、12フレットの攻め、テキサス・シャッフル。'],
- ['バディ・ガイ','ハイ・ポジション、叫ぶチョーキング、静と動の落差。'],
- ['T-ボーン・ウォーカー','9th・6th・ディミニッシュ。ジャズに近い、スウィングするブルース。'],
- ['ジミ・ヘンドリックス','12フレットのプリング、2オクターブの弧、ドリアンの6度。'],
- ['アルバート・コリンズ','氷のように短く鋭い音。弾くより「切る」ブルース。'],
- ['ジョン・メイヤー','ボックスをつなぎ、弦をまたぎ、16分で乗る。ポップスでも使えるモダン・ブルース。'],
- ['マイナー・ブルース','ピーター・グリーンの間と、ゲイリー・ムーアの泣き。Bマイナーで。'],
- ['バッキング','シャッフル、7th、9th、ストップ・タイム、スロー・ブルースの3連。']
+ ['B.B.キング','少ない音と、2弦10フレット周辺の「B.B.ボックス」。1音で泣かせる。',[['B.B. King The Thrill Is Gone', 'The Thrill Is Gone', 'Bマイナーで、1音ずつ歌う。マイナーのB.B.ボックスはこの響き'], ['B.B. King Every Day I Have the Blues Live at the Regal', 'Every Day I Have the Blues（Live at the Regal）', '歌の合間の短い返事と、揺れるビブラート']]],
+ ['フレディ・キング','開放弦と12フレット、メジャーとマイナーの往復。明るく跳ねるブルース。',[['Freddie King Hide Away', 'Hide Away', 'キーEの開放弦と、メジャー・マイナーの行き来'], ['Freddie King Going Down', 'Going Down', '12フレットのEで押し切る、太いロック寄りのブルース']]],
+ ['エリック・クラプトン','3連のリピート、ボックスの拡張、太く長いチョーキング。',[['John Mayall Bluesbreakers Eric Clapton Have You Heard', 'Have You Heard（ブルースブレイカーズ）', '太く長いチョーキングと、ゆっくり歌うソロ'], ['Cream Crossroads live', 'Crossroads（クリーム）', '3連のリピートとペンタの下降で突っ走る']]],
+ ['アルバート・キング','大きく、ゆっくり、1音半まで持ち上げるチョーキング。音数より1音の説得力。',[['Albert King Born Under a Bad Sign', 'Born Under a Bad Sign', '少ない音数と、大きく上げるチョーキング'], ['Albert King I’ll Play the Blues for You', 'I’ll Play the Blues for You', 'ゆっくり上げる1音半と、休符の長さ']]],
+ ['スティーヴィー・レイ・ヴォーン','開放Eの3連、12フレットの攻め、テキサス・シャッフル。',[['Stevie Ray Vaughan Pride and Joy', 'Pride and Joy', '開放Eのテキサス・シャッフル'], ['Stevie Ray Vaughan Texas Flood', 'Texas Flood', 'スロー・ブルースの高い音域と、アルバート・キング譲りのチョーキング']]],
+ ['バディ・ガイ','ハイ・ポジション、叫ぶチョーキング、静と動の落差。',[['Buddy Guy Damn Right I’ve Got the Blues', 'Damn Right, I’ve Got the Blues', '叫ぶチョーキングと、急に静かになる落差'], ['Buddy Guy First Time I Met the Blues', 'First Time I Met the Blues', 'ハイ・ポジションでたたみかける速い連打']]],
+ ['T-ボーン・ウォーカー','9th・6th・ディミニッシュ。ジャズに近い、スウィングするブルース。',[['T-Bone Walker Call It Stormy Monday', 'Call It Stormy Monday', '9thや6thが入った、ジャズに近い響き'], ['T-Bone Walker T-Bone Shuffle', 'T-Bone Shuffle', 'スウィングする8分と、コードをなぞるライン']]],
+ ['ジミ・ヘンドリックス','12フレットのプリング、2オクターブの弧、ドリアンの6度。',[['Jimi Hendrix Red House', 'Red House', 'スロー・ブルースの大きな弧と、1弦のプリング'], ['Jimi Hendrix Hear My Train A Comin’', 'Hear My Train A Comin’', '低音弦のうねりと、ブルースとロックの境目']]],
+ ['アルバート・コリンズ','氷のように短く鋭い音。弾くより「切る」ブルース。',[['Albert Collins Frosty', 'Frosty', '氷のように短く切った高い音'], ['Albert Collins Honey Hush', 'Honey Hush', '音数を絞って、リズムで聴かせるソロ']]],
+ ['ジョン・メイヤー','ボックスをつなぎ、弦をまたぎ、16分で乗る。ポップスでも使えるモダン・ブルース。',[['John Mayer Slow Dancing in a Burning Room', 'Slow Dancing in a Burning Room', 'ポップスの中のブルースのチョーキング'], ['John Mayer Gravity', 'Gravity', '2拍かけてゆっくり上げるチョーキングと、長い間']]],
+ ['マイナー・ブルース','ピーター・グリーンの間と、ゲイリー・ムーアの泣き。Bマイナーで。',[['Fleetwood Mac Peter Green Need Your Love So Bad', 'Need Your Love So Bad（ピーター・グリーン）', '弾かない時間の美しさ'], ['Gary Moore Still Got the Blues', 'Still Got the Blues（ゲイリー・ムーア）', '長く伸ばして泣かせるマイナーのチョーキング']]],
+ ['バッキング','シャッフル、7th、9th、ストップ・タイム、スロー・ブルースの3連。',[['Muddy Waters Hoochie Coochie Man', 'Hoochie Coochie Man（マディ・ウォーターズ）', 'ストップ・タイムの止まり方'], ['Jimmy Reed Bright Lights Big City', 'Bright Lights, Big City（ジミー・リード）', '2本の弦で刻むシャッフル・ブギー']]]
 ];
 const BLUES_MORE=[
 ...[
@@ -442,6 +444,11 @@ function runMission(m){
 }
 
 /* ---------- Screens ---------- */
+/* Reference listening for an artist group: plain links to a YouTube search, nothing to check off. */
+function refsHtml(name){
+ const refs=(ARTISTS.find(([a])=>a===name)||[])[2];if(!refs)return '';
+ return '<div class="dojo-refs"><span class="dojo-refs-label">参考に聴く</span>'+refs.map(([q,title,hint])=>'<a href="https://www.youtube.com/results?search_query='+encodeURIComponent(q)+'" target="_blank" rel="noopener"><b>'+title+'</b><small>'+hint+'</small></a>').join('')+'</div>';
+}
 function board(m){
  /* Positions used by a solo lick, on a 15-fret board. */
  const open=m.inst==='bass'?BASS_OPEN:undefined,lines=m.inst==='bass'?4:6;
@@ -463,7 +470,7 @@ function open(m){
    +((m.learn.type||(m.kind!=='comp'?'song':'strum'))==='song'?'<div class="jam-board-wrap">'+board(m)+'</div><div class="jam-legend"><span><i class="lg dojo-root"></i>ルート</span><span>数字はフレット番号</span>'+(tab(m.learn.src).notes.some(n=>n.bend)?'<span>↑ はチョーキング</span>':'')+'</div>':chords(m))
    +'<div class="dojo-steps">'+STEPS.map(([k,label,sub],i)=>{const locked=i>0&&!st[i-1];return '<button type="button" class="dojo-step'+(st[i]?' done':'')+'" data-step="'+(i+1)+'" '+(locked?'disabled':'')+'><span class="dojo-pip">'+(st[i]?'✓':i+1)+'</span><span><b>'+label+'</b><small>'+(i===2?(m.use.session?'セッションでミッション':m.use.form):sub)+(locked?' ・ 前のステップをクリアで解放':'')+'</small></span><span class="dojo-go">'+(st[i]?'もう一度':'挑戦')+' →</span></button>';}).join('')+'</div>'
    +(window.FQAir?window.FQAir.stepsHtml(m):'')
-   +'<p class="lesson-caption">ステップ1・2は★1（60点）でクリア。ステップ3は'+(m.use.session?'ミッションの全項目達成':'★1')+'でクリア。3つそろえばマスター。</p></div>';
+   +'<p class="lesson-caption">ステップ1・2は★1（60点）でクリア。ステップ3は'+(m.use.session?'ミッションの全項目達成':'★1')+'でクリア。3つそろえばマスター。</p>'+(m.artist?refsHtml(m.artist):'')+'</div>';
   window.FQAir?.bindSteps(el,m);
   el.querySelectorAll('[data-step]').forEach(b=>b.onclick=()=>{const step=Number(b.dataset.step);if(step===3&&m.use.session)runMission(m);else runStage(m,step);});
  });
@@ -476,7 +483,7 @@ function render(){
  $('#dojo-rank').textContent=rank();$('#dojo-count').textContent=mastered()+' / '+LIST.length;
  $('#dojo-tabs').innerHTML=GENRES.map(([g,label])=>'<button type="button" data-genre="'+g+'" aria-pressed="'+(g===genre)+'">'+label+'<small>'+LIST.filter(m=>m.genre===g&&status(m).every(Boolean)).length+' / '+LIST.filter(m=>m.genre===g).length+'</small></button>').join('');
  $('#dojo-tabs').querySelectorAll('[data-genre]').forEach(b=>b.onclick=()=>{genre=b.dataset.genre;try{localStorage.setItem('fretQuestDojoGenre',genre);}catch{}render();});
- el.innerHTML=(groups.length?'<div class="dojo-artists" role="group" aria-label="アーティスト">'+groups.map(([a])=>{const ms=inGenre.filter(m=>m.artist===a);return '<button type="button" data-artist="'+a+'" aria-pressed="'+(a===artist)+'">'+a+'<small>'+ms.filter(m=>status(m).every(Boolean)).length+' / '+ms.length+'</small></button>';}).join('')+'</div><p class="dojo-blurb">'+blurb+(artist==='基礎'||artist==='バッキング'?'':' <span>フレーズはこの人の語法を研究したオリジナルで、実際の曲のソロやメロディではありません。</span>')+'</p>':'')+[['solo','ソロ・アドリブ'],['comp','伴奏'],['line','ベースライン']].map(([kind,label])=>{const ms=list.filter(m=>m.kind===kind);return ms.length?'<div class="dojo-group"><h3>'+label+'</h3><div class="dojo-grid">'+ms.map(m=>{const st=status(m),done=st.every(Boolean);return '<button type="button" class="dojo-card'+(done?' mastered':'')+'" data-module="'+m.id+'"><span class="jam-genre">'+(done?'MASTERED':kind==='solo'?'SOLO':kind==='line'?'BASS':'COMP')+'</span><strong>'+m.title+'</strong><span class="jam-changes">'+m.tag+'</span><span class="dojo-pips">'+st.map((d,i)=>'<i class="'+(d?'on':'')+'" title="'+STEPS[i][1]+'"></i>').join('')+'</span>'+(window.FQAir&&window.FQAir.status(m).every(Boolean)?'<span class="dojo-air">指板 ✓</span>':'')+'</button>';}).join('')+'</div></div>':'';}).join('');
+ el.innerHTML=(groups.length?'<div class="dojo-artists" role="group" aria-label="アーティスト">'+groups.map(([a])=>{const ms=inGenre.filter(m=>m.artist===a);return '<button type="button" data-artist="'+a+'" aria-pressed="'+(a===artist)+'">'+a+'<small>'+ms.filter(m=>status(m).every(Boolean)).length+' / '+ms.length+'</small></button>';}).join('')+'</div><p class="dojo-blurb">'+blurb+(artist==='基礎'||artist==='バッキング'?'':' <span>フレーズはこの人の語法を研究したオリジナルで、実際の曲のソロやメロディではありません。</span>')+'</p>'+refsHtml(artist):'')+[['solo','ソロ・アドリブ'],['comp','伴奏'],['line','ベースライン']].map(([kind,label])=>{const ms=list.filter(m=>m.kind===kind);return ms.length?'<div class="dojo-group"><h3>'+label+'</h3><div class="dojo-grid">'+ms.map(m=>{const st=status(m),done=st.every(Boolean);return '<button type="button" class="dojo-card'+(done?' mastered':'')+'" data-module="'+m.id+'"><span class="jam-genre">'+(done?'MASTERED':kind==='solo'?'SOLO':kind==='line'?'BASS':'COMP')+'</span><strong>'+m.title+'</strong><span class="jam-changes">'+m.tag+'</span><span class="dojo-pips">'+st.map((d,i)=>'<i class="'+(d?'on':'')+'" title="'+STEPS[i][1]+'"></i>').join('')+'</span>'+(window.FQAir&&window.FQAir.status(m).every(Boolean)?'<span class="dojo-air">指板 ✓</span>':'')+'</button>';}).join('')+'</div></div>':'';}).join('');
  el.querySelectorAll('[data-module]').forEach(b=>b.onclick=()=>open(LIST.find(m=>m.id===b.dataset.module)));
  /* Keep the chosen artist in view inside the scrolling chip row, without moving the page. */
  {const row=el.querySelector('.dojo-artists'),on=row?.querySelector('[aria-pressed="true"]');if(on)row.scrollLeft=on.offsetLeft-row.offsetLeft-24;}

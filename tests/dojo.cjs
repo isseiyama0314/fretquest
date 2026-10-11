@@ -63,6 +63,8 @@ const rank=await p.$eval('#dojo-count',e=>e.textContent);check('mastery count',r
 // Artist groups: switching shows that artist's licks and is remembered.
 await p.click('[data-artist="アルバート・キング"]');
 const ak=await p.evaluate(()=>({ids:[...document.querySelectorAll('#dojo [data-module]')].map(b=>b.dataset.module),saved:localStorage.getItem('fretQuestDojoArtist')}));
+const refs=await p.$$eval('#dojo .dojo-refs a',x=>x.map(a=>({href:a.href,target:a.target})));
+check('artist reference links open a YouTube search',refs.length===2&&refs.every(r=>r.href.startsWith('https://www.youtube.com/results?search_query=')&&r.target==='_blank'),JSON.stringify(refs));
 check('artist filter',ak.ids.length===8&&ak.ids.every(id=>id.startsWith('ak-'))&&ak.saved==='アルバート・キング',JSON.stringify(ak));
 if(OUT){await p.evaluate(()=>document.querySelector('#dojo-section').scrollIntoView());await p.waitForTimeout(200);await p.screenshot({path:OUT+'/dojo-artist.png'});}
 const bend=await p.evaluate(()=>window.FQDojo.chartFor(window.FQDojo.modules.find(m=>m.id==='ak-big'),1).exercise.notes[0]);
