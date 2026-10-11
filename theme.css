@@ -247,3 +247,4 @@ circle.iv-wrong{fill:#ff8fb8;stroke:#ffd3e3;stroke-width:1.5}
 .modal-dialog.is-stage,.modal-dialog.is-stage *{-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
 .modal-dialog.is-stage input,.modal-dialog.is-stage textarea{-webkit-user-select:text;user-select:text}
 .modal-dialog.is-stage button,.air-board,.air-cell,#stage-pad,.stage-screen{touch-action:manipulation;-webkit-tap-highlight-color:transparent}
+.iv-play .iv-wide{grid-column:1/-1}

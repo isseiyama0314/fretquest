@@ -68,7 +68,7 @@ Missions are graded from the notes the microphone hears during a session: note c
 
 ## Off-guitar training
 
-`train.js` offers nine screen-and-sound games for times without a guitar, five levels each. A run is five quick questions and passes at four correct; three passing runs on a level (not necessarily in a row) open the next one, and the result and level buttons show the count. Levels opened before this rule stay open, and faster answers and combos raise the score.
+`train.js` offers ten screen-and-sound games for times without a guitar, five levels each. A run is five quick questions and passes at four correct; three passing runs on a level (not necessarily in a row) open the next one, and the result and level buttons show the count. Levels opened before this rule stay open, and faster answers and combos raise the score.
 
 - メロディ耳コピ (solfège): hear a 3–5 note melody and reproduce it by tapping a six-string, frets 0–7 board; the first note is given and every tap sounds. C major steps up to A minor pentatonic and blues phrases.
 - 拍子当て: name the meter of a drum groove (4/4 and 3/4 up to 6/8, 5/4, 7/8, 9/8, 12/8).
@@ -85,6 +85,8 @@ Each mode played counts as the daily menu's game and earns 20 XP the first time 
 
 After a wrong answer in interval training, a review panel puts the root, the right interval and the chosen interval on one fretboard (the playable shape from a root on the lowest string), names each interval's character and how many semitones the answer was off, and plays both intervals from the same root for comparison.
 
+
+Modulation (転調当て): the same melody or chord progression plays twice and the second pass is in another key; the player names how far it moved (half step, whole step, minor/major 3rd, perfect 4th or 5th, up or down). Levels: melody upward, melody up or down, chords upward, chords up or down, and a mid-song key change where the second pass follows straight on with a top line on each chord's 3rd. A wrong answer plays the right and the chosen move from the same start, says whether only the direction was wrong, and offers the two keys' tonics alone, which turns it into an interval question.
 ## Skipping ahead
 
 Each course can be opened early in two ways: a skip challenge (play the course's last stage and reach ★1; only that stage counts as cleared) or opening it without a test. Experienced mode opens every course, makes the home card and daily menu follow the chosen course, and offers all sessions from the start. Skipped lessons are never marked cleared and earn no XP. Opened courses and the mode are part of the saved record and the export.
