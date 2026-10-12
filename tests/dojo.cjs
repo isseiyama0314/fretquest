@@ -58,7 +58,7 @@ r=await mission({kind:'mission',bpm:84,bars:12,down:69,others:[71,72,74,76],shot
 const mastered=await p.evaluate(()=>window.FQDojo.status(window.FQDojo.modules.find(m=>m.id==='bb-box')).every(Boolean));
 check('mission passes and masters the lick',r.title==='ミッション達成！'&&mastered,JSON.stringify(r));
 await p.click('#modal-close');await p.waitForTimeout(300);
-const rank=await p.$eval('#dojo-count',e=>e.textContent);check('mastery count',rank==='1 / 105',rank);
+const rank=await p.$eval('#dojo-count',e=>e.textContent);check('mastery count',rank==='1 / 147',rank);
 
 // Artist groups: switching shows that artist's licks and is remembered.
 await p.click('[data-artist="アルバート・キング"]');
@@ -87,8 +87,14 @@ check('bends hit at the bent pitch',bent.score>=95&&bent.miss===0,JSON.stringify
 await p.click('#modal-close');await p.waitForTimeout(300);
 await p.click('[data-artist="基礎"]');
 
-// A comping module and a pop session.
-await p.click('[data-genre="JAZZ"]');await p.click('[data-module="shells"]');await p.waitForSelector('.dojo-chords');
+// Jazz has its own artist groups and remembers its own choice; its comping sits under バッキング.
+await p.click('[data-genre="JAZZ"]');
+const jz=await p.evaluate(()=>({artists:[...document.querySelectorAll('#dojo [data-artist]')].map(b=>b.dataset.artist),cards:document.querySelectorAll('#dojo [data-module]').length}));
+check('jazz artist groups',jz.artists.length===12&&jz.artists[0]==='基礎'&&jz.artists.includes('ジャンゴ・ラインハルト')&&jz.cards===9,JSON.stringify(jz));
+await p.click('[data-artist="バッキング"]');
+const kept=await p.evaluate(()=>({jazz:localStorage.getItem('fretQuestDojoArtist:JAZZ'),blues:localStorage.getItem('fretQuestDojoArtist')}));
+check('artist choice is kept per genre',kept.jazz==='バッキング'&&kept.blues==='基礎',JSON.stringify(kept));
+// A comping module and a pop session.await p.click('[data-module="shells"]');await p.waitForSelector('.dojo-chords');
 if(OUT)await p.screenshot({path:OUT+'/dojo-comp.png'});
 const c1=await tapStep('shells',1);check('comping learn step',c1>=95,c1);
 await p.click('#modal-close');await p.waitForTimeout(300);

@@ -129,19 +129,25 @@ const E=4,B=11;
 const SETS={blues:[BLUES_A,'Aブルース・スケール'],amix:[[9,11,0,1,2,3,4,6,7],'Aのメジャー＋マイナー・ペンタ'],
  eblues:[[4,7,9,10,11,2],'Eブルース・スケール'],emix:[[4,6,7,8,9,10,11,1,2],'Eのメジャー＋マイナー・ペンタ'],
  bminor:[[11,1,2,4,6,7,9],'Bナチュラル・マイナー'],bminor7:[[11,1,2,4,6,7,9,10],'Bマイナー＋F♯7のA♯'],cmajor:[MAJOR_C,'Cメジャー・スケール']};
-const SESSION={'blues-a':{root:A,name:'A',set:'blues',min:20},chicago:{root:E,name:'E',set:'eblues',min:20},thrill:{root:B,name:'B',set:'bminor',min:16},ballad:{root:C,name:'C',set:'cmajor',min:12}};
-const lick=artist=>([id,title,tag,about,src,o={}])=>{
- const s=o.session||'blues-a',d=SESSION[s],bpm=o.bpm||72,[pcs,setName]=SETS[o.set||d.set],min=o.min||d.min;
- return {id,genre:'BLUES',kind:'solo',artist,root:d.root,title,tag,about,learn:{bpm,src},groove:{bpm:o.groove||bpm+12},
-  use:{session:s,text:o.text,goals:[{type:'notes',min,label:min+'音以上弾く'},{type:'inSet',pcs,ratio:.8,label:setName+'の音が80%以上'},
-   ...(o.goals||[{type:'land',pcs:[d.root],min:3,label:'小節の頭で'+d.name+'に3回着地'}])]}};
+const SESSION={'ii-v-i':{root:C,min:24},autumn:{root:G,min:24},fly:{root:A,min:24},billie:{root:5,min:24},bossa:{root:C,min:20},
+ rhythm:{root:10,min:24},'minor-blues':{root:C,min:20},modal:{root:2,min:24},
+ 'blues-a':{root:A,name:'A',set:'blues',min:20},chicago:{root:E,name:'E',set:'eblues',min:20},thrill:{root:B,name:'B',set:'bminor',min:16},ballad:{root:C,name:'C',set:'cmajor',min:12}};
+/* An artist-style lick: [id,title,tag,about,src,opt]. opt: session, bpm, groove, set, min, text, goals, over.
+   Sessions with a scale (blues, pops) grade the share of notes in it; chord-change sessions (jazz) grade chord tones.
+   "over" names the chords under the learn chart bar by bar; it is used by the content checks, not shown. */
+const lick=(artist,genre='BLUES')=>([id,title,tag,about,src,o={}])=>{
+ const s=o.session||(genre==='JAZZ'?'ii-v-i':'blues-a'),d=SESSION[s],bpm=o.bpm||72,set=o.set||d.set,min=o.min||d.min;
+ const base=set?{type:'inSet',pcs:SETS[set][0],ratio:.8,label:SETS[set][1]+'の音が80%以上'}:{type:'tones',ratio:.5,label:'コードの音が50%以上'};
+ const land=d.set?{type:'land',pcs:[d.root],min:3,label:'小節の頭で'+d.name+'に3回着地'}:{type:'land',min:4,label:'小節の頭でコードの音に4回着地'};
+ return {id,genre,kind:'solo',artist,root:d.root,title,tag,about,over:o.over,learn:{bpm,src},groove:{bpm:o.groove||bpm+12},
+  use:{session:s,text:o.text,goals:[{type:'notes',min,label:min+'音以上弾く'},base,...(o.goals||[land])]}};
 };
 const pc=(p,min,label)=>({type:'pc',pc:p,min,label});
 const few=max=>({type:'maxNotes',max,label:'弾きすぎない（'+max+'音以下）'});
 const high=(lo,ratio,label)=>({type:'range',lo,hi:90,ratio,label});
 /* Each artist: name, what to study, and reference listening as [YouTube search words, title, what to listen for].
    Links open a YouTube search rather than a fixed video, so a removed upload never breaks them. */
-const ARTISTS=[
+const ARTISTS={BLUES:[
  ['基礎','ブルース・ソロの土台。ボックス、チョーキング、ブルーノート、3連。'],
  ['B.B.キング','少ない音と、2弦10フレット周辺の「B.B.ボックス」。1音で泣かせる。',[['B.B. King The Thrill Is Gone', 'The Thrill Is Gone', 'Bマイナーで、1音ずつ歌う。マイナーのB.B.ボックスはこの響き'], ['B.B. King Every Day I Have the Blues Live at the Regal', 'Every Day I Have the Blues（Live at the Regal）', '歌の合間の短い返事と、揺れるビブラート']]],
  ['フレディ・キング','開放弦と12フレット、メジャーとマイナーの往復。明るく跳ねるブルース。',[['Freddie King Hide Away', 'Hide Away', 'キーEの開放弦と、メジャー・マイナーの行き来'], ['Freddie King Going Down', 'Going Down', '12フレットのEで押し切る、太いロック寄りのブルース']]],
@@ -155,7 +161,7 @@ const ARTISTS=[
  ['ジョン・メイヤー','ボックスをつなぎ、弦をまたぎ、16分で乗る。ポップスでも使えるモダン・ブルース。',[['John Mayer Slow Dancing in a Burning Room', 'Slow Dancing in a Burning Room', 'ポップスの中のブルースのチョーキング'], ['John Mayer Gravity', 'Gravity', '2拍かけてゆっくり上げるチョーキングと、長い間']]],
  ['マイナー・ブルース','ピーター・グリーンの間と、ゲイリー・ムーアの泣き。Bマイナーで。',[['Fleetwood Mac Peter Green Need Your Love So Bad', 'Need Your Love So Bad（ピーター・グリーン）', '弾かない時間の美しさ'], ['Gary Moore Still Got the Blues', 'Still Got the Blues（ゲイリー・ムーア）', '長く伸ばして泣かせるマイナーのチョーキング']]],
  ['バッキング','シャッフル、7th、9th、ストップ・タイム、スロー・ブルースの3連。',[['Muddy Waters Hoochie Coochie Man', 'Hoochie Coochie Man（マディ・ウォーターズ）', 'ストップ・タイムの止まり方'], ['Jimmy Reed Bright Lights Big City', 'Bright Lights, Big City（ジミー・リード）', '2本の弦で刻むシャッフル・ブギー']]]
-];
+]};
 const BLUES_MORE=[
 ...[
  ['choke-basic','チョーキング入門','3弦7フレットを1音上げる',['チョーキングは、押さえた弦を指で持ち上げて音程を上げる技。3弦7フレット（D）を1音上げると、9フレットのEと同じ高さになります。','薬指で押さえ、中指と人差し指を後ろに添えて3本で押し上げます。画面の「↑」が合図。マイクは上がりきった音の高さで判定するので、音程が届くまで上げきろう。'],
@@ -342,7 +348,7 @@ const BLUES_MORE=[
 ];
 /* Blues comping patterns. */
 const SHUFFLE='X -:.5 ^X:.5 X -:.5 ^X:.5',TWELVE_A=['A7','D7','A7','A7','D7','D7','A7','A7','E7','D7','A7','E7'];
-const comp=(id,title,tag,about,learn,groove,form)=>({id,genre:'BLUES',kind:'comp',artist:'バッキング',title,tag,about,learn,groove,use:{form,bpm:groove.bpm+8,src:null}});
+const comp=(id,title,tag,about,learn,groove,form,genre='BLUES')=>({id,genre,kind:'comp',artist:'バッキング',title,tag,about,learn,groove,use:{form,bpm:groove.bpm+8,src:null}});
 BLUES_MORE.push(
  comp('comp-9th','ナインス・コード','A9・D9・E9を短く刻む',['7thに9thを足したナインス・コード。ファンキーなブルースやシカゴ・ブルースで、短く切って刻みます。','D9とE9は同じ形を2フレットずらすだけ。左手を軽く浮かせて、音を短く止めましょう。'],
   {bpm:76,src:bars('X:.5 -:.5 ^X:.5 X:.5 -:1 ^X:.5 -:.5',['A9','D9','A9','E9'])},{bpm:88,src:bars('X:.5 -:.5 ^X:.5 X:.5 -:1 ^X:.5 -:.5',['A9','D9','A9','A9','D9','D9','A9','A9','E9','D9','A9','E9'])},'12小節ブルース・2コーラス'),
@@ -355,9 +361,138 @@ BLUES_MORE.push(
  comp('comp-turn','ターンアラウンドのコード','A7→D7→A7→E7を2拍ずつ',['12小節の最後の2小節で、コードを2拍ずつ切り替える。I–IV–I–Vの流れで、次のコーラスへ戻ります。','2拍ごとのチェンジは忙しいので、次のコードの形を1拍前から準備しておきましょう。'],
   {bpm:72,src:'A7 -:.5 ^A7:.5 D7 -:.5 ^D7:.5 | A7 -:.5 ^A7:.5 E7:2 | A7 -:.5 ^A7:.5 D7 -:.5 ^D7:.5 | A7 -:.5 ^A7:.5 E7:2'},{bpm:86,src:bars(SHUFFLE,TWELVE_A.slice(0,10))+' | A7 -:.5 ^A7:.5 D7 -:.5 ^D7:.5 | A7 -:.5 ^A7:.5 E7:2'},'ターンアラウンド入り12小節・2コーラス')
 );
-/* The original blues modules open the 基礎 and バッキング groups. */
-MODULES.forEach(m=>{if(m.genre==='BLUES'&&!m.artist)m.artist=m.kind==='comp'?'バッキング':'基礎';});
-MODULES.push(...BLUES_MORE);
+/* ---------------- JAZZ / ARTIST STYLES ----------------
+   Original lines in each player's vocabulary over the jazz sessions. Missions grade chord tones and downbeat landings. */
+ARTISTS.JAZZ=[
+ ['基礎','コードの音、ガイドトーン、半音のアプローチ。ジャズの「線」の土台。'],
+ ['チャーリー・クリスチャン','管楽器のように弾く単音のスウィング。リフの繰り返しとディミニッシュ。',[['Benny Goodman Sextet Charlie Christian Seven Come Eleven','Seven Come Eleven','同じリフを押し続ける、スウィングの推進力'],['Charlie Christian Solo Flight','Solo Flight','ビッグバンドの上で、管楽器のように歌う単音']]],
+ ['ジャンゴ・ラインハルト','マイナー6のアルペジオ、半音の駆け上がり、♭9の切なさ。ジプシー・スウィング。',[['Django Reinhardt Stephane Grappelli Minor Swing','Minor Swing','マイナー6の分散和音と、たたみかける3連'],['Django Reinhardt Nuages','Nuages','ゆったりした曲での、泣くような装飾と半音']]],
+ ['ウェス・モンゴメリー','ブルージーな単音、同じフレーズを1オクターブ上で繰り返す組み立て。',[['Wes Montgomery Four on Six','Four on Six','単音→オクターブへと盛り上げていく構成'],['Wes Montgomery D-Natural Blues','D-Natural Blues','ゆったりしたブルースの、親指で弾く柔らかい単音']]],
+ ['グラント・グリーン','同じ音の連打、ジャズの中のペンタ、ホーンのようなシンプルさ。',[['Grant Green Idle Moments','Idle Moments','音数を絞って、1音ずつ置いていく間'],['Grant Green Green Street','Green Street','同じ音を繰り返して、グルーヴで押すソロ']]],
+ ['ケニー・バレル','低い音域の渋いブルース、控えめなチョーキング。',[['Kenny Burrell Chitlins con Carne','Chitlins con Carne','ジャズ・ギターで弾く、渋いマイナー・ブルース'],['Kenny Burrell Midnight Blue','Midnight Blue','低い音域と、短いフレーズの間']]],
+ ['ジョー・パス','途切れない8分、裏コード、バラードの装飾。',[['Joe Pass Virtuoso','Virtuoso（アルバム）','ソロ・ギターで、ベース・コード・メロディを1人で'],['Joe Pass Ella Fitzgerald Take Love Easy','Take Love Easy（エラ・フィッツジェラルドと）','歌の後ろで入れる短い飾りと、ii–Vのライン']]],
+ ['パット・マルティーノ','マイナー・コンバージョン、途切れない8分と3連、半音のサイドスリップ。',[['Pat Martino Sunny','Sunny','止まらない8分のラインと、同じ形の繰り返し'],['Pat Martino El Hombre','El Hombre','マイナーのアルペジオでつなぐ長いフレーズ']]],
+ ['ジム・ホール','少ない音、モチーフの展開、4度の音程。',[['Bill Evans Jim Hall My Funny Valentine Undercurrent','My Funny Valentine（Undercurrent）','ピアノと会話するような、短いモチーフ'],['Jim Hall Concierto','Concierto','音数を絞った、静かで深いソロ']]],
+ ['ジョージ・ベンソン','16分の速いブルース・ラン、半音の下降、マイナー9。',[['George Benson Breezin','Breezin’','ポップでも崩れない、歌うようなジャズのライン'],['George Benson Cookbook','The George Benson Cookbook（アルバム）','オルガン・トリオで弾く、速いブルース・ラン']]],
+ ['パット・メセニー','9度と6度で明るく歌う、長い音のメロディ。',[['Pat Metheny Bright Size Life','Bright Size Life','明るい響きの中で、長く伸ばして歌う単音'],['Pat Metheny Phase Dance','Phase Dance','繰り返しの上で、少しずつ広がるメロディ']]],
+ ['バッキング','シェル、4つ切り、チャールストン、ボサノバ、ラ・ポンプ、先取り。',[['Count Basie Orchestra Freddie Green','カウント・ベイシー楽団（フレディ・グリーン）','ほとんど聴こえないのに、バンドを前に進める4つ切り'],['Joao Gilberto Desafinado','Desafinado（ジョアン・ジルベルト）','ボサノバのギターの、低音とコードの刻み']]]
+];
+const JZ=a=>lick(a,'JAZZ');
+const JAZZ_MORE=[
+...[
+ ['bebop-scale','ビバップ・スケール','G7で♭7と7の両方を通る',['G7のスケール（ミクソリディアン）に、F♯を1音足したのがビバップ・スケール。Gから8分で下りると、拍の頭にG・F・D・Bとコードの音が並びます。','足したF♯は通り道。8音にしたことで、どこから下りても拍の頭がコードの音に来るのがこのスケールの仕掛けです。'],
+  '2.8:.5 2.7:.5 2.6:.5 2.5:.5 3.7:.5 3.5:.5 3.4:.5 4.7:.5 | 4.5:.5 4.9:.5 3.5:.5 3.9:2.5',{over:'G7 Cmaj7',text:'G7の小節でビバップ・スケールを下り、Cmaj7の音に着地しよう。'}],
+ ['approach','半音下からのアプローチ','コードの音へ半音下から入る',['コードの音（Dm7ならD・F・A・C）を、それぞれ半音下の音から弾く。E→F、G♯→A、B→C。狙う音は拍の頭に、半音下の音はその直前の裏拍に置きます。','半音下の音はスケールの外でも、すぐ解決するので気持ちよく聴こえます。小節の最後の音は、次の小節の頭への半音下（F♯→G、B→C）です。'],
+  '3.7:.5 2.5:.5 2.6:.5 2.9:.5 2.10:.5 1.7:.5 1.8:.5 2.7:.5 | 2.8:.5 1.6:.5 1.7:.5 1.9:.5 1.10:.5 2.5:.5 2.6:.5 1.7:.5 | 1.8:.5 2.4:.5 2.5:.5 2.7:.5 2.8:2 | 3.9:4',{over:'Dm7 G7 Cmaj7 Cmaj7',text:'コードの音に半音下から入るソロ。半音の音は短く、着地の音は長く。'}],
+ ['digital','1・2・3・5のパターン','4音ずつの形でコードを描く',['コードのルートから1度・2度・3度・5度の4音を弾く「1235」。Dm7ならD・E・F・A。サックス奏者も使う、コードを簡単に描く定番の形です。','同じ形をコードごとに移すだけで、進行がはっきり聴こえます。'],
+  '3.7:.5 3.9:.5 3.10:.5 2.10:.5 2.6:.5 2.8:.5 2.10:.5 1.8:.5 | 2.8:.5 2.10:.5 1.7:.5 1.10:.5 1.10:.5 1.7:.5 2.10:.5 2.8:.5 | 3.5:.5 3.7:.5 3.9:.5 2.8:.5 2.5:.5 2.8:.5 1.7:.5 1.8:.5 | 1.7:4',{over:'Dm7 G7 Cmaj7 Cmaj7',text:'1235の形を、コードが変わるたびに移してソロ。'}],
+ ['dim-sub','G7でディミニッシュ','B・D・F・A♭でG7♭9',['G7の3度Bから、B・D・F・A♭と短3度ずつ積むとディミニッシュ。G7の上で弾くと♭9（A♭）を含んだ緊張の強い響きになります。','A♭はGへ、FはEへ。次のCmaj7で、それぞれ半音下に解決します。'],
+  '3.4:.5 3.7:.5 2.6:.5 2.9:.5 1.7:.5 2.9:.5 2.6:.5 3.7:.5 | 2.8 2.5 3.5:2',{over:'G7 Cmaj7',text:'G7の小節でディミニッシュを弾き、Cmaj7で半音下に解決しよう。',goals:[{type:'pc',pc:8,min:2,label:'A♭（G7の♭9）を2回弾く'},{type:'land',min:4,label:'小節の頭でコードの音に4回着地'}]}]
+].map(JZ('基礎')),
+...[
+ ['cc-riff','スウィングのリフ','同じ形を繰り返して押す',['F・A・C・D（F6）の短いリフを、コードが変わっても形をほとんど変えずに繰り返す。スウィング時代のギターは、管楽器のようにリフで押しました。','B♭7の小節では、AをB♭に変えるだけ。1音の違いでコードの変化を伝えます。'],
+  '3.10:.5 2.10:.5 1.8:.5 1.10:.5 1.8 2.10 | 3.10:.5 2.11:.5 1.10:.5 1.8:.5 1.10 2.11 | 3.10:.5 2.10:.5 1.8:.5 1.10:.5 1.8 2.10 | 3.10:4',{session:'billie',over:'F7 Bb7 F7 F7',text:'短いリフを繰り返してソロ。コードが変わったら1音だけ変えよう。'}],
+ ['cc-dim','ディミニッシュの駆け上がり','Bdim7からF7へ',['Billie’s Bounceの6小節目はBdim7。B・D・F・A♭を2オクターブ駆け上がって、7小節目のF7に入ります。','同じ形が3フレットごとに繰り返すのがディミニッシュ。1つ覚えれば、どこでも弾けます。'],
+  '4.9:.5 3.7:.5 2.6:.5 2.9:.5 1.7:.5 1.10:.5 1.13:.5 1.10:.5 | 1.8:.5 2.10:.5 3.10:.5 2.8:.5 2.10:2',{session:'billie',over:'Bdim7 F7',text:'Bdim7の小節でディミニッシュを入れて、F7の音に着地。'}],
+ ['cc-blue','ブルースとジャズの間','A♭→Aの3度で',['F7の短3度A♭から長3度Aへ。ブルースの泥臭さと、ジャズのコードの音を1拍で行き来します。','E♭（♭7）からD・C・Aと下りる2小節目は、F7のコードの音をなぞる動きです。'],
+  '2.9:.5 2.10:.5 1.8 2.9:.5 2.10:.5 3.10 | 1.11:.5 1.10:.5 1.8:.5 2.10:.5 2.9:.5 2.10:.5 3.10',{session:'billie',over:'F7 F7',text:'A♭からAへの動きを入れて、ブルースとジャズの両方の音で。',goals:[{type:'pc',pc:9,min:4,label:'A（F7の3度）を4回弾く'},{type:'land',min:4,label:'小節の頭でコードの音に4回着地'}]}],
+ ['cc-ii-v','スウィング期のii–V','Gm7→C7をアルペジオで',['ブルースの9〜10小節目、Gm7→C7をコードの音で上下する。最後はC7の3度Eから、F7のFへ半音で着地します。','8分を均等に、拍の頭を少しだけ強く。スウィングの跳ねは、強弱で作ります。'],
+  '5.10:.5 4.8:.5 3.7:.5 3.10:.5 2.8:.5 2.11:.5 1.10:.5 1.13:.5 | 1.8:.5 1.12:.5 2.11:.5 2.8:.5 4.10:.5 3.9:1.5 | 3.10:2 2.10:2',{session:'billie',over:'Gm7 C7 F7',text:'9〜10小節目のGm7→C7で、コードの音をなぞってF7へ。'}]
+].map(JZ('チャーリー・クリスチャン')),
+...[
+ ['dj-m6','マイナー6のアルペジオ','Gm6を3連で駆け上がる',['G・B♭・D・E（Gm6）を3連で2オクターブ。ジプシー・ジャズの一番の名刺代わりです。','Eはマイナーの6度。暗いのに少し明るい、この音がジプシーらしさを作ります。'],
+  '5.10:1/3 4.8:1/3 4.12:1/3 3.9:1/3 3.12:1/3 2.11:1/3 1.10:1/3 1.12:1/3 1.15:1/3 1.12 | 1.15:1/3 1.12:1/3 1.10:1/3 2.11:1/3 3.12:1/3 3.9:1/3 4.12:1/3 4.8:1/3 5.10:1/3 5.10',{session:'autumn',bpm:63,groove:76,over:'Gm6 Gm6',text:'Gm6の小節で、マイナー6のアルペジオを入れよう。',goals:[{type:'pc',pc:4,min:3,label:'E（Gm6の6度）を3回弾く'},{type:'land',min:4,label:'小節の頭でコードの音に4回着地'}]}],
+ ['dj-chromatic','半音の駆け上がり','AからDまで半音で',['D7の小節で、4弦7フレットのAから12フレットのDまで1フレットずつ。勢いでスケールの外を通り抜けます。','着地はGm6のG→B♭→D。駆け上がった勢いのまま、コードの音で止まります。'],
+  '4.7:.5 4.8:.5 4.9:.5 4.10:.5 4.11:.5 4.12:.5 3.11:.5 2.10:.5 | 2.8 2.11 1.10:2',{session:'autumn',over:'D7 Gm6',text:'D7の小節で半音の駆け上がりを入れて、Gm6に着地。'}],
+ ['dj-b9','D7♭9の切なさ','E♭で泣くマイナーのV',['マイナー・キーのV（D7）では、♭9のE♭がよく似合います。F♯・A・C・E♭のディミニッシュで弾くと、自然に♭9が入ります。','E♭はGm6のDへ。半音下がって解決する動きが、マイナーの切なさです。'],
+  '4.4:.5 4.7:.5 3.5:.5 3.8:.5 2.7:.5 2.10:.5 1.8:.5 1.11:.5 | 1.10 2.8 2.11:2',{session:'autumn',over:'D7 Gm6',text:'D7でE♭（♭9）を使い、Gm6のDに解決しよう。',goals:[{type:'pc',pc:3,min:2,label:'E♭（D7の♭9）を2回弾く'},{type:'land',min:4,label:'小節の頭でコードの音に4回着地'}]}],
+ ['dj-minor-251','マイナーのii–V–i','Cm7→D7→Gmを8分で降りる',['Cm7のE♭から8分で降り、D7のF♯で向きを変え、GmのB♭に着地する。枯葉の後半にそのまま使えます。','D7の最後のGは、次のGmの先取り。小節線をまたいでつながる感覚です。'],
+  '1.11:.5 1.8:.5 2.11:.5 2.8:.5 3.8:.5 4.10:.5 4.8:.5 5.10:.5 | 5.9:.5 4.7:.5 4.10:.5 3.8:.5 3.7:.5 2.7:.5 2.10:.5 2.8:.5 | 2.11 1.10 2.8:2',{session:'autumn',over:'Cm7 D7 Gm6',text:'Cm7→D7→Gmの流れで、8分のラインをつなごう。'}]
+].map(JZ('ジャンゴ・ラインハルト')),
+...[
+ ['wm-blues','ブルージーな単音','Cマイナー・ペンタを短く歌う',['ジャズの人でも、ブルースではペンタトニックを使います。8フレットのCマイナー・ペンタで、短く区切って歌う。','2小節目は1拍休んでから。休符で始めると、ぐっと落ち着いたブルースになります。'],
+  '2.11:.5 2.8:.5 3.10:.5 3.8:.5 3.10 4.10 | -:1 1.8:.5 1.11:.5 1.8:.5 2.11:.5 2.8',{session:'minor-blues',over:'Cm7 Cm7',text:'マイナー・ブルースで、ペンタの短いフレーズを歌おう。'}],
+ ['wm-octave','1オクターブ上で繰り返す','低く言って、高く答える',['同じフレーズを、低い音域と1オクターブ上で2回。実際のウェスは2本の弦で同時にオクターブを弾きますが、アプリは単音しか採点できないので1音ずつで。','繰り返すと、聴いている人は「次は何が来るか」をわかって待てる。これが盛り上げの基本です。'],
+  '4.10:.5 3.8:.5 4.10:.5 4.8:.5 5.10:2 | 2.13:.5 1.11:.5 2.13:.5 2.11:.5 2.8:2',{session:'minor-blues',over:'Cm7 Cm7',text:'同じフレーズを、低い音域と高い音域で繰り返してソロ。',goals:[{type:'range',lo:40,hi:62,ratio:.25,label:'低い音域が25%以上'},{type:'range',lo:64,hi:90,ratio:.25,label:'高い音域が25%以上'}]}],
+ ['wm-dorian','ドリアンの6度','Cm7でAを使う',['Cm7の上で、ナチュラル・マイナーのA♭ではなくA（6度）を使うとドリアン。暗すぎない、ジャズらしいマイナーになります。','G→A→B♭→Cと上がって、また下りる。Aを通るたびに少し明るくなるのを聴いてください。'],
+  '2.8:.5 2.10:.5 2.11:.5 1.8:.5 2.11:.5 2.10:.5 2.8 | 3.8:.5 3.10:.5 3.8:.5 4.10:.5 4.7:.5 4.8:1.5',{session:'minor-blues',over:'Cm7 Cm7',text:'Cm7の小節でA（6度）を使ってソロ。Fm7の小節ではA♭に戻そう。',goals:[{type:'pc',pc:9,min:3,label:'A（Cm7の6度）を3回弾く'},{type:'land',min:4,label:'小節の頭でコードの音に4回着地'}]}],
+ ['wm-turn','A♭7からG7へ','9〜10小節目をなぞる',['マイナー・ブルースの9小節目A♭7、10小節目G7。A♭・C・E♭・G♭をなぞってから、G7のB・D・F・A♭へ移ります。','A♭7とG7は半音違い。形をそのまま1フレット下げる感覚でもつかめます。'],
+  '2.9:.5 1.8:.5 1.11:.5 1.8:.5 2.9:.5 2.7:.5 3.8 | 4.9:.5 3.7:.5 3.10:.5 2.8:.5 2.9:.5 2.6:.5 3.7:.5 4.9:.5 | 4.10:2 3.8:2',{session:'minor-blues',over:'Ab7 G7 Cm7',text:'9〜10小節目のA♭7→G7で、コードの音を追いかけよう。'}]
+].map(JZ('ウェス・モンゴメリー')),
+...[
+ ['gg-repeat','同じ音の連打','1音を繰り返してグルーヴ',['1弦8フレットのCを4回。メロディを動かさず、リズムだけで聴かせます。','同じ音でも、強弱で表情が出ます。4回のうち1回目と3回目を少し強く。'],
+  '1.8:.5 1.8:.5 1.8:.5 1.8:.5 1.10:.5 1.8:.5 2.10 | 1.8:.5 1.8:.5 1.11:.5 1.10:.5 1.8:.5 2.10:.5 3.10',{session:'billie',over:'F7 F7',text:'同じ音の連打を入れてソロ。動かない音で、リズムを聴かせよう。',goals:[{type:'pc',pc:0,min:8,label:'C（F7の5度）を8回弾く'},{type:'land',min:4,label:'小節の頭でコードの音に4回着地'}]}],
+ ['gg-pent','ジャズの中のペンタ','Fマイナー・ペンタでブルース',['F7の上でFマイナー・ペンタ。A♭はF7の♯9で、ジャズ・ブルースでは定番の緊張です。','B♭7の小節では、同じA♭がB♭7の♭7になる。1つのスケールで2つのコードに合います。'],
+  '1.11:.5 1.8:.5 2.11:.5 2.9:.5 3.10:.5 3.8:.5 3.10 | 4.8:.5 4.10:.5 3.8:.5 3.10:.5 2.9:2',{session:'billie',over:'F7 Bb7',text:'Fマイナー・ペンタを使ってソロ。最後はコードの音で。'}],
+ ['gg-bebop','半音でつなぐライン','F7からB♭7の3度へ',['F7の小節の最後をC→C♯と半音で上げ、B♭7の3度Dに着地する。コードが変わる瞬間を、半音で耳に知らせます。','着地のDのあとは、B♭7のコードの音をなぞって下ります。'],
+  '2.10:.5 1.8:.5 1.11:.5 1.10:.5 1.8:.5 2.10:.5 1.8:.5 1.9:.5 | 1.10:.5 1.8:.5 2.11:.5 2.9:.5 3.10:2',{session:'billie',over:'F7 Bb7',text:'1〜2小節目のF7→B♭7で、半音で3度に着地しよう。'}],
+ ['gg-riff','マイナー・ブルースのリフ','短い形を3回',['E♭・F・Gの3音の形を、2回繰り返してから少し伸ばす。グラント・グリーンのソロの、粘るような繰り返し。','3回目で形を崩して、上のCで終わる。繰り返しは「崩す」ためにあります。'],
+  '3.8:.5 3.10:.5 2.8 3.8:.5 3.10:.5 2.8 | 3.8:.5 3.10:.5 2.8:.5 2.11:.5 1.8:2',{session:'minor-blues',over:'Cm7 Cm7',text:'短いリフを繰り返して、最後に崩すソロ。'}]
+].map(JZ('グラント・グリーン')),
+...[
+ ['kb-low','低い音域のブルース','5弦・4弦で渋く',['3フレットのCマイナー・ペンタを、5弦と4弦で。F♯（♭5）を通って、低い音域で渋く歌います。','低い音は音量が出にくいので、ピッキングはしっかり。弦をなでるのではなく、押し込むように。'],
+  '5.3:.5 5.6:.5 4.3:.5 4.4:.5 4.5 5.6:.5 5.3:.5 | 4.5:.5 3.3:.5 3.5:.5 3.3:.5 4.5:2',{session:'minor-blues',over:'Cm7 Cm7',text:'低い音域を中心に、渋いマイナー・ブルースのソロ。',goals:[{type:'range',lo:40,hi:60,ratio:.6,label:'低い音域（3〜6弦）が60%以上'},{type:'land',min:4,label:'小節の頭でコードの音に4回着地'}]}],
+ ['kb-bend','さりげないチョーキング','ジャズでは1音だけ控えめに',['ジャズの太い弦でも、1音だけチョーキング。3弦3フレットのB♭を1音上げてC、2弦4フレットのE♭を1音上げてF。','ブルースほど大げさにせず、上げたら素直に次の音へ。ジャズ・ブルースの品の良さです。'],
+  '3.3b2 3.3:.5 4.5:.5 5.6 5.3 | 2.4b2 2.4:.5 3.5:.5 4.6 4.3',{session:'minor-blues',over:'Cm7 Fm7',text:'チョーキングを1〜2回だけ入れたマイナー・ブルースのソロ。'}],
+ ['kb-space','短いフレーズと間','2拍弾いて2拍休む',['2拍弾いて、2拍休む。言いたいことを短く区切ると、聴いている人が次を待ってくれます。','3小節目だけは長めに。短い言葉を2回重ねてから、少し長く話す流れです。'],
+  '3.5:.5 3.3:.5 4.5 -:2 | 4.6:.5 4.3:.5 5.6 -:2 | 3.5:.5 3.3:.5 4.5:.5 4.3:.5 5.6:.5 5.3:1.5',{session:'minor-blues',min:12,over:'Cm7 Fm7 Cm7',text:'短いフレーズと休符でソロ。弾かない時間を怖がらない。',goals:[{type:'maxNotes',max:60,label:'弾きすぎない（60音以下）'},{type:'land',min:3,label:'小節の頭でコードの音に3回着地'}]}]
+].map(JZ('ケニー・バレル')),
+...[
+ ['jp-line','途切れない8分','ii–Vを休まず8分で',['Dm7からG7まで、8分音符を一度も止めずに弾く。G7の最後はE♭（♭13）で、Cmaj7のEへ半音上がって着地します。','途切れないラインは、拍の頭がコードの音に来ているから成り立ちます。ゆっくり確かめながら。'],
+  '3.7:.5 3.5:.5 4.7:.5 3.5:.5 3.7:.5 2.6:.5 2.5:.5 3.7:.5 | 3.4:.5 3.7:.5 2.6:.5 2.8:.5 1.7:.5 2.8:.5 2.6:.5 2.4:.5 | 2.5 3.4 3.5:2',{over:'Dm7 G7 Cmaj7',text:'ii–Vを8分で途切れずに弾き、Cmaj7に着地しよう。',goals:[{type:'tones',ratio:.55,label:'コードの音が55%以上'},{type:'land',min:4,label:'小節の頭でコードの音に4回着地'}]}],
+ ['jp-thirds','3度をつなぐ','Am7→Dm7→G7→Cmaj7',['4度ずつ進むコードの、それぞれの3度（C・F・B・E）を小節の頭に置く。3度は半音か全音でつながるので、ほとんど指が動きません。','3度のあとは短い8分で次の3度へ。Fly Me to the Moonの最初の4小節にそのまま使えます。'],
+  '3.5 3.7:.5 3.9:.5 2.8 2.5 | 2.6 2.5:.5 3.7:.5 3.5 4.7 | 3.4 3.5:.5 3.7:.5 2.6 2.8 | 2.5:4',{session:'fly',over:'Am7 Dm7 G7 Cmaj7',text:'各小節の頭に3度を置いてソロ。',goals:[{type:'guide',min:10,label:'3度・7度を10回弾く'},{type:'land',min:5,label:'小節の頭でコードの音に5回着地'}]}],
+ ['jp-tritone','裏コード','G7の代わりにD♭7',['G7とD♭7は、3度と7度（B・F）が同じ。だからG7の上でD♭7を弾いても成立します。これが「裏コード」です。','D♭7のD♭からCmaj7のCへ。ルートが半音で下がる動きが、なめらかな解決を作ります。'],
+  '3.7:.5 2.6:.5 2.10:.5 1.8:.5 2.10:.5 2.6:.5 3.7:.5 3.6:.5 | 3.6:.5 2.6:.5 2.9:.5 1.7:.5 1.9:.5 1.7:.5 2.9:.5 2.6:.5 | 2.5:2 3.5:2',{over:'Dm7 Db7 Cmaj7',text:'G7の小節でD♭7のアルペジオを使い、Cmaj7に着地。'}],
+ ['jp-ballad','バラードの飾り','長い音と16分の装飾',['長く伸ばす音の後に、16分で4音の飾りを入れて次の音へ。歌の後ろで弾くような、バラードの装飾です。','飾りは軽く、伸ばす音は太く。長さの差が大きいほど美しく聴こえます。'],
+  '2.6:2 2.5:.25 2.6:.25 2.5:.25 3.7:.25 3.5 | 3.4:2 3.5:.25 3.4:.25 4.7:.25 4.6:.25 4.5 | 4.9:2 3.5 3.9 | 2.8:4',{bpm:60,groove:68,over:'Dm7 G7 Cmaj7 Cmaj7',min:16,text:'長い音と短い飾りで、ゆったりしたソロ。',goals:[{type:'maxNotes',max:60,label:'弾きすぎない（60音以下）'},{type:'land',min:4,label:'小節の頭でコードの音に4回着地'}]}]
+].map(JZ('ジョー・パス')),
+...[
+ ['pm-convert','マイナー・コンバージョン','G7の上でDm7を弾く',['G7の上で、Dm7のアルペジオを弾く。D・F・A・CはG7の5・7・9・11度で、G7を弾くより都会的に響きます。','ii–Vの2小節を、まるごとDm7だけで弾けるのがこの考え方の便利なところ。'],
+  '3.7:.5 3.10:.5 2.10:.5 1.8:.5 1.10:.5 1.8:.5 2.10:.5 2.8:.5 | 1.10:.5 1.8:.5 2.10:.5 3.10:.5 3.7:.5 4.10:.5 4.7:.5 4.9:.5 | 4.10 3.9 2.8:2',{over:'Dm7 G7 Cmaj7',text:'Dm7とG7の2小節を、Dm7のアルペジオでつないでソロ。'}],
+ ['pm-modal','ドリアンの長いライン','Dm7だけで2小節を8分で',['コードが変わらないDm7の上で、Dドリアン（Cメジャーと同じ音）を8分で上下する。Bは6度で、ドリアンらしさの決め手です。','変化がない場所ほど、ラインの上下の形で展開を作ります。'],
+  '3.7:.5 3.9:.5 3.10:.5 2.8:.5 2.10:.5 2.12:.5 1.10:.5 2.12:.5 | 2.10:.5 2.8:.5 3.10:.5 3.9:.5 3.7:.5 4.9:.5 4.10:.5 3.7:.5',{session:'modal',over:'Dm7 Dm7',text:'Dm7のワンコードで、ドリアンの長いラインを。',goals:[{type:'pc',pc:11,min:3,label:'B（ドリアンの6度）を3回弾く'},{type:'land',min:4,label:'小節の頭でコードの音に4回着地'}]}],
+ ['pm-triplet','3連のアルペジオ','Dm7を3連で上下',['Dm7のD・F・A・Cを3連符で上下する。1拍に3音なので、4音のアルペジオとずれながら回り、うねりが出ます。','ピッキングはオルタネイト（ダウン・アップの交互）。3連の頭が毎回入れ替わるのに慣れましょう。'],
+  '3.7:1/3 3.10:1/3 2.10:1/3 1.8:1/3 2.10:1/3 3.10:1/3 3.7:1/3 3.10:1/3 2.10:1/3 1.8:1/3 1.10:1/3 1.8:1/3 | 2.10:1/3 2.8:1/3 3.10:1/3 2.8:1/3 3.10:1/3 3.7:1/3 3.10:1/3 3.7:1/3 4.9:1/3 4.10',{bpm:63,groove:76,over:'Dm7 G7',text:'3連のアルペジオを入れてソロ。',min:30}],
+ ['pm-sideslip','半音ずらす','Dm7→E♭m7→Dm7',['同じ形を1フレット上げてE♭m7、また戻す。バンドはDm7のままなので、一瞬だけわざと外れて戻ってくる「サイドスリップ」です。','外れている時間は短く。戻った瞬間の安心感が、この技の聴かせどころです。'],
+  '3.7:.5 3.10:.5 2.10:.5 1.8:2.5 | 3.8:.5 3.11:.5 2.11:.5 1.9:2.5 | 3.7:.5 3.10:.5 2.10:.5 1.8:.5 1.10:2',{session:'modal',over:'Dm7 Ebm7 Dm7',text:'Dm7のワンコードで、半音上にずらして戻る動きを入れよう。'}]
+].map(JZ('パット・マルティーノ')),
+...[
+ ['jhall-motif','2音のモチーフ','2音だけで進行をつなぐ',['各小節で2音だけ。Cm7のG・E♭、F7のA・E♭、B♭maj7のA・F、E♭maj7のG・D。2音の組み合わせが、コードごとに少しずつ変わっていきます。','音を減らすほど、1音ごとの意味が大きくなる。ジム・ホールの最大の武器です。'],
+  '2.8 3.8 -:2 | 2.10 3.8 -:2 | 2.10 3.10 -:2 | 2.8 3.7 -:2',{session:'autumn',min:12,over:'Cm7 F7 Bbmaj7 Ebmaj7',text:'1小節に2〜3音だけでソロ。音を選んで置こう。',goals:[{type:'maxNotes',max:48,label:'弾きすぎない（48音以下）'},{type:'tones',ratio:.6,label:'コードの音が60%以上'}]}],
+ ['jhall-fourths','4度で積む','4度音程のメロディ',['A・D・G・Cのように、4度ずつ積んだ音を順に弾く。3度で積むアルペジオより、開いた現代的な響きになります。','コードが変わっても、4度の形はほぼそのまま。指の形を保って移動します。'],
+  '4.7:.5 3.7:.5 2.8:.5 1.8:2.5 | 2.6:.5 1.8:.5 2.8:.5 3.7:2.5 | 4.9:.5 3.9:.5 2.10:.5 1.10:2.5 | 2.8:.5 3.7:.5 4.7:.5 5.7:2.5',{session:'fly',over:'Am7 Dm7 G7 Cmaj7',text:'4度の音程を使ってソロ。開いた響きを聴こう。'}],
+ ['jhall-space','答えを待つ','1小節弾いて1小節休む',['1小節弾いたら、次の1小節は何も弾かない。デュオで相手の音を聴くときのような、会話のソロです。','休んだあとの最初の音は、前のフレーズへの答えになるように選びます。'],
+  '2.8:.5 2.11:.5 1.10 2.8:2 | -:4 | 2.11:.5 1.10:.5 2.10 3.10:2 | 2.8:4',{session:'autumn',min:12,over:'Cm7 F7 Bbmaj7 Ebmaj7',text:'1小節弾いたら1小節休むつもりでソロ。',goals:[{type:'maxNotes',max:40,label:'弾きすぎない（40音以下）'},{type:'land',min:3,label:'小節の頭でコードの音に3回着地'}]}]
+].map(JZ('ジム・ホール')),
+...[
+ ['gb-run','速いブルース・ラン','16分でFブルースを下る',['Fブルース・スケール（F・A♭・B♭・B・C・E♭）を16分で下りる。2弦12フレットのBが♭5です。','最後はEからFへ、そしてF7の3度Aに着地。速いランほど、終わりの1音をはっきりと。'],
+  '1.13:.25 1.11:.25 1.8:.25 1.11:.25 1.13:.25 1.11:.25 1.8:.25 2.11:.25 2.12:.25 2.11:.25 2.9:.25 2.11:.25 2.9:.25 3.10:.25 3.8:.25 3.10:.25 | 4.10:.5 3.8:.5 3.9:.5 3.10:.5 2.10:2',{session:'billie',bpm:56,groove:66,over:'F7 F7',text:'速いブルース・ランを1回入れて、F7の3度に着地。',min:30}],
+ ['gb-chromatic','半音で降りてくる','GからCまで半音を混ぜて',['G→F♯→F→E♭→D→Cと、半音を混ぜて下りる。スケールの音とスケール外の音が交互に出て、なめらかに滑り落ちる響きです。','最後はB♭→B→Cと半音で上がって着地。下りて、少し上がって終わる形です。'],
+  '2.8:.5 2.7:.5 2.6:.5 3.8:.5 3.7:.5 3.5:.5 4.8:.5 4.5:.5 | 4.8:.5 4.9:.5 3.5:2 -:1',{session:'minor-blues',over:'Cm7 Cm7',text:'半音を混ぜて降りるラインを入れて、マイナー・ブルースのソロ。'}],
+ ['gb-m9','マイナー9のアルペジオ','Cm9をなめらかに',['C・E♭・G・B♭・D（Cm9）を下から上へ。9度のDが、マイナーに都会的な明るさを足します。','上で止まったら、同じ音をたどって下りる。登って、下りるだけで1つのフレーズになります。'],
+  '4.10:.5 3.8:.5 3.12:.5 2.11:.5 1.10:.5 1.11:.5 1.15 | 1.11:.5 1.10:.5 2.11:.5 3.12:.5 3.8:2',{session:'minor-blues',over:'Cm7 Cm7',text:'Cm9のアルペジオを入れてソロ。9度のDを聴かせよう。',goals:[{type:'pc',pc:2,min:3,label:'D（Cm9の9度）を3回弾く'},{type:'land',min:4,label:'小節の頭でコードの音に4回着地'}]}]
+].map(JZ('ジョージ・ベンソン')),
+...[
+ ['metheny-sing','9度と6度で歌う','Cmaj7を明るく',['Cmaj7の上で、9度のDと6度のAを長く使う。コードの音だけより、ふわっと明るく広がる響きになります。','音数は少なく、1音を長く。メロディを歌うつもりで。'],
+  '1.10:1.5 1.8:.5 2.10 2.8 | 1.7:1.5 1.5:.5 2.8:2',{over:'Cmaj7 Cmaj7',min:16,text:'Cmaj7の小節で、9度と6度を使って歌うソロ。',goals:[{type:'pc',pc:2,min:3,label:'D（9度）を3回弾く'},{type:'land',min:4,label:'小節の頭でコードの音に4回着地'}]}],
+ ['metheny-bossa','ボサノバで歌う','長い音で9度を',['Cm7では9度のDを長く伸ばし、Fm7では5度のCから3度のA♭へ。長い音を、ボサノバのリズムの上にゆったり置きます。','2拍、4拍と伸ばす音が中心。リズムはバンドに任せて、ギターは歌に徹します。'],
+  '1.10:2 1.11 1.8 | 2.8:4 | 1.8:2 2.9 2.11 | 2.9:4',{session:'bossa',min:12,over:'Cm7 Cm7 Fm7 Fm7',text:'Blue Bossaで、長い音を中心に歌うソロ。',goals:[{type:'maxNotes',max:48,label:'弾きすぎない（48音以下）'},{type:'land',min:4,label:'小節の頭でコードの音に4回着地'}]}]
+].map(JZ('パット・メセニー'))
+];
+/* Jazz comping. */
+const BILLIE_COMP='F7 F7 F7 F7 | Bb7 Bb7 Bb7 Bb7 | F7 F7 F7 F7 | Cm7 Cm7 F7 F7 | Bb7 Bb7 Bb7 Bb7 | Bdim7 Bdim7 Bdim7 Bdim7 | F7 F7 F7 F7 | Am7 Am7 D7 D7 | Gm7 Gm7 Gm7 Gm7 | C7 C7 C7 C7 | F7 F7 D7 D7 | Gm7 Gm7 C7 C7';
+JAZZ_MORE.push(
+ comp('jc-pompe','ラ・ポンプ','ジプシー・ジャズの刻み',['ジプシー・ジャズの伴奏「ラ・ポンプ」。1拍目と3拍目は短く低く、2拍目と4拍目は小さなアップを先に入れてから強く刻みます。','左手は弾いた直後に力を抜いて、音を短く切る。ドラムのいないバンドでは、ギターがスネアの役目です。'],
+  {bpm:84,src:bars('X:.5 -:.5 ^X:.25 X:.25 -:.5 X:.5 -:.5 ^X:.25 X:.25 -:.5',['Gm6','Gm6','D7','D7'])},{bpm:100,src:bars('X:.5 -:.5 ^X:.25 X:.25 -:.5 X:.5 -:.5 ^X:.25 X:.25 -:.5',['Cm7','F7','Bbmaj7','Ebmaj7','Am7b5','D7','Gm6','Gm6'])},'枯葉（前半8小節）×2','JAZZ'),
+ comp('jc-blues','ジャズ・ブルースのコンプ','F7・B♭7・ii–Vを4つ切りで',['ブルースでも、ジャズではii–Vやディミニッシュが入ります。Billie’s Bounceの12小節を、4分音符で刻みながらコードを追いかけます。','1小節に2つのコードがある所は、2拍ずつ。B♭7とBdim7は、1本の指をずらすだけで移れます。'],
+  {bpm:84,src:'F7 F7 F7 F7 | Bb7 Bb7 Bb7 Bb7 | F7 F7 F7 F7 | Cm7 Cm7 F7 F7'},{bpm:100,src:BILLIE_COMP},'Billie’s Bounce・2コーラス','JAZZ'),
+ comp('jc-anticip','先取りのコンプ','4拍目の裏で次のコードへ',['次のコードを、小節線の8分前（4拍目の裏）に先取りして弾く。バンドが前に進む感じが一気に強まります。','先取りした音は次の小節の頭まで伸ばす。小節の頭で弾き直さないのがポイントです。'],
+  {bpm:84,src:'Dm7:1.5 Dm7:.5 -:1.5 G7:.5 | -:1.5 G7:.5 -:1.5 Cmaj7:.5 | -:1.5 Cmaj7:.5 -:2 | Cmaj7:1.5 Cmaj7:.5 -:1.5 Dm7:.5'},{bpm:100,src:'Dm7:1.5 Dm7:.5 -:1.5 G7:.5 | -:1.5 G7:.5 -:1.5 Cmaj7:.5 | -:1.5 Cmaj7:.5 -:2 | Cmaj7:1.5 Cmaj7:.5 -:1.5 Dm7:.5 | -:1.5 Dm7:.5 -:1.5 G7:.5 | -:1.5 G7:.5 -:1.5 Cmaj7:.5 | -:1.5 Cmaj7:.5 -:2 | Cmaj7:1.5 Cmaj7:.5 -:2'},'ii–V–I を4周','JAZZ')
+);
+/* The original modules of a genre with artist groups open its 基礎 and バッキング groups. */
+MODULES.forEach(m=>{if(ARTISTS[m.genre]&&!m.artist)m.artist=m.kind==='comp'?'バッキング':'基礎';});
+MODULES.push(...BLUES_MORE,...JAZZ_MORE);
 /* ---------------- BASS LINES (shown when the instrument is bass) ----------------
    Tab strings for bass: 1 = G, 2 = D, 3 = A, 4 = E. */
 const BASS_MODULES=[
@@ -425,7 +560,8 @@ const status=m=>{const p=load()[m.id]||{};return [(p.s1||0)>=60,(p.s2||0)>=60,!!
 const mastered=()=>LIST.filter(m=>status(m).every(Boolean)).length;
 const rank=()=>RANKS.filter(([n])=>mastered()>=n).pop()[1];
 let genre='BLUES';try{genre=localStorage.getItem('fretQuestDojoGenre')||'BLUES';}catch{}
-let artist=ARTISTS[0][0];try{artist=localStorage.getItem('fretQuestDojoArtist')||artist;}catch{}
+const artistKey=g=>'fretQuestDojoArtist'+(g==='BLUES'?'':':'+g),artistBy={};
+for(const g in ARTISTS)try{artistBy[g]=localStorage.getItem(artistKey(g))||ARTISTS[g][0][0];}catch{artistBy[g]=ARTISTS[g][0][0];}
 
 /* ---------- Charts for the stage engine ---------- */
 function chartFor(m,step){
@@ -450,8 +586,8 @@ function runMission(m){
 
 /* ---------- Screens ---------- */
 /* Reference listening for an artist group: plain links to a YouTube search, nothing to check off. */
-function refsHtml(name){
- const refs=(ARTISTS.find(([a])=>a===name)||[])[2];if(!refs)return '';
+function refsHtml(genre,name){
+ const refs=((ARTISTS[genre]||[]).find(([a])=>a===name)||[])[2];if(!refs)return '';
  return '<div class="dojo-refs"><span class="dojo-refs-label">参考に聴く</span>'+refs.map(([q,title,hint])=>'<a href="https://www.youtube.com/results?search_query='+encodeURIComponent(q)+'" target="_blank" rel="noopener"><b>'+title+'</b><small>'+hint+'</small></a>').join('')+'</div>';
 }
 function board(m){
@@ -475,24 +611,24 @@ function open(m){
    +((m.learn.type||(m.kind!=='comp'?'song':'strum'))==='song'?'<div class="jam-board-wrap">'+board(m)+'</div><div class="jam-legend"><span><i class="lg dojo-root"></i>ルート</span><span>数字はフレット番号</span>'+(tab(m.learn.src).notes.some(n=>n.bend)?'<span>↑ はチョーキング</span>':'')+'</div>':chords(m))
    +'<div class="dojo-steps">'+STEPS.map(([k,label,sub],i)=>{const locked=i>0&&!st[i-1];return '<button type="button" class="dojo-step'+(st[i]?' done':'')+'" data-step="'+(i+1)+'" '+(locked?'disabled':'')+'><span class="dojo-pip">'+(st[i]?'✓':i+1)+'</span><span><b>'+label+'</b><small>'+(i===2?(m.use.session?'セッションでミッション':m.use.form):sub)+(locked?' ・ 前のステップをクリアで解放':'')+'</small></span><span class="dojo-go">'+(st[i]?'もう一度':'挑戦')+' →</span></button>';}).join('')+'</div>'
    +(window.FQAir?window.FQAir.stepsHtml(m):'')
-   +'<p class="lesson-caption">ステップ1・2は★1（60点）でクリア。ステップ3は'+(m.use.session?'ミッションの全項目達成':'★1')+'でクリア。3つそろえばマスター。</p>'+(m.artist?refsHtml(m.artist):'')+'</div>';
+   +'<p class="lesson-caption">ステップ1・2は★1（60点）でクリア。ステップ3は'+(m.use.session?'ミッションの全項目達成':'★1')+'でクリア。3つそろえばマスター。</p>'+(m.artist?refsHtml(m.genre,m.artist):'')+'</div>';
   window.FQAir?.bindSteps(el,m);
   el.querySelectorAll('[data-step]').forEach(b=>b.onclick=()=>{const step=Number(b.dataset.step);if(step===3&&m.use.session)runMission(m);else runStage(m,step);});
  });
 }
 function render(){
  const el=$('#dojo');if(!el)return;
- const inGenre=LIST.filter(m=>m.genre===genre),groups=ARTISTS.filter(([a])=>inGenre.some(m=>m.artist===a));
- if(groups.length&&!groups.some(([a])=>a===artist))artist=groups[0][0];
- const list=groups.length?inGenre.filter(m=>m.artist===artist):inGenre,blurb=groups.length?ARTISTS.find(([a])=>a===artist)[1]:'';
+ const inGenre=LIST.filter(m=>m.genre===genre),groups=(ARTISTS[genre]||[]).filter(([a])=>inGenre.some(m=>m.artist===a));
+ let artist=artistBy[genre];if(groups.length&&!groups.some(([a])=>a===artist))artist=groups[0][0];
+ const list=groups.length?inGenre.filter(m=>m.artist===artist):inGenre,blurb=groups.length?groups.find(([a])=>a===artist)[1]:'';
  $('#dojo-rank').textContent=rank();$('#dojo-count').textContent=mastered()+' / '+LIST.length;
  $('#dojo-tabs').innerHTML=GENRES.map(([g,label])=>'<button type="button" data-genre="'+g+'" aria-pressed="'+(g===genre)+'">'+label+'<small>'+LIST.filter(m=>m.genre===g&&status(m).every(Boolean)).length+' / '+LIST.filter(m=>m.genre===g).length+'</small></button>').join('');
  $('#dojo-tabs').querySelectorAll('[data-genre]').forEach(b=>b.onclick=()=>{genre=b.dataset.genre;try{localStorage.setItem('fretQuestDojoGenre',genre);}catch{}render();});
- el.innerHTML=(groups.length?'<div class="dojo-artists" role="group" aria-label="アーティスト">'+groups.map(([a])=>{const ms=inGenre.filter(m=>m.artist===a);return '<button type="button" data-artist="'+a+'" aria-pressed="'+(a===artist)+'">'+a+'<small>'+ms.filter(m=>status(m).every(Boolean)).length+' / '+ms.length+'</small></button>';}).join('')+'</div><p class="dojo-blurb">'+blurb+(artist==='基礎'||artist==='バッキング'?'':' <span>フレーズはこの人の語法を研究したオリジナルで、実際の曲のソロやメロディではありません。</span>')+'</p>'+refsHtml(artist):'')+[['solo','ソロ・アドリブ'],['comp','伴奏'],['line','ベースライン']].map(([kind,label])=>{const ms=list.filter(m=>m.kind===kind);return ms.length?'<div class="dojo-group"><h3>'+label+'</h3><div class="dojo-grid">'+ms.map(m=>{const st=status(m),done=st.every(Boolean);return '<button type="button" class="dojo-card'+(done?' mastered':'')+'" data-module="'+m.id+'"><span class="jam-genre">'+(done?'MASTERED':kind==='solo'?'SOLO':kind==='line'?'BASS':'COMP')+'</span><strong>'+m.title+'</strong><span class="jam-changes">'+m.tag+'</span><span class="dojo-pips">'+st.map((d,i)=>'<i class="'+(d?'on':'')+'" title="'+STEPS[i][1]+'"></i>').join('')+'</span>'+(window.FQAir&&window.FQAir.status(m).every(Boolean)?'<span class="dojo-air">指板 ✓</span>':'')+'</button>';}).join('')+'</div></div>':'';}).join('');
+ el.innerHTML=(groups.length?'<div class="dojo-artists" role="group" aria-label="アーティスト">'+groups.map(([a])=>{const ms=inGenre.filter(m=>m.artist===a);return '<button type="button" data-artist="'+a+'" aria-pressed="'+(a===artist)+'">'+a+'<small>'+ms.filter(m=>status(m).every(Boolean)).length+' / '+ms.length+'</small></button>';}).join('')+'</div><p class="dojo-blurb">'+blurb+(artist==='基礎'||artist==='バッキング'?'':' <span>フレーズはこの人の語法を研究したオリジナルで、実際の曲のソロやメロディではありません。</span>')+'</p>'+refsHtml(genre,artist):'')+[['solo','ソロ・アドリブ'],['comp','伴奏'],['line','ベースライン']].map(([kind,label])=>{const ms=list.filter(m=>m.kind===kind);return ms.length?'<div class="dojo-group"><h3>'+label+'</h3><div class="dojo-grid">'+ms.map(m=>{const st=status(m),done=st.every(Boolean);return '<button type="button" class="dojo-card'+(done?' mastered':'')+'" data-module="'+m.id+'"><span class="jam-genre">'+(done?'MASTERED':kind==='solo'?'SOLO':kind==='line'?'BASS':'COMP')+'</span><strong>'+m.title+'</strong><span class="jam-changes">'+m.tag+'</span><span class="dojo-pips">'+st.map((d,i)=>'<i class="'+(d?'on':'')+'" title="'+STEPS[i][1]+'"></i>').join('')+'</span>'+(window.FQAir&&window.FQAir.status(m).every(Boolean)?'<span class="dojo-air">指板 ✓</span>':'')+'</button>';}).join('')+'</div></div>':'';}).join('');
  el.querySelectorAll('[data-module]').forEach(b=>b.onclick=()=>open(LIST.find(m=>m.id===b.dataset.module)));
  /* Keep the chosen artist in view inside the scrolling chip row, without moving the page. */
  {const row=el.querySelector('.dojo-artists'),on=row?.querySelector('[aria-pressed="true"]');if(on)row.scrollLeft=on.offsetLeft-row.offsetLeft-24;}
- el.querySelectorAll('[data-artist]').forEach(b=>b.onclick=()=>{artist=b.dataset.artist;try{localStorage.setItem('fretQuestDojoArtist',artist);}catch{}render();});
+ el.querySelectorAll('[data-artist]').forEach(b=>b.onclick=()=>{artistBy[genre]=b.dataset.artist;try{localStorage.setItem(artistKey(genre),b.dataset.artist);}catch{}render();});
 }
 window.addEventListener('fq:progress',render);window.addEventListener('fq:air',render);
 render();
