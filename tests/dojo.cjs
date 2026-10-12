@@ -68,6 +68,10 @@ check('artist reference links open a YouTube search',refs.length===2&&refs.every
 check('artist filter',ak.ids.length===8&&ak.ids.every(id=>id.startsWith('ak-'))&&ak.saved==='アルバート・キング',JSON.stringify(ak));
 if(OUT){await p.evaluate(()=>document.querySelector('#dojo-section').scrollIntoView());await p.waitForTimeout(200);await p.screenshot({path:OUT+'/dojo-artist.png'});}
 const bend=await p.evaluate(()=>window.FQDojo.chartFor(window.FQDojo.modules.find(m=>m.id==='ak-big'),1).exercise.notes[0]);
+const feel=await p.evaluate(()=>{const D=window.FQDojo,g=id=>D.chartFor(D.modules.find(m=>m.id===id),1).exercise,bb=g('bb-box'),jz=g('jp-line'),bo=g('bossa-comp'),pair=window.FQChart.tab('3.9+2.10:1 1.5');
+ return {bb:[bb.feel,bb.notes[1].beat,bb.notes[0].len,bb.chords.join()],jz:[jz.feel,jz.chords.join()],bo:[bo.feel,bo.strums[1].beat],pair:pair.notes.map(n=>n.beat+':'+n.group).join(),beats:pair.beats};});
+check('blues and jazz charts swing, bossa stays straight, licks carry chords',feel.bb[0]==='shuffle'&&Math.abs(feel.bb[1]-2/3)<1e-9&&Math.abs(feel.bb[2]-2/3)<1e-9&&feel.bb[3]==='A7'&&feel.jz[0]==='swing'&&feel.jz[1]==='Dm7,G7,Cmaj7'&&feel.bo[0]==='straight'&&feel.bo[1]===1.5,JSON.stringify(feel));
+check('notes joined with + share a beat',feel.pair==='0:0,0:0,1:undefined'&&feel.beats===2,JSON.stringify(feel));
 check('bend notation',bend.fret===8&&bend.bend===3&&bend.midi===75,JSON.stringify(bend));
 
 // Bends are judged at the bent pitch: a gliding bend clears the learn step, the unbent fret pitch does not.
@@ -87,6 +91,19 @@ check('bends hit at the bent pitch',bent.score>=95&&bent.miss===0,JSON.stringify
 await p.click('#modal-close');await p.waitForTimeout(300);
 await p.click('[data-artist="基礎"]');
 
+// Double stops and chords: one of the notes heard on time counts for the whole chord.
+{const src='3.9+2.10:1 2.8 3.9+2.10:1 2.8 | 1.5:2 3.7+2.8:2';
+ const ex=await p.evaluate(src=>({bpm:80,...window.FQChart.tab(src)}),src);
+ const heard=ex.notes.filter((n,i,a)=>n.group===undefined||a.findIndex(x=>x.group===n.group)===i);
+ await p.evaluate(pl=>{window.__plan=pl;},{kind:'lick',notes:heard,bpm:80});
+ await p.evaluate(()=>window.FQDojo.open(window.FQDojo.modules.find(m=>m.id==='bb-box')));await p.waitForSelector('.dojo-module');
+ await p.evaluate(ex=>window.FQStage.lobby({lesson:{id:'chord-test',title:'和音テスト',type:'song',minutes:1,goal:'',tips:[],exercise:ex},course:{title:'テスト'}},{next:null,back:()=>{}}),ex);
+ await p.waitForSelector('#stage-start');await p.click('[data-input="mic"]');await p.click('[data-speed="1"]');await p.click('#stage-start');
+ await p.waitForSelector('.stage-result',{timeout:60000});
+ const r=await p.evaluate(()=>({score:Number(document.querySelector('.result-score strong').textContent),miss:Number([...document.querySelectorAll('.stage-result small')].find(x=>x.textContent==='MISS').previousElementSibling.textContent)}));
+ check('a chord counts when one of its notes is heard',r.score>=95&&r.miss===0&&heard.length===6,JSON.stringify(r));
+ await p.click('#modal-close');await p.waitForTimeout(300);}
+
 // Jazz has its own artist groups and remembers its own choice; its comping sits under バッキング.
 await p.click('[data-genre="JAZZ"]');
 const jz=await p.evaluate(()=>({artists:[...document.querySelectorAll('#dojo [data-artist]')].map(b=>b.dataset.artist),cards:document.querySelectorAll('#dojo [data-module]').length}));
@@ -94,7 +111,8 @@ check('jazz artist groups',jz.artists.length===12&&jz.artists[0]==='基礎'&&jz.
 await p.click('[data-artist="バッキング"]');
 const kept=await p.evaluate(()=>({jazz:localStorage.getItem('fretQuestDojoArtist:JAZZ'),blues:localStorage.getItem('fretQuestDojoArtist')}));
 check('artist choice is kept per genre',kept.jazz==='バッキング'&&kept.blues==='基礎',JSON.stringify(kept));
-// A comping module and a pop session.await p.click('[data-module="shells"]');await p.waitForSelector('.dojo-chords');
+// A comping module and a pop session.
+await p.click('[data-module="shells"]');await p.waitForSelector('.dojo-chords');
 if(OUT)await p.screenshot({path:OUT+'/dojo-comp.png'});
 const c1=await tapStep('shells',1);check('comping learn step',c1>=95,c1);
 await p.click('#modal-close');await p.waitForTimeout(300);

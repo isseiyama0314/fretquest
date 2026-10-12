@@ -6,9 +6,10 @@ const lesson=(id,title,type,minutes,goal,tips,exercise)=>({id,title,type,minutes
 const OPEN=[0,64,59,55,50,45,40];
 /* Tab: pass another open-string table (such as the bass's) as the second argument.
    "string.fret[:beats]" is a note, "-" a rest, "|" a bar line for readability. Beats may be fractions ("1/3" for triplets).
-   "string.fretbN" is a bend: picked at the fret and pushed up N semitones; midi is the bent pitch, which is what gets judged. */
+   "string.fretbN" is a bend: picked at the fret and pushed up N semitones; midi is the bent pitch, which is what gets judged.
+   "3.9+2.10" plays notes together (a double stop or chord): they share one beat and carry the same group number. */
 const beatsOf=len=>{const [a,b]=len.split('/');return b?Number(a)/Number(b):Number(a);};
-const tab=(src,open=OPEN)=>{let beat=0;const notes=[];for(const token of src.trim().split(/\s+/)){if(token==='|')continue;const [body,len='1']=token.split(':'),beats=beatsOf(len);if(body!=='-'){const [string,rest]=body.split('.'),[fret,bend=0]=rest.split('b').map(Number),note={beat,len:beats,string:Number(string),fret,midi:open[string]+fret+bend};if(bend)note.bend=bend;notes.push(note);}beat+=beats;}return {notes,beats:beat};};
+const tab=(src,open=OPEN)=>{let beat=0;const notes=[];for(const token of src.trim().split(/\s+/)){if(token==='|')continue;const [body,len='1']=token.split(':'),beats=beatsOf(len);if(body!=='-'){const parts=body.split('+'),group=parts.length>1?beat:undefined;for(const part of parts){const [string,rest]=part.split('.'),[fret,bend=0]=rest.split('b').map(Number),note={beat,len:beats,string:Number(string),fret,midi:open[string]+fret+bend};if(bend)note.bend=bend;if(group!==undefined)note.group=group;notes.push(note);}}beat+=beats;}return {notes,beats:beat};};
 /* Strum: "Chord[:beats]" is a downstroke, "^Chord" an upstroke, "-" a rest. */
 const strum=src=>{let beat=0;const strums=[];for(const token of src.trim().split(/\s+/)){if(token==='|')continue;const [body,len='1']=token.split(':'),beats=beatsOf(len);if(body!=='-')strums.push({beat,len:beats,chord:body.replace('^',''),up:body.startsWith('^')});beat+=beats;}return {strums,beats:beat};};
 /* Chart helpers are shared with the phrase dojo. */

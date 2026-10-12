@@ -267,6 +267,6 @@ function finish(r){
 }
 
 window.addEventListener('fq:progress',()=>{try{prefs.best=JSON.parse(localStorage.getItem('fretQuestJam'))?.best||prefs.best;}catch{}renderCards();});
-window.FQJam={sessions:SESSIONS,renderCards,lobby};
+window.FQJam={sessions:SESSIONS,renderCards,lobby,parse};
 renderCards();
 })();

@@ -493,6 +493,11 @@ JAZZ_MORE.push(
 /* The original modules of a genre with artist groups open its 基礎 and バッキング groups. */
 MODULES.forEach(m=>{if(ARTISTS[m.genre]&&!m.artist)m.artist=m.kind==='comp'?'バッキング':'基礎';});
 MODULES.push(...BLUES_MORE,...JAZZ_MORE);
+/* Chords under the charts that leave the session's home chord (used by the backing band and the content checks). */
+const OVER={turnaround:'A7 E7','ec-turn':'A7 E7','srv-turn':'E7 B7','ak-turn':'A7 A7 A7 E7','jm-turn':'A7 E7','bb-gmaj7':'Gmaj7 Gmaj7 F#7 Bm7','pg-resolve':'F#7 Bm7',
+ 'tb-swing':'A7 D7 A7 A7','tb-dim':'D7 D#dim7 A7 A7','arp-251':'Dm7 G7 Cmaj7 Cmaj7','guide-tones':'Dm7 G7 Cmaj7 Cmaj7','enclosure':'Cmaj7','lick-251':'Dm7 G7 Cmaj7','minor-251':'Am7b5 D7 Gm6',
+ 'sing-line':'Fmaj7 G Em Am','arpeggio':'C G Am Em'};
+MODULES.forEach(m=>{if(OVER[m.id])m.over=OVER[m.id];});
 /* ---------------- BASS LINES (shown when the instrument is bass) ----------------
    Tab strings for bass: 1 = G, 2 = D, 3 = A, 4 = E. */
 const BASS_MODULES=[
@@ -537,7 +542,7 @@ const BASS_MODULES=[
  groove:{bpm:112,rest:0},
  use:{session:'bossa',text:'Blue Bossa のベースを担当。付点4分のパターンで、1拍目はルート。',goals:[{type:'notes',min:32,label:'32音以上弾く'},{type:'roots',min:10,label:'小節の頭でルートを10回'},{type:'tones',ratio:.6,label:'コードの音が60%以上'}]}}
 ];
-BASS_MODULES.forEach(m=>m.inst='bass');
+BASS_MODULES.forEach(m=>{m.inst='bass';m.over=({'b-root':'A7 D7 A7 E7','b-boogie':'A7 A7 D7 D7','b-eighth':'Fmaj7 G Em Am','b-octave':'C G Am Em','b-sync':'C Am F G','b-walk':'Dm7 G7 Cmaj7 Cmaj7','b-bossa':'Cm7 Fm7 Dm7b5 G7'})[m.id];});
 /* The chord under each bar of a chord-based phrase (learn chart), shown while practising it. Scale and box phrases have none. */
 const PHRASE_CHORDS={'arp-251':'Dm7 G7 Cmaj7 Cmaj7','guide-tones':'Dm7 G7 Cmaj7 Cmaj7','enclosure':'Cmaj7 Cmaj7','lick-251':'Dm7 G7 Cmaj7','minor-251':'Am7b5 D7 Gm',
  'turnaround':'A7 E7','sing-line':'Fmaj7 G Em Am','arpeggio':'C G Am Em',
@@ -564,10 +569,27 @@ const artistKey=g=>'fretQuestDojoArtist'+(g==='BLUES'?'':':'+g),artistBy={};
 for(const g in ARTISTS)try{artistBy[g]=localStorage.getItem(artistKey(g))||ARTISTS[g][0][0];}catch{artistBy[g]=ARTISTS[g][0][0];}
 
 /* ---------- Charts for the stage engine ---------- */
+/* Blues and jazz are played swung: an offbeat eighth sits on the last third of the beat, so a pair of eighths is long-short.
+   Charts are written straight and swung here. Bossa nova and pops stay straight; triplets and 16ths are left as written. */
+const SWING_FEEL={shuffle:'shuffle',slow:'shuffle',swing:'swing'},STRAIGHT_IDS=new Set(['bossa-comp','b-bossa','metheny-bossa']);
+function feelOf(m){
+ if(STRAIGHT_IDS.has(m.id))return 'straight';
+ const s=m.use.session&&window.FQJam.sessions.find(x=>x.id===m.use.session);
+ if(s)return SWING_FEEL[s.feel]||'straight';
+ return m.genre==='BLUES'?'shuffle':m.genre==='JAZZ'?'swing':'straight';
+}
+const swingBeat=b=>{const f=b-Math.floor(b);return Math.abs(f-.5)<1e-6?Math.floor(b)+2/3:b;};
+const swingAll=list=>list.map(n=>{const beat=swingBeat(n.beat);return {...n,beat,len:swingBeat(n.beat+n.len)-beat};});
+/* Chords under a tab chart, bar by bar (repeated when the chart is longer): the lick's own "over", else the session's home chord. */
+const HOME_CHORD={'blues-a':'A7',chicago:'E7',thrill:'Bm7',ballad:'C',oudou:'C',canon:'C'};
+const chordsOf=m=>(m.over||HOME_CHORD[m.use.session]||'').split(' ').filter(Boolean);
 function chartFor(m,step){
  const solo=m.kind==='solo'||m.kind==='line',spec=step===1?m.learn:step===2?m.groove:m.use,type=spec.type||m.learn.type||(solo?'song':'strum');
  let src=step===1?m.learn.src:step===2?(m.groove.src||spaced(m.learn.src,m.groove.rest===0?0:4)):m.use.src;
  const exercise={bpm:spec.bpm,...(type==='song'?tab(src,m.inst==='bass'?BASS_OPEN:undefined):strum(src))};if(m.inst==='bass')exercise.inst='bass';
+ const feel=feelOf(m);exercise.feel=feel;
+ if(feel!=='straight'){if(exercise.notes)exercise.notes=swingAll(exercise.notes);else exercise.strums=swingAll(exercise.strums);}
+ if(type==='song'){const ch=chordsOf(m);if(ch.length)exercise.chords=ch;}
  return {id:'lick-'+m.id+'-'+step,title:m.title+(step===1?'':step===2?'（合わせる）':'（'+m.use.form+'）'),type,minutes:2,goal:'',tips:[],exercise};
 }
 function runStage(m,step){
