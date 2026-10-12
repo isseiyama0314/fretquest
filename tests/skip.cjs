@@ -1,6 +1,7 @@
 /* Browser checks for skipping ahead: unlock without a test, the skip challenge (pass and fail), experienced mode.
    Usage is the same as stage-playthrough.cjs. Uses tap mode so no microphone is needed. */
 const { chromium } = require(process.env.PW||'playwright');
+const {armStart,tapOnClock}=require('./audio-taps.cjs');
 const BASE=process.env.BASE||'http://localhost:8765/fretquest/';
 (async()=>{
 const b=await chromium.launch({args:['--autoplay-policy=no-user-gesture-required']});
@@ -20,10 +21,9 @@ check('unlock without test',after.every(x=>x==='available')&&s.xp===0&&s.cleared
 
 async function challenge(course,taps){
  await p.click(`[data-course="${course}"]`);await p.click('#skip-challenge');await p.click('#lesson-begin');await p.waitForSelector('#stage-start');
- await p.click('[data-input="tap"]');await p.click('[data-speed="1"]');await p.click('#stage-start');await p.waitForSelector('#stage-pad');
+ await p.click('[data-input="tap"]');await p.click('[data-speed="1"]');await armStart(p,'#stage-start');await p.click('#stage-start');await p.waitForSelector('#stage-pad');
  const l=await p.evaluate(c=>{const x=window.FQCourses.find(k=>k.id===c);return x.lessons[x.lessons.length-1];},course),spb=60/l.exercise.bpm;
- if(taps){const start=Date.now(),times=(l.exercise.notes||l.exercise.strums).map(n=>(.35+4*spb+n.beat*spb)*1000);
-  for(const t of times){const w=t-(Date.now()-start);if(w>0)await p.waitForTimeout(w);await p.locator('#stage-pad').dispatchEvent('pointerdown');}}
+ if(taps)await tapOnClock(p,(l.exercise.notes||l.exercise.strums).map(n=>({at:.35+(l.exercise.meter||4)*spb+n.beat*spb,sel:'#stage-pad'})));
  await p.waitForSelector('.stage-result',{timeout:120000});const score=await p.$eval('.result-score strong',e=>e.textContent);
  await p.click('#stage-back');await p.waitForTimeout(300);return score;
 }

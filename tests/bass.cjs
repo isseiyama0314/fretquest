@@ -3,6 +3,7 @@
    Synthetic tones only; this does not prove accuracy with a real bass and a phone microphone.
    Usage is the same as stage-playthrough.cjs. */
 const { chromium } = require(process.env.PW||'playwright');
+const {armStart,tapOnClock}=require('./audio-taps.cjs');
 const BASE=process.env.BASE||'http://localhost:8765/fretquest/',OUT=process.env.OUT;
 (async()=>{
 const b=await chromium.launch({args:['--autoplay-policy=no-user-gesture-required']});
@@ -80,9 +81,9 @@ await p.evaluate(()=>window.FQDojo.open(window.FQDojo.modules.find(m=>m.id==='b-
 const lines=await p.$$eval('.dojo-module svg line',x=>x.filter(l=>l.getAttribute('x1')==='20').length);
 check('dojo board has 4 strings',lines===4,lines);
 if(OUT)await p.screenshot({path:OUT+'/bass-module.png'});
-await p.click('[data-step="1"]');await p.waitForSelector('#stage-start');await p.click('[data-input="tap"]');await p.click('[data-speed="1"]');await p.click('#stage-start');await p.waitForSelector('#stage-pad');
-{const ex=await p.evaluate(()=>window.FQDojo.chartFor(window.FQDojo.modules.find(m=>m.id==='b-walk'),1).exercise),spb=60/ex.bpm,start=Date.now();
- for(const n of ex.notes){const w=(.35+4*spb+n.beat*spb)*1000-(Date.now()-start);if(w>0)await p.waitForTimeout(w);await p.locator('#stage-pad').dispatchEvent('pointerdown');}
+await p.click('[data-step="1"]');await p.waitForSelector('#stage-start');await p.click('[data-input="tap"]');await p.click('[data-speed="1"]');await armStart(p,'#stage-start');await p.click('#stage-start');await p.waitForSelector('#stage-pad');
+{const ex=await p.evaluate(()=>window.FQDojo.chartFor(window.FQDojo.modules.find(m=>m.id==='b-walk'),1).exercise),spb=60/ex.bpm;
+ await tapOnClock(p,ex.notes.map(n=>({at:.35+(ex.meter||4)*spb+n.beat*spb,sel:'#stage-pad'})));
  await p.waitForSelector('.stage-result',{timeout:60000});const s=Number(await p.$eval('.result-score strong',e=>e.textContent));check('walking bass learn step (tap)',s>=95&&ex.inst==='bass'&&ex.notes[0].midi===38,s);
  await p.click('#stage-back');await p.waitForSelector('.dojo-module');}
 await p.evaluate(()=>{const st=JSON.parse(localStorage.getItem('fretQuestLicks')||'{}');st['b-root']={s1:80,s2:80};localStorage.setItem('fretQuestLicks',JSON.stringify(st));window.FQDojo.open(window.FQDojo.modules.find(m=>m.id==='b-root'));});
