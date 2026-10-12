@@ -62,6 +62,34 @@ function intervalReview(n,m,seqFor){
   bind(el){el.querySelector('[data-iv="right"]').onclick=()=>playNotes(seqFor(n));el.querySelector('[data-iv="wrong"]').onclick=()=>playNotes(seqFor(m));}};
 }
 
+/* ---------- Modulation: how far the key moved ---------- */
+const MOD_NAMES={1:'半音',2:'全音',3:'短3度',4:'長3度',5:'完全4度',7:'完全5度'};
+const MOD_LEVELS=[{kind:'melody',dirs:[1],sizes:[1,2,5,7]},{kind:'melody',dirs:[1,-1],sizes:[1,2,3,4]},{kind:'chords',dirs:[1],sizes:[1,2,3,4,5,7]},{kind:'chords',dirs:[1,-1],sizes:[1,2,3,4,5,7]},{kind:'song',dirs:[1,-1],sizes:[1,2,3,4,5,7]}];
+const modLabel=k=>MOD_NAMES[Math.abs(k)]+(k>0?'上':'下');
+/* A short major-key melody as scale steps from the tonic, and the progressions used for the chord levels. */
+const MOD_MELODIES=[[0,2,4,5,4,2,0],[0,4,7,4,5,2,0],[4,2,0,2,4,4,4],[7,5,4,2,4,0],[0,2,4,7,9,7,4]];
+const MOD_PROGS=[['I','vi','IV','V'],['I','IV','V','I'],['ii7','V7','Imaj7','vi7'],['I','V','vi','IV']];
+/* Notes for one pass in the key of tonic, starting at time t0. Returns [seq, length]. */
+function modPass(kind,tonic,t0,mel,prog){
+ if(kind==='melody'){const seq=mel.map((st,i)=>[t0+i*.42,[tonic+st],.38]);return [seq,mel.length*.42];}
+ const seq=[];prog.forEach((d,i)=>{const [off,shape]=DEG[d],t=t0+i*.8;seq.push([t,[tonic+off-12,...chordMidis(tonic+off,CHORDS[shape][1])],.75]);
+  /* The song level adds a top line on each chord's 3rd, so it sounds like a tune moving key. */
+  if(kind==='song')seq.push([t,[tonic+off+12+CHORDS[shape][1][1]],.7]);});
+ return [seq,prog.length*.8];
+}
+/* Two passes: the second moved by k semitones. 'song' runs straight on like a last-chorus key change. */
+function modSeq(kind,tonic,k,mel,prog){const [a,len]=modPass(kind,tonic,0,mel,prog),[b]=modPass(kind,tonic+k,len+(kind==='song'?0:.6),mel,prog);return [...a,...b];}
+function modulationReview(q,k,m){
+ const play=x=>playNotes(modSeq(q.kind,q.tonic,x,q.mel,q.prog)),same=Math.abs(k)===Math.abs(m);
+ return {html:'<div class="interval-review"><div class="iv-legend"><span><i class="iv-right"></i>正解 '+modLabel(k)+'</span><span><i class="iv-wrong"></i>あなた '+modLabel(m)+'</span></div>'
+  +'<p>'+(same?'幅は合っています。<b>上がったか下がったか</b>が逆です。2回目の最初の音が、1回目より高いか低いかに注目。':'正解は半音'+Math.abs(k)+'個分、あなたの答えは半音'+Math.abs(m)+'個分'+(k*m<0?'（しかも向きが逆）':'')+'。')
+  +'<br>迷ったら、2つのキーの<b>主音（ドの音）だけ</b>を聴き比べると、ただの音程当てになります。</p>'
+  +'<div class="iv-play"><button type="button" data-iv="right">▶ 正解を聴く</button><button type="button" data-iv="wrong">▶ あなたの答えを聴く</button></div>'
+  +'<div class="iv-play"><button type="button" data-iv="tonic" class="iv-wide">▶ 2つのキーの主音だけ聴く</button></div></div>',
+  bind(el){el.querySelector('[data-iv="right"]').onclick=()=>play(k);el.querySelector('[data-iv="wrong"]').onclick=()=>play(m);
+   el.querySelector('[data-iv="tonic"]').onclick=()=>playNotes([[0,[q.tonic],.8],[.9,[q.tonic+k],1]]);}};
+}
+
 /* ---------- Question generators per mode and level ---------- */
 const MODES_DEF={
  interval:{title:'音程当て',tag:'2つの音の距離を聴き分ける',icon:'music',about:'2つの音を聴いて、何度離れているかを答えます。ソロで「次に弾く音」を耳で選べるようになる、いちばんの基礎です。',
@@ -81,6 +109,12 @@ const MODES_DEF={
   make(lv){const set=PROG_LEVELS[lv-1],tonic=48+Math.floor(Math.random()*7),home=set[0],seq=[home,...Array.from({length:3},()=>pick(set.slice(1).concat(set[0])))];
    const sounds=seq.map((d,i)=>{const [off,shape]=DEG[d];return [i*1.1,[tonic+off-12,...chordMidis(tonic+off,CHORDS[shape][1])],1];});
    return {prompt:'最初が '+home+'。続く3つのコードは？',play:()=>playNotes(sounds),choices:set,answer:seq.slice(1),multi:3,explain:seq.join(' → ')};}},
+ modulate:{title:'転調当て',tag:'キーが何度上がった？下がった？',icon:'map',about:'同じメロディやコード進行が2回鳴り、2回目はキーが変わっています。何度上がったか・下がったかを答えます。サビ前の転調や、セッション中のキーチェンジにすぐついていく耳を作ります。',
+  levels:['メロディ・上がる（半音・全音・4度・5度）','メロディ・上か下か（半音〜長3度）','コード進行・上がる','コード進行・上か下か','曲の途中で転調（続けて鳴る）'],
+  make(lv){const L=MOD_LEVELS[lv-1],k=pick(L.dirs)*pick(L.sizes),tonic=55+Math.floor(Math.random()*6),mel=pick(MOD_MELODIES),prog=pick(MOD_PROGS);
+   const choices=L.dirs.flatMap(d=>L.sizes.map(n=>modLabel(d*n))),q={kind:L.kind,tonic,mel,prog};
+   return {prompt:L.kind==='song'?'途中でキーが変わります。何度動いた？':L.dirs.length>1?'2回目のキーは、何度上がった？下がった？':'2回目のキーは、何度上がった？',play:()=>playNotes(modSeq(L.kind,tonic,k,mel,prog)),choices,answer:modLabel(k),explain:modLabel(k)+'（半音'+Math.abs(k)+'個分'+(k>0?'上':'下')+'）',
+    review:c=>{const m=choices.indexOf(c);if(m<0)return null;const d=L.dirs[Math.floor(m/L.sizes.length)]*L.sizes[m%L.sizes.length];return modulationReview(q,k,d);}};}},
  rhythm:{title:'リズム聴き取り',tag:'1小節を聴いて譜面を選ぶ',icon:'rhythm',about:'4カウントのあとに鳴る1小節のリズムを、4つの譜面から選びます。間違えたリズムは「苦手リズム帳」に入り、リミックスで復習できます。',
   levels:['4分音符と8分音符','裏拍・休符','シンコペーション','16分音符','16分のシンコペーション'],
   make(lv){const pools=window.FQGames.calls,pool=pools[Math.min(pools.length-1,lv-1)],p=pick(pool),bpm=84,spb=60/bpm;
@@ -125,7 +159,7 @@ const MODES_DEF={
    if(lv===4){const ans=SIGS[key],opts=shuffle([ans,...shuffle(Object.values(SIGS).filter(x=>x!==ans)).slice(0,3)]);return {prompt:key+'メジャー・キーの調号は？',choices:opts,answer:ans,explain:key+'メジャー＝'+sc.join(' ')};}
    const d=Math.floor(Math.random()*7),chord=sc[d]+['maj7','m7','m7','maj7','7','m7','m7♭5'][d];return {prompt:key+'メジャー・キーで、'+chord+'（'+ROMAN[d]+'）の上で使うモードは？',choices:shuffle([MODES[d],...shuffle(MODES.filter(m=>m!==MODES[d])).slice(0,3)]),answer:MODES[d],explain:ROMAN[d]+'の上では、キーの'+(d+1)+'番目の音から始まる '+MODES[d]};}}
 };
-const ORDER=['melody','interval','chord','prog','rhythm','meter','timing','fret','theory'];
+const ORDER=['melody','interval','chord','prog','modulate','rhythm','meter','timing','fret','theory'];
 
 /* ---------- Progress ---------- */
 const KEY='fretQuestTrain';

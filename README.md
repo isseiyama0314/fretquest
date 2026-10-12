@@ -54,7 +54,7 @@ Each drill counts as the daily menu's game (the menu rotates rhythm games and dr
 
 `tools.js` adds a microphone tuner (nearest string or a tapped one with a reference tone, median-smoothed, within 5 cents counts as tuned) and an automatic timing measurement (eight clicks; the median offset is saved and used by stages, sessions and games; noisy or incomplete runs are refused).
 
-Today's menu replaces the retired daily quests (35-second chord change, note-name quiz, screen-tap rhythm): one lesson (the next one, or the lowest-starred stage), one session and one game (rhythm games and guitar drills), rotating by date. Beginners only get the three easier sessions until 12 lessons are cleared. The day's goal is one item: the lesson is shown as the suggestion and the session and game as optional extras ("時間があれば"), but any one of the three reaches the goal. A lesson clear earns 40 XP the first time; each session or game earns 20 XP the first time it is played that day; reaching the goal adds 20 XP and finishing all three (the full course) another 20. Days completed under the earlier rule (one 40 XP bonus for all three) keep their XP and count as full courses. Sessions and games count toward practice days and streaks, appear in the calendar and badges, and their best records travel with the JSON export. Older records that hold the retired quests remain valid.
+Today's menu replaces the retired daily quests (35-second chord change, note-name quiz, screen-tap rhythm): one lesson (the next one, or the lowest-starred stage), one session and one game (rhythm games and guitar drills), rotating by date. Beginners only get the three easier sessions until 12 lessons are cleared. The day's goal is the lesson. On a day without the instrument, a link under it swaps in the day's ear-training game, which counts too (any of the three items reaches the goal in the records). Once the goal is reached, one optional mission is revealed at a time: after the lesson, the session and then the game; after the no-instrument swap, the session on the screen fretboard and then the lesson. A lesson clear earns 40 XP the first time; each session or game earns 20 XP the first time it is played that day; reaching the goal adds 20 XP and finishing all three (the full course) another 20. Days completed under the earlier rule (one 40 XP bonus for all three) keep their XP and count as full courses. Sessions and games count toward practice days and streaks, appear in the calendar and badges, and their best records travel with the JSON export. Older records that hold the retired quests remain valid.
 
 ## Phrase dojo
 
@@ -73,7 +73,7 @@ Missions are graded from the notes the microphone hears during a session: note c
 
 ## Off-guitar training
 
-`train.js` offers nine screen-and-sound games for times without a guitar, five levels each. A run is five quick questions and passes at four correct; three passing runs on a level (not necessarily in a row) open the next one, and the result and level buttons show the count. Levels opened before this rule stay open, and faster answers and combos raise the score.
+`train.js` offers ten screen-and-sound games for times without a guitar, five levels each. A run is five quick questions and passes at four correct; three passing runs on a level (not necessarily in a row) open the next one, and the result and level buttons show the count. Levels opened before this rule stay open, and faster answers and combos raise the score.
 
 - メロディ耳コピ (solfège): hear a 3–5 note melody and reproduce it by tapping a six-string, frets 0–7 board; the first note is given and every tap sounds. C major steps up to A minor pentatonic and blues phrases.
 - 拍子当て: name the meter of a drum groove (4/4 and 3/4 up to 6/8, 5/4, 7/8, 9/8, 12/8).
@@ -90,6 +90,8 @@ Each mode played counts as the daily menu's game and earns 20 XP the first time 
 
 After a wrong answer in interval training, a review panel puts the root, the right interval and the chosen interval on one fretboard (the playable shape from a root on the lowest string), names each interval's character and how many semitones the answer was off, and plays both intervals from the same root for comparison.
 
+
+Modulation (転調当て): the same melody or chord progression plays twice and the second pass is in another key; the player names how far it moved (half step, whole step, minor/major 3rd, perfect 4th or 5th, up or down). Levels: melody upward, melody up or down, chords upward, chords up or down, and a mid-song key change where the second pass follows straight on with a top line on each chord's 3rd. A wrong answer plays the right and the chosen move from the same start, says whether only the direction was wrong, and offers the two keys' tonics alone, which turns it into an interval question.
 ## Skipping ahead
 
 Each course can be opened early in two ways: a skip challenge (play the course's last stage and reach ★1; only that stage counts as cleared) or opening it without a test. Experienced mode opens every course, makes the home card and daily menu follow the chosen course, and offers all sessions from the start. Skipped lessons are never marked cleared and earn no XP. Opened courses and the mode are part of the saved record and the export.
@@ -111,7 +113,7 @@ Not verified on a real bass. The low-frequency response of iPhone microphones va
 
 For practising away from the instrument. The board shows the real strings and frets of the chosen instrument (6 or 4 strings), so positions learned on it are the ones played on the neck later. Taps sound immediately (bass an octave up, so a phone speaker can carry it).
 
-- Phrase modules (solo licks, bass lines, tab-based comping): 1 **trace**: an approach ring closes on each position; tap it on the beat (judged like a stage: position and timing; a wrong position costs points and leaves the note open). 2 **recall**: no guides; rebuild the phrase in order from the first note (the same pitch elsewhere is pointed out but not accepted). 3 **air session**: the module's session mission, played by tapping the board.
+- Phrase modules (solo licks, bass lines, tab-based comping): 1 **trace**: an approach ring closes on each position; tap it on the beat (judged like a stage on pitch and timing; the same note on another string counts and is pointed out; a wrong note costs points and leaves the note open). 2 **recall**: no guides; rebuild the phrase in order from the lit first note (the same note on another string counts, with the tab's position shown). Chord shapes keep exact positions. Play screens block text selection, the long-press menu and double-tap zoom, so fast tapping cannot start a selection on iOS (`tests/noselect.cjs`). Chord-based phrases (arpeggios, guide tones, ii–V licks, the sung line, every bass line) carry the chord of each bar: trace shows it next to the next position, and recall groups the answer slots by bar under their chord and shows the current and next chord. Scale and box phrases have none. 3 **air session**: the module's session mission, played by tapping the board.
 - Chord modules: 1 **shapes**: place each form with the diagram in view (open and muted strings are marked at the nut). 2 **changes**: the progression plays and each form must be complete before its chord starts, without the diagram.
 - Sessions: the lobby offers "play on the screen fretboard" next to the microphone; the board colours the current chord's tones (with degrees) and the scale, and can be moved along the neck.
 - Progress is kept separately from the instrument steps (`fretQuestAir`): air steps never count as dojo mastery. Once a module is done on the board, the module screen points to the instrument steps.
@@ -137,6 +139,8 @@ Sound plays even with the ring/silent switch on. The page declares its audio as 
 ## Records and installation
 
 The existing `fretQuestV1` localStorage key is retained. Course activity counts toward practice days and streaks. JSON export/import merges daily activity and course completions, protecting against duplicate XP. This is manual transfer, not account-based cloud synchronization. Automated account sync requires an authenticated backend; none is configured in this static site.
+
+Opening the app always starts at the top (My Studio): the manifest's start_url is `./`, and a leftover `#section` in the URL or a restored scroll position is dropped on load. `tests/start.cjs` checks this.
 
 The manifest, PNG icons and a service worker support home-screen installation and cached offline lessons. The service worker is limited to `/fretquest/`, caches only app assets, and never handles microphone audio. This is a PWA, not an App Store native iOS application. iPhone hardware microphone accuracy and Safari installation require device verification.
 

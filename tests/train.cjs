@@ -8,7 +8,7 @@ const p=await b.newPage({viewport:{width:390,height:844},deviceScaleFactor:2});
 const errs=[];let failed=0;p.on('pageerror',e=>errs.push('pageerror '+e.message));p.on('console',m=>{if(m.type()==='error')errs.push(m.text())});
 const check=(name,ok,detail)=>{if(!ok)failed++;console.log(ok?'ok  ':'FAIL',name,'=>',detail);};
 await p.goto(BASE,{waitUntil:'networkidle'});
-check('cards',(await p.$$eval('#train-cards [data-train]',e=>e.length))===9,'9 modes');
+check('cards',(await p.$$eval('#train-cards [data-train]',e=>e.length))===10,'10 modes');
 /* Answers the open question correctly (right=true) or wrongly. */
 async function answer(right){
  const q=await p.evaluate(()=>{const q=window.FQTrain.current();return {choices:q.choices,answer:q.answer,multi:q.multi,frets:q.answerFrets,melody:q.melody};});
@@ -26,7 +26,7 @@ async function play(id,right,shot){
  await p.click('#train-close');await p.waitForTimeout(200);return r;
 }
 /* One passing run counts 1 of 3; the third opens the next level. */
-for(const id of ['melody','interval','chord','prog','meter','timing','fret','theory']){const r=await play(id,()=>true,OUT&&(id==='melody'||id==='timing'));check(id+' perfect run counts 1 of 3',r.title==='クリア 1 / 3'&&r.score==='5',JSON.stringify(r));}
+for(const id of ['melody','interval','chord','prog','modulate','meter','timing','fret','theory']){const r=await play(id,()=>true,OUT&&(id==='melody'||id==='timing'));check(id+' perfect run counts 1 of 3',r.title==='クリア 1 / 3'&&r.score==='5',JSON.stringify(r));}
 {const r2=await play('theory',()=>true),r3=await play('theory',()=>true),lv=await p.evaluate(()=>JSON.parse(localStorage.getItem('fretQuestTrain')).theory.unlocked);
  check('third passing run opens Lv2',r2.title==='クリア 2 / 3'&&r3.title==='Lv2 解放！'&&lv===2,JSON.stringify([r2,r3,lv]));}
 {const opened=await p.evaluate(()=>{const all=JSON.parse(localStorage.getItem('fretQuestTrain'));all.chord={unlocked:3,best:{1:5,2:4}};localStorage.setItem('fretQuestTrain',JSON.stringify(all));window.FQTrain.lobby('chord');return [...document.querySelectorAll('[data-lv]')].map(b=>b.disabled?'x':'o').join('');});
@@ -35,8 +35,16 @@ const before=await p.evaluate(()=>window.FQStage.kit.rhythmBook.weak().length);
 const r=await play('rhythm',i=>i<2,OUT);const after=await p.evaluate(()=>window.FQStage.kit.rhythmBook.weak().length);
 const lv=await p.evaluate(()=>JSON.parse(localStorage.getItem('fretQuestTrain')).rhythm.unlocked);
 check('poor rhythm run stays at Lv1 and fills the rhythm book',r.title==='あと少し！'&&lv===1&&after>before,JSON.stringify(r)+' book '+before+'→'+after);
+/* Modulation: a wrong answer shows the review with both keys' tonics to compare; every level builds a question. */
+{const r=await p.evaluate(async()=>{const out=[];for(let lv=1;lv<=5;lv++){const q=window.FQTrain.modes.modulate.make(lv);out.push(q.choices.includes(q.answer)&&q.choices.length>=4);}return out;});
+ await p.evaluate(()=>window.FQTrain.run('modulate',4));await p.waitForSelector('[data-choice]');
+ const q=await p.evaluate(()=>({c:window.FQTrain.current().choices,a:window.FQTrain.current().answer}));const wrong=q.c.findIndex(x=>x!==q.a);
+ await p.click(`[data-choice="${wrong}"]`);const rv=await p.evaluate(()=>({tonic:!!document.querySelector('[data-iv="tonic"]'),text:document.querySelector('.interval-review p')?.innerText||''}));
+ if(OUT)await p.screenshot({path:OUT+'/train-modulate.png'});
+ check('modulation levels and review',r.every(Boolean)&&rv.tonic&&rv.text.length>0,JSON.stringify({r,rv,a:q.a,picked:q.c[wrong]}));
+ await p.evaluate(()=>window.FretQuest.close());}
 const st=await p.evaluate(()=>{const s=window.FretQuest.getState(),d=s.history[window.FretQuest.today()];return {xp:s.xp,extra:d.extra,menu:document.querySelector('#menu-count').textContent};});
-/* 9 modes × 20 XP, plus 20 for reaching today's goal (one item). */
-check('xp and daily menu',st.xp===200&&st.extra.length===9&&st.menu==='達成',JSON.stringify(st));
+/* 10 modes × 20 XP, plus 20 for reaching today's goal (one item). */
+check('xp and daily menu',st.xp===220&&st.extra.length===10&&st.menu==='達成',JSON.stringify(st));
 if(errs.length){failed++;console.log('page errors',JSON.stringify(errs));}
 console.log(failed?failed+' failed':'all passed');await b.close();process.exit(failed?1:0);})();

@@ -4,7 +4,7 @@
   "short_name": "FRET QUEST",
   "lang": "ja",
   "description": "6コース、36レッスン。毎日のギター練習を小さな冒険に。",
-  "start_url": "./#courses",
+  "start_url": "./",
   "scope": "./",
   "display": "standalone",
   "background_color": "#f5f3f9",
