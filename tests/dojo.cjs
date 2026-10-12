@@ -1,6 +1,7 @@
 /* Browser checks for the phrase dojo: learn and groove steps (tap mode), a session mission (synthetic microphone),
    mastery, and a pop session. Usage is the same as stage-playthrough.cjs. */
 const { chromium } = require(process.env.PW||'playwright');
+const {armStart,tapOnAudioClock}=require('./taps.cjs');
 const BASE=process.env.BASE||'http://localhost:8765/fretquest/',OUT=process.env.OUT;
 (async()=>{
 const b=await chromium.launch({args:['--autoplay-policy=no-user-gesture-required']});
@@ -25,20 +26,11 @@ const artists=await p.$$eval('#dojo [data-artist]',e=>e.length);
 check('dojo renders the blues basics with artist groups',cards===9&&artists===13&&tabs.includes('ジャズ'),cards+' cards, '+artists+' artists, tabs '+tabs);
 if(OUT){await p.evaluate(()=>document.querySelector('#dojo-section').scrollIntoView());await p.waitForTimeout(300);await p.screenshot({path:OUT+'/dojo.png'});}
 
-/* Taps are sent from inside the page on the audio clock, which is what the stage judges against. Scheduling them from
-   Playwright on the wall clock adds ~120 ms of delivery delay, and headless Chromium's audio clock can stall for a few
-   hundred ms, which shifted every later tap and failed runs at random. */
 async function tapStep(id,step){
  await p.click(`[data-step="${step}"]`);await p.waitForSelector('#stage-start');
- await p.click('[data-input="tap"]');await p.click('[data-speed="1"]');
- await p.evaluate(()=>document.querySelector('#stage-start').addEventListener('click',()=>{window.__a0=window.FretQuest.audioContext().currentTime;},{capture:true,once:true}));
- await p.click('#stage-start');await p.waitForSelector('#stage-pad');
- await p.evaluate(async({id,step})=>{
-  const ex=window.FQDojo.chartFor(window.FQDojo.modules.find(m=>m.id===id),step).exercise,spb=60/ex.bpm,ctx=window.FretQuest.audioContext();
-  for(const n of ex.notes||ex.strums){const at=window.__a0+.35+4*spb+n.beat*spb;
-   while(ctx.currentTime<at)await new Promise(r=>setTimeout(r,2));
-   document.querySelector('#stage-pad').dispatchEvent(new PointerEvent('pointerdown',{bubbles:true,cancelable:true,composed:true}));}
- },{id,step});
+ await p.click('[data-input="tap"]');await p.click('[data-speed="1"]');await armStart(p,'#stage-start');await p.click('#stage-start');await p.waitForSelector('#stage-pad');
+ const ex=await p.evaluate(({id,step})=>window.FQDojo.chartFor(window.FQDojo.modules.find(m=>m.id===id),step).exercise,{id,step}),spb=60/ex.bpm;
+ await tapOnAudioClock(p,(ex.notes||ex.strums).map(n=>({at:.35+4*spb+n.beat*spb,sel:'#stage-pad'})));
  await p.waitForSelector('.stage-result',{timeout:120000});const score=await p.$eval('.result-score strong',e=>e.textContent);
  await p.click('#stage-back');await p.waitForSelector('.dojo-module');return Number(score);
 }

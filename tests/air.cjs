@@ -3,6 +3,7 @@
    done right; a dojo session mission passes from board taps; free sessions score on the board; bass uses 4 strings.
    Usage is the same as stage-playthrough.cjs. */
 const { chromium } = require(process.env.PW||'playwright');
+const {armStart,tapOnAudioClock}=require('./taps.cjs');
 const BASE=process.env.BASE||'http://localhost:8765/fretquest/',OUT=process.env.OUT;
 (async()=>{
 const b=await chromium.launch({args:['--autoplay-policy=no-user-gesture-required']});
@@ -13,6 +14,7 @@ async function page(inst){
  await p.addInitScript(i=>{try{localStorage.setItem('fretQuestInstrument',i);}catch{}},inst);
  await p.goto(BASE,{waitUntil:'networkidle'});await p.evaluate(()=>window.FretQuest.ensureAudio());return p;
 }
+const cellSel=(s,f,scope='')=>scope+' .air-cell[data-s="'+s+'"][data-f="'+f+'"]';
 const tap=(p,s,f,scope='')=>p.locator(scope+' .air-cell[data-s="'+s+'"][data-f="'+f+'"]').first().dispatchEvent('pointerdown');
 /* Taps each note at its time, measured from the click on start (count-in of 4 beats after 0.4 s). */
 /* The same pitch on another string inside the board window, when there is one. */
@@ -21,9 +23,8 @@ async function playTrace(p,id,{wrong=false,alt=false,speed=1}={}){
  await p.evaluate(id=>window.FQAir.start(window.FQDojo.modules.find(m=>m.id===id),1),id);await p.waitForSelector('#air-start');
  await p.click('[data-speed="'+speed+'"]');
  const spec=await p.evaluate(id=>{const s=window.FQAir.specFor(window.FQDojo.modules.find(m=>m.id===id),1);return {notes:s.notes,bpm:s.bpm,w:s.w,open:window.FQInst.get().open,alts:0};},id),spb=60/(spec.bpm*speed);
- await p.click('#air-start');const start=Date.now();await p.waitForSelector('.air-play');
- for(const n of spec.notes){const w=(.4+4*spb+n.beat*spb)*1000-(Date.now()-start);if(w>0)await p.waitForTimeout(w);
-  const a=alt&&altOf(n,spec.w,spec.open);if(a){spec.alts++;await tap(p,a.string,a.fret,'.air-play');}else await tap(p,wrong?(n.string===1?2:n.string-1):n.string,n.fret,'.air-play');}
+ await armStart(p,'#air-start');await p.click('#air-start');await p.waitForSelector('.air-play');
+ await tapOnAudioClock(p,spec.notes.map(n=>{const a=alt&&altOf(n,spec.w,spec.open);if(a)spec.alts++;const [s,f]=a?[a.string,a.fret]:[wrong?(n.string===1?2:n.string-1):n.string,n.fret];return {at:.4+4*spb+n.beat*spb,sel:cellSel(s,f,'.air-play')};}));
  await p.waitForSelector('.stage-result',{timeout:90000});const score=Number(await p.$eval('.result-score strong',e=>e.textContent));return alt?{score,alts:spec.alts,n:spec.notes.length}:score;
 }
 
@@ -78,9 +79,9 @@ await p.click('#air-back');await p.waitForSelector('.dojo-module');
 
 // Session mission on the board: A on every downbeat, then B, C, D in the B.B. box.
 await p.evaluate(()=>window.FQAir.start(window.FQDojo.modules.find(m=>m.id==='bb-box'),3));await p.waitForSelector('.mission-box');
-await p.click('[data-ch="1"]');await p.click('#jam-start');const t0=Date.now();await p.waitForSelector('#jam-board .air-cell');
+await p.click('[data-ch="1"]');await armStart(p,'#jam-start');await p.click('#jam-start');await p.waitForSelector('#jam-board .air-cell');
 {const spb=60/84,pos=[[2,10],[2,12],[2,13],[1,10]];
- for(let beat=0;beat<48;beat++){const w=(.4+4*spb+beat*spb+.03)*1000-(Date.now()-t0);if(w>0)await p.waitForTimeout(w);const [s,f]=pos[beat%4];await tap(p,s,f,'#jam-board');}
+ await tapOnAudioClock(p,Array.from({length:48},(_,beat)=>{const [s,f]=pos[beat%4];return {at:.4+4*spb+beat*spb+.03,sel:cellSel(s,f,'#jam-board')};}));
  if(OUT)await p.screenshot({path:OUT+'/air-mission.png'});
  await p.waitForSelector('.stage-result',{timeout:60000});
  const r=await p.evaluate(()=>({title:document.querySelector('#modal-title').textContent,goals:[...document.querySelectorAll('.stage-result .goal')].map(g=>(g.classList.contains('ok')?'✓':'✗')+g.querySelector('span').textContent+' '+g.querySelector('b').textContent),st:window.FQAir.status(window.FQDojo.modules.find(m=>m.id==='bb-box'))}));
@@ -102,8 +103,8 @@ await p.click('#air-back');await p.waitForSelector('.dojo-module');
 // Changes: build each form one beat before its chord starts.
 await p.evaluate(()=>window.FQAir.start(window.FQDojo.modules.find(m=>m.id==='seventh-shuffle'),2));await p.waitForSelector('#air-start');await p.click('[data-speed="1"]');
 {const spec=await p.evaluate(()=>{const s=window.FQAir.specFor(window.FQDojo.modules.find(m=>m.id==='seventh-shuffle'),2);return {bpm:s.bpm,seq:s.seq.map(c=>({beat:c.beat,t:window.FretQuest.chordShape(c.chord).map((f,i)=>({s:6-i,f})).filter(x=>x.f>0)}))};}),spb=60/spec.bpm;
- await p.click('#air-start');const start=Date.now();await p.waitForSelector('.air-play');
- for(const c of spec.seq){const w=(.4+8*spb+(c.beat-1.2)*spb)*1000-(Date.now()-start);if(w>0)await p.waitForTimeout(w);for(const t of c.t)await tap(p,t.s,t.f,'.air-play');}
+ await armStart(p,'#air-start');await p.click('#air-start');await p.waitForSelector('.air-play');
+ await tapOnAudioClock(p,spec.seq.map(c=>({at:.4+8*spb+(c.beat-1.2)*spb,sel:c.t.map(t=>cellSel(t.s,t.f,'.air-play'))})));
  if(OUT)await p.screenshot({path:OUT+'/air-changes.png'});
  await p.waitForSelector('.stage-result',{timeout:90000});const s=Number(await p.$eval('.result-score strong',e=>e.textContent));
  check('changes: every form in time',s===100,s+' over '+spec.seq.length+' changes');}
