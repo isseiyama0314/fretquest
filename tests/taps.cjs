@@ -4,8 +4,9 @@
    shifts every later tap and fails runs at random. So: note the audio time when the start button is clicked, then
    dispatch each tap once the audio clock reaches its time after that click. */
 
-/* Call before clicking the start button; the click handler that computes the screen's start time runs right after. */
-exports.armStart=(p,selector)=>p.evaluate(sel=>document.querySelector(sel).addEventListener('click',()=>{window.__a0=window.FretQuest.audioContext().currentTime;},{capture:true,once:true}),selector);
+/* Call before clicking the start button; the click handler that computes the screen's start time runs right after.
+   The audio context is created first, since some screens only create it inside that click. */
+exports.armStart=(p,selector)=>p.evaluate(async sel=>{await window.FretQuest.ensureAudio();document.querySelector(sel).addEventListener('click',()=>{window.__a0=window.FretQuest.audioContext().currentTime;},{capture:true,once:true});},selector);
 
 /* taps: [{at: seconds after the start click, sel: a selector or a list of selectors tapped together}] */
 exports.tapOnAudioClock=(p,taps)=>p.evaluate(async taps=>{

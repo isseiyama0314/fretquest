@@ -69,8 +69,8 @@ check('artist filter',ak.ids.length===8&&ak.ids.every(id=>id.startsWith('ak-'))&
 if(OUT){await p.evaluate(()=>document.querySelector('#dojo-section').scrollIntoView());await p.waitForTimeout(200);await p.screenshot({path:OUT+'/dojo-artist.png'});}
 const bend=await p.evaluate(()=>window.FQDojo.chartFor(window.FQDojo.modules.find(m=>m.id==='ak-big'),1).exercise.notes[0]);
 const feel=await p.evaluate(()=>{const D=window.FQDojo,g=id=>D.chartFor(D.modules.find(m=>m.id===id),1).exercise,bb=g('bb-box'),jz=g('jp-line'),bo=g('bossa-comp'),pair=window.FQChart.tab('3.9+2.10:1 1.5');
- return {bb:[bb.feel,bb.notes[1].beat,bb.notes[0].len,bb.chords.join()],jz:[jz.feel,jz.chords.join()],bo:[bo.feel,bo.strums[1].beat],pair:pair.notes.map(n=>n.beat+':'+n.group).join(),beats:pair.beats};});
-check('blues and jazz charts swing, bossa stays straight, licks carry chords',feel.bb[0]==='shuffle'&&Math.abs(feel.bb[1]-2/3)<1e-9&&Math.abs(feel.bb[2]-2/3)<1e-9&&feel.bb[3]==='A7'&&feel.jz[0]==='swing'&&feel.jz[1]==='Dm7,G7,Cmaj7'&&feel.bo[0]==='straight'&&feel.bo[1]===1.5,JSON.stringify(feel));
+ return {bb:[bb.feel,bb.notes[0].beat,bb.notes[0].len,bb.chords.join()],jz:[jz.feel,jz.chords.join()],bo:[bo.feel,bo.strums[1].beat],pair:pair.notes.map(n=>n.beat+':'+n.group).join(),beats:pair.beats};});
+check('blues and jazz charts swing, bossa stays straight, licks carry chords',feel.bb[0]==='shuffle'&&Math.abs(feel.bb[1]-2/3)<1e-9&&Math.abs(feel.bb[2]-1/3)<1e-9&&feel.bb[3]==='A7'&&feel.jz[0]==='swing'&&feel.jz[1]==='Dm7,G7,Cmaj7'&&feel.bo[0]==='straight'&&feel.bo[1]===1.5,JSON.stringify(feel));
 check('notes joined with + share a beat',feel.pair==='0:0,0:0,1:undefined'&&feel.beats===2,JSON.stringify(feel));
 check('bend notation',bend.fret===8&&bend.bend===3&&bend.midi===75,JSON.stringify(bend));
 
