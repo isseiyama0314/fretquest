@@ -57,7 +57,7 @@ const stopKit=()=>{if(kit){kit.a.stop();kit.dead=true;kit=null;}};
 const voice=m=>BASS?m+12:m;
 async function tapSound(midi){const k=await sound();k?.a.pluck(k.ctx.currentTime+.005,voice(midi),.45,.15);}
 /* The whole phrase is scheduled ahead, so leaving the screen (close, back, next screen) must cut it. */
-async function playPhrase(notes,bpm){const generation=F.generation(),k=await sound();if(!k||generation!==F.generation())return;const spb=60/bpm,t=k.ctx.currentTime+.1;notes.forEach(n=>k.a.pluck(t+n.beat*spb,voice(n.midi),n.len*spb,.15));F.setCleanup(stopAll);}
+async function playPhrase(notes,bpm){const generation=F.generation(),k=await sound();if(!k||generation!==F.generation())return;const spb=60/bpm,t=k.ctx.currentTime+.1;notes.forEach(n=>k.a.pluck(t+n.beat*spb,voice(n.midi),n.len*spb,.15,n.bend||0));F.setCleanup(stopAll);}
 function strumShape(name){sound().then(k=>{if(!k)return;const ms=K.chordMidis(name),t=k.ctx.currentTime+.02;ms.forEach((m,i)=>k.a.pluck(t+i*.018,m,.9,.07));});}
 
 /* ---------- Shared screens ---------- */
@@ -121,7 +121,7 @@ async function traceStart(spec,prefs){
  const a=r.audio,at=b=>r.t0+b*spb;
  for(let b=-meter;b<0;b++)a.click(at(b),b===-meter);
  for(let b=0;b<Math.ceil(beats);b++){a.hat(at(b),b%meter===0);if(b%meter===0)a.kick(at(b));}
- if(prefs.guide)r.items.forEach(it=>a.pluck(at(it.beat),voice(it.midi),Math.max(.2,it.len*spb),.05));
+ if(prefs.guide)r.items.forEach(it=>a.pluck(at(it.beat),voice(it.midi),Math.max(.2,it.len*spb),.05,it.bend||0));
  const length=beats*spb;
  F.show(el=>{
   $('.modal-dialog').classList.add('is-stage');
