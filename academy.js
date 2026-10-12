@@ -49,16 +49,25 @@ function renderMenu(state){
   {kind:'SESSION',label:'セッション',title:jam.title,sub:jam.genre+' ・ ♩ '+jam.bpm,done:st.jam,doneText:'今日セッション済み',go:()=>FQJam.lobby(jam)},
   {kind:'GAME',label:'ゲーム',title:game.title,sub:game.tag,done:st.game,doneText:'今日ゲーム済み',go:()=>gameHost(gameId).lobby(gameId)}
  ];
- /* The goal is any one item; the first is the suggestion, the other two are extras for days with more time. */
- const count=items.filter(x=>x.done).length,goal=count>=1;
- grid.innerHTML=items.map((x,i)=>(i===1?'<div class="menu-sub">時間があれば（任意）</div>':'')+'<button type="button" class="menu-card'+(x.done?' done':'')+(i?' optional':' main')+'" data-menu="'+i+'"><span class="menu-num">'+(x.done?F.icon('check'):i?'+':'01')+'</span><span class="menu-copy"><small>'+(i?'':'<em class="menu-tag">今日の1つ</em>')+x.label+'</small><strong>'+x.title+'</strong><span>'+(x.done?x.doneText:x.sub)+'</span></span><span class="menu-go">'+(x.done?'もう一度':(xp=>xp?'+'+xp+' XP':'★を更新')((i?20:state.courses?.[l.id]?0:40)+(goal?0:20)))+' '+F.icon('arrow')+'</span></button>').join('');
+ /* Today's one is the lesson. A day without the instrument can swap it for the day's ear-training game (it counts too).
+    After the goal, one next mission is revealed at a time: after a lesson, the session and then the game; after the
+    no-instrument swap, the session on the screen fretboard and then the lesson. */
+ const trainIds=window.FQTrain?Object.keys(window.FQTrain.modes):[],trainId=trainIds[dayNo%Math.max(1,trainIds.length)],train=trainId&&window.FQTrain.modes[trainId];
+ const [lesson,session,gameItem]=items,count=items.filter(x=>x.done).length,goal=count>=1;
+ const offline=goal&&!st.lesson;
+ if(offline){session.label='指板でセッション';session.sub='楽器なしでOK ・ 画面の指板で弾く';session.go=()=>FQJam.lobby(jam,{air:true});}
+ const order=st.lesson?[session,gameItem]:[session,lesson,gameItem],next=goal?order.find(x=>!x.done):null;
+ const card=(x,role)=>'<button type="button" class="menu-card '+role+(x.done?' done':'')+'" data-menu="'+items.indexOf(x)+'"><span class="menu-num">'+(x.done?F.icon('check'):role==='main'?'01':'+')+'</span><span class="menu-copy"><small>'+(role==='main'?'<em class="menu-tag">今日の1つ</em>':role==='mission'?'<em class="menu-tag mission">次のミッション</em>':'')+x.label+'</small><strong>'+x.title+'</strong><span>'+(x.done?x.doneText:x.sub)+'</span></span><span class="menu-go">'+(x.done?'もう一度':(xp=>xp?'+'+xp+' XP':'★を更新')((x===lesson?(state.courses?.[l.id]?0:40):20)+(goal?(count===2?20:0):20)))+' '+F.icon('arrow')+'</span></button>';
+ grid.innerHTML=!goal
+  ?card(lesson,'main')+(train?'<button type="button" class="menu-swap" id="menu-swap">楽器がない日は：<b>'+train.title+'</b>（5問）でもOK →</button>':'')
+  :items.filter(x=>x.done).map(x=>card(x,'done-row')).join('')+(next?'<div class="menu-sub">時間があれば（任意）</div>'+card(next,'mission'):'');
  grid.querySelectorAll('[data-menu]').forEach(b=>b.onclick=()=>items[Number(b.dataset.menu)].go());
+ $('#menu-swap')?.addEventListener('click',()=>window.FQTrain.lobby(trainId));
  $('#menu-count').innerHTML=(goal?'達成':'0 / 1')+(count>1?'<em> +'+(count-1)+'</em>':'');
  $('#menu-bonus').className='menu-bonus'+(st.full?' got':goal?' half':'');
- $('#menu-bonus').innerHTML=F.icon('gift')+'<span>'+(st.full?'フルコース達成！ 今日は +40 XP。また明日。':goal?'今日の目標達成！ +20 XP 獲得。時間があれば、あと'+(3-count)+'つでフルコース +20 XP。':'どれか1つで今日の目標達成 +20 XP。3つ全部でフルコース、さらに +20 XP。')+'</span>';
- const next=items.find(x=>!x.done);
- $('#daily-start').innerHTML=(!goal?'今日の練習を始める':next?'もう1つやる（任意）':'今日はフルコース ✓')+' '+F.icon('arrow');
- $('#daily-start').onclick=next?next.go:()=>$('#today').scrollIntoView({behavior:'smooth'});
+ $('#menu-bonus').innerHTML=F.icon('gift')+'<span>'+(st.full?'フルコース達成！ 今日は +40 XP。また明日。':goal?'今日の目標達成！ +20 XP 獲得。次のミッションも全部こなせば、フルコース +20 XP。':'今日のレッスンで目標達成 +20 XP。')+'</span>';
+ $('#daily-start').innerHTML=(!goal?'今日のレッスンを始める':next?'次のミッションへ（任意）':'今日はフルコース ✓')+' '+F.icon('arrow');
+ $('#daily-start').onclick=!goal?lesson.go:next?next.go:()=>$('#today').scrollIntoView({behavior:'smooth'});
 }
 function render(){
  const state=F.getState(),done=all.filter(l=>state.courses?.[l.id]).length;
