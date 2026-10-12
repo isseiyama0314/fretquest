@@ -23,7 +23,9 @@ function chart(l,speed){
 }
 const chordMidis=name=>(F.chordShape(name)||[]).map((fret,i)=>fret<0?null:OPEN[6-i]+fret).filter(m=>m!==null);
 /* How long after its time a note can still be caught. */
-const lateWindow=(c,it)=>c.song?Math.min(.6,Math.max(.3,it.dur*.8)):.24;
+const BEND={1:'半音チョーキング',2:'1音チョーキング',3:'1音半チョーキング'};
+/* A bend reaches its pitch a moment after the pick, so it gets a little longer. */
+const lateWindow=(c,it)=>c.song?Math.min(.6,Math.max(.3,it.dur*.8))+(it.bend?.2:0):.24;
 
 /* Small synthesizer. Everything routes through one gain so stopping is instant. */
 function synth(ctx){
@@ -36,7 +38,9 @@ function synth(ctx){
   kick(t){const o=ctx.createOscillator(),g=ctx.createGain();o.frequency.setValueAtTime(130,t);o.frequency.exponentialRampToValueAtTime(42,t+.14);env(g,t,.55,.003,.24);o.connect(g);g.connect(master);o.start(t);o.stop(t+.3);},
   snare(t){burst(t,'bandpass',1900,.22,.13);},
   hat(t,accent){burst(t,'highpass',7200,accent?.07:.045,.035);},
-  pluck(t,midi,dur,vol=.16){const o=ctx.createOscillator(),f=ctx.createBiquadFilter(),g=ctx.createGain(),end=Math.max(.25,dur)+.25;o.type='sawtooth';o.frequency.value=440*Math.pow(2,(midi-69)/12);f.type='lowpass';f.frequency.setValueAtTime(3200,t);f.frequency.exponentialRampToValueAtTime(700,t+end);env(g,t,vol,.004,end);o.connect(f);f.connect(g);g.connect(master);o.start(t);o.stop(t+end+.05);},
+  pluck(t,midi,dur,vol=.16,bend=0){const o=ctx.createOscillator(),f=ctx.createBiquadFilter(),g=ctx.createGain(),end=Math.max(.25,dur)+.25,hz=m=>440*Math.pow(2,(m-69)/12);o.type='sawtooth';
+   /* A bend starts at the fretted pitch and reaches the target within 0.15 s. */
+   if(bend){o.frequency.setValueAtTime(hz(midi-bend),t);o.frequency.linearRampToValueAtTime(hz(midi),t+Math.min(.15,dur*.5));}else o.frequency.value=hz(midi);f.type='lowpass';f.frequency.setValueAtTime(3200,t);f.frequency.exponentialRampToValueAtTime(700,t+end);env(g,t,vol,.004,end);o.connect(f);f.connect(g);g.connect(master);o.start(t);o.stop(t+end+.05);},
   pad(t,midis,dur){midis.slice(-4).forEach(m=>{const o=ctx.createOscillator(),g=ctx.createGain();o.type='triangle';o.frequency.value=440*Math.pow(2,(m-69)/12);g.gain.setValueAtTime(.0001,t);g.gain.linearRampToValueAtTime(.028,t+.18);g.gain.setValueAtTime(.028,t+Math.max(.2,dur-.05));g.gain.linearRampToValueAtTime(.0001,t+dur+.25);o.connect(g);g.connect(master);o.start(t);o.stop(t+dur+.3);});},
   stop(){const t=ctx.currentTime;master.gain.cancelScheduledValues(t);master.gain.setValueAtTime(master.gain.value,t);master.gain.linearRampToValueAtTime(0,t+.04);setTimeout(()=>master.disconnect(),120);}
  };
@@ -57,7 +61,7 @@ function schedule(r){
   c.items.forEach(it=>{if(it.chord!==chord){flush(it.beat);chord=it.chord;start=it.beat;}});flush(c.beats);
  }
  if(r.guide)c.items.forEach(it=>{
-  if(c.song)a.pluck(at(it.beat),it.midi,it.dur);
+  if(c.song)a.pluck(at(it.beat),it.midi,it.dur,.16,it.bend||0);
   else{const notes=chordMidis(it.chord);(it.up?[...notes].reverse().slice(0,4):notes).forEach((m,k)=>a.pluck(at(it.beat)+k*.014,m,Math.min(it.dur,.9),it.up?.05:.075));}
  });
 }
@@ -161,9 +165,11 @@ function listen(r,now){
  if(r.stable<2)return;
  /* Bass: a phone microphone often hears the low notes an octave high, so the same note name an octave away counts.
     The long analysis window settles late, so the attack time comes from the onset detector when there is one. */
- const at0=BASS&&r.lastOnset<=r.firstMatch&&r.firstMatch-r.lastOnset<.25?r.lastOnset:r.firstMatch;
+ let at0=BASS&&r.lastOnset<=r.firstMatch&&r.firstMatch-r.lastOnset<.25?r.lastOnset:r.firstMatch;
  const it=r.c.items.find(x=>!x.grade&&same(x.midi,midi)&&at0>=x.time-.28&&at0<=x.time+lateWindow(r.c,x));
  if(!it)return;
+ /* A bend is timed from its pick attack, since the target pitch arrives while the string is pushed. */
+ if(it.bend&&r.lastOnset<=r.firstMatch&&r.firstMatch-r.lastOnset<.45)at0=r.lastOnset;
  /* A repeated pitch only counts when the string is picked again. */
  const prev=r.c.items[it.i-1];
  if(prev&&same(prev.midi,midi)&&prev.hitAt!==null&&r.lastOnset<=prev.hitAt+.04)return;
@@ -205,7 +211,7 @@ function draw(r,t,dt){
   if(c.song&&!hit&&x1-x0>30){g.fillStyle=color;g.globalAlpha=alpha*.32;pill(g,x0,y-5,x1-x0-6,10,5);g.fill();g.globalAlpha=alpha;}
   g.fillStyle=color;g.beginPath();g.arc(cx,y,13*scale,0,Math.PI*2);g.fill();
   g.fillStyle='#211d33';
-  if(c.song){g.font='900 14px "Noto Sans JP",sans-serif';const label=String(it.fret);g.fillText(label,cx-g.measureText(label).width/2,y+4.5);}
+  if(c.song){g.font='900 14px "Noto Sans JP",sans-serif';const label=it.fret+(it.bend?'↑':'');g.fillText(label,cx-g.measureText(label).width/2,y+4.5);}
   else{g.beginPath();const d=it.up?-1:1;g.moveTo(cx-6,y-4*d);g.lineTo(cx+6,y-4*d);g.lineTo(cx,y+6*d);g.closePath();g.fill();g.fillRect(cx-1.5,y-(it.up?-3:9),3,6);}
   g.globalAlpha=1;
  }
@@ -226,7 +232,7 @@ function hud(r,t){
  const next=r.c.items.find(i=>!i.grade);
  if(r.c.song){
   const heard=$('#stage-heard');if(heard)heard.textContent=r.mic?(r.heard!=null?noteName(r.heard):'—'):'TAP';
-  if(next&&next!==r.shownNext){r.shownNext=next;$('#stage-next').innerHTML='<span>NEXT'+(next.chord?' ・ '+next.chord+' のルート':'')+'</span><b>'+next.string+'弦 '+next.fret+'フレット</b><em>'+noteName(next.midi)+'</em>';}
+  if(next&&next!==r.shownNext){r.shownNext=next;$('#stage-next').innerHTML='<span>NEXT'+(next.chord?' ・ '+next.chord+' のルート':'')+'</span><b>'+next.string+'弦 '+next.fret+'フレット'+(next.bend?' ↑'+BEND[next.bend]:'')+'</b><em>'+noteName(next.midi)+'</em>';}
  }else{
   const chord=(next||r.c.items[r.c.items.length-1]).chord;
   if(chord!==r.shownChord){r.shownChord=chord;$('#stage-chord').innerHTML=F.chordDiagram(chord);}

@@ -4,6 +4,7 @@
    Env: BASE (default http://localhost:8765/fretquest/), PW (path to the playwright package), OUT (screenshot folder).
    This checks the judging logic against clean synthetic tones. It does not prove accuracy with a real guitar. */
 const { chromium } = require(process.env.PW||'playwright');
+const {armStart,tapOnAudioClock}=require('./taps.cjs');
 const BASE=process.env.BASE||'http://localhost:8765/fretquest/',OUT=process.env.OUT;
 const PASS=60;
 (async()=>{
@@ -39,12 +40,11 @@ async function runLesson(id,{mode='good',input='mic',speed=1,off=0,lat=0,shot=nu
  await p.waitForSelector('#stage-start');
  await p.click(`[data-input="${input}"]`);await p.click(`[data-speed="${speed}"]`);await p.click(`[data-latency="${lat}"]`);
  if(shot&&OUT)await p.screenshot({path:`${OUT}/${shot}-lobby.png`});
- await p.click('#stage-start');
+ await armStart(p,'#stage-start');await p.click('#stage-start');
  await p.waitForSelector('#stage-score');
  const lesson=await p.evaluate(()=>window.__lesson),spb=60/(lesson.exercise.bpm*speed);
  if(input==='tap'){
-  const start=Date.now(),times=(lesson.exercise.notes||lesson.exercise.strums).map(n=>(.35+4*spb+n.beat*spb+off)*1000);
-  for(const t of times){const wait=t-(Date.now()-start);if(wait>0)await p.waitForTimeout(wait);await p.locator('#stage-pad').dispatchEvent('pointerdown');}
+  await tapOnAudioClock(p,(lesson.exercise.notes||lesson.exercise.strums).map(n=>({at:.35+4*spb+n.beat*spb+off,sel:'#stage-pad'})));
  }else if(shot&&OUT){await p.waitForTimeout(Math.min((lesson.exercise.beats+4)*spb*450,9000));await p.screenshot({path:`${OUT}/${shot}-play.png`});}
  await p.waitForSelector('.stage-result',{timeout:90000});
  const score=Number(await p.$eval('.result-score strong',e=>e.textContent)),grid=await p.$$eval('.result-grid div',d=>d.map(x=>x.innerText.replace('\n',' ')).join(', '));
