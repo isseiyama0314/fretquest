@@ -20,6 +20,10 @@ function render(){const d=day(),played=hasPractice(d);$('#streak-value').textCon
 
 
 function openModal(type){modalGeneration++;$('.modal-dialog').classList.remove('is-stage');if($('#modal').hidden)lastFocus=document.activeElement;stopMetro();activeCleanup();activeCleanup=()=>{};$('#modal').hidden=false;document.body.style.overflow='hidden';$('.app-shell').inert=true;$('#modal-close').focus()}
+/* iOS can still start a selection or the copy menu during fast tapping: block both inside play screens. */
+const inPlay=e=>{const el=e.target?.nodeType===3?e.target.parentElement:e.target;return el instanceof Element&&!!el.closest('.modal-dialog.is-stage')&&!el.closest('input,textarea');};
+document.addEventListener('selectstart',e=>{if(inPlay(e))e.preventDefault();});
+document.addEventListener('contextmenu',e=>{if(inPlay(e))e.preventDefault();});
 /* Opening the app always starts at the top (My Studio). A leftover #section in the URL (from the menu, or an icon
    added to the home screen before start_url pointed at the top) and the browser's restored scroll position are dropped. */
 if('scrollRestoration' in history)history.scrollRestoration='manual';

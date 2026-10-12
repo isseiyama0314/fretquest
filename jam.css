@@ -180,6 +180,7 @@
 .tc-interval:before{background:radial-gradient(circle,#ff8fb8 0%,transparent 65%)}
 .tc-chord:before{background:radial-gradient(circle,#8fb4ff 0%,transparent 65%)}
 .tc-prog:before{background:radial-gradient(circle,#ffd166 0%,transparent 65%)}
+.tc-modulate:before{background:radial-gradient(circle,#6fe3d2 0%,transparent 65%)}
 .tc-rhythm:before{background:radial-gradient(circle,#c7ef75 0%,transparent 65%)}
 .tc-fret:before{background:radial-gradient(circle,#6fe3d2 0%,transparent 65%)}
 .tc-theory:before{background:radial-gradient(circle,#c69cff 0%,transparent 65%)}
