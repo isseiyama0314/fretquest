@@ -18,9 +18,15 @@ const savePrefs=()=>{try{localStorage.setItem('fretQuestStage',JSON.stringify(pr
 const I=window.FQInst,BASS=I.isBass(),INST=I.get(),LANES=INST.open.length-1;
 function chart(l,speed){
  const a=BASS?I.adapt(l):{type:l.type,exercise:l.exercise},e=a.exercise,spb=60/(e.bpm*speed),meter=e.meter||4,song=a.type==='song';
- const items=(song?e.notes:e.strums).map((n,i)=>({...n,i,time:n.beat*spb,dur:n.len*spb,grade:null,hitAt:null}));
- return {song,fromStrum:!!a.fromStrum,spb,meter,beats:e.beats,items,length:e.beats*spb,bpm:Math.round(e.bpm*speed)};
+ /* Notes played together (a double stop or chord) become one item: any one of their pitches counts, since the
+    microphone follows a single pitch. Each part is still drawn on its own string. */
+ const list=[];for(const n of song?e.notes:e.strums){const prev=list[list.length-1];if(n.group!==undefined&&prev&&prev.group===n.group){prev.midis.push(n.midi);prev.parts.push({string:n.string,fret:n.fret,bend:n.bend});}else list.push(n.group!==undefined?{...n,midis:[n.midi],parts:[{string:n.string,fret:n.fret,bend:n.bend}]}:n);}
+ const items=list.map((n,i)=>({...n,i,time:n.beat*spb,dur:n.len*spb,grade:null,hitAt:null}));
+ return {song,fromStrum:!!a.fromStrum,spb,meter,beats:e.beats,items,length:e.beats*spb,bpm:Math.round(e.bpm*speed),feel:l.exercise.feel||'straight',chords:l.exercise.chords||null};
 }
+/* Band voicings: the bass below E2 (or the bass guitar's open E), chords in a compact middle-register shell. */
+const bassNote=pc=>28+((pc-28%12+12)%12);
+function voicing(ch){const base=52+((ch.root-52%12+12)%12);return ch.tones.slice(1).map(i=>base+i).map(n=>n>66?n-12:n).sort((x,y)=>x-y);}
 const chordMidis=name=>(F.chordShape(name)||[]).map((fret,i)=>fret<0?null:OPEN[6-i]+fret).filter(m=>m!==null);
 /* How long after its time a note can still be caught. */
 const BEND={1:'半音チョーキング',2:'1音チョーキング',3:'1音半チョーキング'};
@@ -40,7 +46,12 @@ function synth(ctx){
   hat(t,accent){burst(t,'highpass',7200,accent?.07:.045,.035);},
   pluck(t,midi,dur,vol=.16,bend=0){const o=ctx.createOscillator(),f=ctx.createBiquadFilter(),g=ctx.createGain(),end=Math.max(.25,dur)+.25,hz=m=>440*Math.pow(2,(m-69)/12);o.type='sawtooth';
    /* A bend starts at the fretted pitch and reaches the target within 0.15 s. */
-   if(bend){o.frequency.setValueAtTime(hz(midi-bend),t);o.frequency.linearRampToValueAtTime(hz(midi),t+Math.min(.15,dur*.5));}else o.frequency.value=hz(midi);f.type='lowpass';f.frequency.setValueAtTime(3200,t);f.frequency.exponentialRampToValueAtTime(700,t+end);env(g,t,vol,.004,end);o.connect(f);f.connect(g);g.connect(master);o.start(t);o.stop(t+end+.05);},
+   if(bend){o.frequency.setValueAtTime(hz(midi-bend),t);o.frequency.linearRampToValueAtTime(hz(midi),t+Math.min(.15,dur*.5));}else o.frequency.value=hz(midi);/* Long notes get a gentle vibrato after the attack, like a held guitar note. */
+   if(dur>.45){const lfo=ctx.createOscillator(),depth=ctx.createGain();lfo.frequency.value=5.5;depth.gain.setValueAtTime(0,t);depth.gain.linearRampToValueAtTime(hz(midi)*.009,t+.35);lfo.connect(depth);depth.connect(o.frequency);lfo.start(t);lfo.stop(t+end+.05);}
+   f.type='lowpass';f.frequency.setValueAtTime(3200,t);f.frequency.exponentialRampToValueAtTime(700,t+end);env(g,t,vol,.004,end);o.connect(f);f.connect(g);g.connect(master);o.start(t);o.stop(t+end+.05);},
+  bass(t,midi,dur){const o=ctx.createOscillator(),f=ctx.createBiquadFilter(),g=ctx.createGain();o.type='triangle';o.frequency.value=440*Math.pow(2,(midi-69)/12);f.type='lowpass';f.frequency.value=600;env(g,t,.4,.012,Math.max(.15,dur));o.connect(f);f.connect(g);g.connect(master);o.start(t);o.stop(t+dur+.3);},
+  keys(t,midis,dur,vol=.035){midis.forEach(m=>{const o=ctx.createOscillator(),o2=ctx.createOscillator(),g=ctx.createGain();o.type='sine';o2.type='triangle';o.frequency.value=440*Math.pow(2,(m-69)/12);o2.frequency.value=o.frequency.value*2.001;env(g,t,vol,.008,Math.max(.12,dur));o.connect(g);o2.connect(g);g.connect(master);o.start(t);o2.start(t);o.stop(t+dur+.3);o2.stop(t+dur+.3);});},
+  ride(t,v=.05){burst(t,'highpass',5200,v,.22);},
   pad(t,midis,dur){midis.slice(-4).forEach(m=>{const o=ctx.createOscillator(),g=ctx.createGain();o.type='triangle';o.frequency.value=440*Math.pow(2,(m-69)/12);g.gain.setValueAtTime(.0001,t);g.gain.linearRampToValueAtTime(.028,t+.18);g.gain.setValueAtTime(.028,t+Math.max(.2,dur-.05));g.gain.linearRampToValueAtTime(.0001,t+dur+.25);o.connect(g);g.connect(master);o.start(t);o.stop(t+dur+.3);});},
   stop(){const t=ctx.currentTime;master.gain.cancelScheduledValues(t);master.gain.setValueAtTime(master.gain.value,t);master.gain.linearRampToValueAtTime(0,t+.04);setTimeout(()=>master.disconnect(),120);}
  };
@@ -50,10 +61,26 @@ function schedule(r){
  const {c,audio:a,t0}=r,at=b=>t0+b*c.spb;
  for(let b=-c.meter;b<0;b++)a.click(at(b),b===-c.meter);
  if(r.backing&&c.song){
+  /* Swung charts swing the drums too; with chords the band adds a bass line, and chords when the microphone is off
+     (keys in the guitar's range could be heard as the player). The bass stays below the instrument's lowest note. */
+  const sw=c.feel==='straight'?.5:2/3,J=window.FQJam,chords=c.chords&&J?c.chords.map(s=>{try{return J.parse(s);}catch{return null;}}):null,keys=chords&&r.input!=='mic';
   for(let b=0;b<Math.ceil(c.beats);b++){const inBar=b%c.meter;
-   if(inBar===0)a.kick(at(b));else if(c.meter===4&&inBar===2)a.kick(at(b));
-   if(c.meter===4&&inBar%2===1)a.snare(at(b));
-   a.hat(at(b),inBar===0);if(c.meter===4)a.hat(at(b+.5),false);}
+   if(c.feel==='swing'){a.ride(at(b),inBar%2?.055:.045);if(inBar%2){a.ride(at(b+sw),.035);a.hat(at(b),false);}}
+   else{if(inBar===0)a.kick(at(b));else if(c.meter===4&&inBar===2)a.kick(at(b));
+    if(c.meter===4&&inBar%2===1)a.snare(at(b));
+    a.hat(at(b),inBar===0);if(c.meter===4)a.hat(at(b+sw),false);}
+   const bar=Math.floor(b/c.meter),ch=chords&&chords[bar%chords.length];if(!ch||c.meter!==4)continue;
+   const next=chords[(bar+1)%chords.length]||ch,minor=ch.tones[1]===3;
+   if(!BASS){
+    if(c.feel==='swing')a.bass(at(b),bassNote(inBar===0?ch.root:inBar===3?(next.root+11)%12:ch.root+ch.tones[inBar]),c.spb*.9);
+    else if(c.feel==='shuffle'){const step=[0,7,minor?10:9,7][inBar];a.bass(at(b),bassNote(ch.root+step),c.spb*.55);a.bass(at(b+sw),bassNote(ch.root+step),c.spb*.3);}
+    else if(inBar%2===0)a.bass(at(b),bassNote(ch.root+(inBar?7:0)),c.spb*1.8);
+   }
+   if(keys){const v=voicing(ch);
+    if(c.feel==='swing'){if(inBar===0)a.keys(at(b),v,c.spb*.5);if(inBar===1)a.keys(at(b+sw),v,c.spb*.6,.03);}
+    else if(c.feel==='shuffle'){if(inBar%2)a.keys(at(b),v,c.spb*.35,.04);}
+    else if(inBar===0)a.keys(at(b),v,c.spb*3.6,.03);}
+  }
  }
  /* Strum backing is a soft pad with no sharp attacks, so it does not look like a strum to the onset detector. */
  if(r.backing&&!c.song){
@@ -61,7 +88,7 @@ function schedule(r){
   c.items.forEach(it=>{if(it.chord!==chord){flush(it.beat);chord=it.chord;start=it.beat;}});flush(c.beats);
  }
  if(r.guide)c.items.forEach(it=>{
-  if(c.song)a.pluck(at(it.beat),it.midi,it.dur,.16,it.bend||0);
+  if(c.song)(it.parts||[it]).forEach((p,k)=>a.pluck(at(it.beat)+k*.012,it.parts?it.midis[k]:it.midi,it.dur,it.parts?.11:.16,p.bend||0));
   else{const notes=chordMidis(it.chord);(it.up?[...notes].reverse().slice(0,4):notes).forEach((m,k)=>a.pluck(at(it.beat)+k*.014,m,Math.min(it.dur,.9),it.up?.05:.075));}
  });
 }
@@ -166,13 +193,13 @@ function listen(r,now){
  /* Bass: a phone microphone often hears the low notes an octave high, so the same note name an octave away counts.
     The long analysis window settles late, so the attack time comes from the onset detector when there is one. */
  let at0=BASS&&r.lastOnset<=r.firstMatch&&r.firstMatch-r.lastOnset<.25?r.lastOnset:r.firstMatch;
- const it=r.c.items.find(x=>!x.grade&&same(x.midi,midi)&&at0>=x.time-.28&&at0<=x.time+lateWindow(r.c,x));
+ const it=r.c.items.find(x=>!x.grade&&(x.midis?x.midis.some(m=>same(m,midi)):same(x.midi,midi))&&at0>=x.time-.28&&at0<=x.time+lateWindow(r.c,x));
  if(!it)return;
  /* A bend is timed from its pick attack, since the target pitch arrives while the string is pushed. */
  if(it.bend&&r.lastOnset<=r.firstMatch&&r.firstMatch-r.lastOnset<.45)at0=r.lastOnset;
  /* A repeated pitch only counts when the string is picked again. */
  const prev=r.c.items[it.i-1];
- if(prev&&same(prev.midi,midi)&&prev.hitAt!==null&&r.lastOnset<=prev.hitAt+.04)return;
+ if(prev&&(prev.midis?prev.midis.some(m=>same(m,midi)):same(prev.midi,midi))&&prev.hitAt!==null&&r.lastOnset<=prev.hitAt+.04)return;
  judge(r,it,at0);
 }
 
@@ -209,10 +236,12 @@ function draw(r,t,dt){
   const y=c.song?laneY(r,it.string):r.laneMid,cx=hit?hitX:x0,scale=hit?1+(t-it.hitAt)*3:1,alpha=hit?Math.max(0,1-(t-it.hitAt)*4):1;
   g.globalAlpha=alpha;
   if(c.song&&!hit&&x1-x0>30){g.fillStyle=color;g.globalAlpha=alpha*.32;pill(g,x0,y-5,x1-x0-6,10,5);g.fill();g.globalAlpha=alpha;}
-  g.fillStyle=color;g.beginPath();g.arc(cx,y,13*scale,0,Math.PI*2);g.fill();
-  g.fillStyle='#211d33';
-  if(c.song){g.font='900 14px "Noto Sans JP",sans-serif';const label=it.fret+(it.bend?'↑':'');g.fillText(label,cx-g.measureText(label).width/2,y+4.5);}
-  else{g.beginPath();const d=it.up?-1:1;g.moveTo(cx-6,y-4*d);g.lineTo(cx+6,y-4*d);g.lineTo(cx,y+6*d);g.closePath();g.fill();g.fillRect(cx-1.5,y-(it.up?-3:9),3,6);}
+  if(c.song){
+   const parts=it.parts||[it];
+   if(parts.length>1){const ys=parts.map(p=>laneY(r,p.string));g.strokeStyle=color;g.lineWidth=4;g.beginPath();g.moveTo(cx,Math.min(...ys));g.lineTo(cx,Math.max(...ys));g.stroke();}
+   for(const p of parts){const py=laneY(r,p.string);g.fillStyle=parts.length>1&&it.grade!=='miss'?STRING_COLOR[p.string]:color;g.beginPath();g.arc(cx,py,13*scale,0,Math.PI*2);g.fill();
+    g.fillStyle='#211d33';g.font='900 14px "Noto Sans JP",sans-serif';const label=p.fret+(p.bend?'↑':'');g.fillText(label,cx-g.measureText(label).width/2,py+4.5);}
+  }else{g.fillStyle=color;g.beginPath();g.arc(cx,y,13*scale,0,Math.PI*2);g.fill();g.fillStyle='#211d33';g.beginPath();const d=it.up?-1:1;g.moveTo(cx-6,y-4*d);g.lineTo(cx+6,y-4*d);g.lineTo(cx,y+6*d);g.closePath();g.fill();g.fillRect(cx-1.5,y-(it.up?-3:9),3,6);}
   g.globalAlpha=1;
  }
  r.fx=r.fx.filter(p=>(p.life-=dt*2.2)>0);
@@ -232,7 +261,7 @@ function hud(r,t){
  const next=r.c.items.find(i=>!i.grade);
  if(r.c.song){
   const heard=$('#stage-heard');if(heard)heard.textContent=r.mic?(r.heard!=null?noteName(r.heard):'—'):'TAP';
-  if(next&&next!==r.shownNext){r.shownNext=next;$('#stage-next').innerHTML='<span>NEXT'+(next.chord?' ・ '+next.chord+' のルート':'')+'</span><b>'+next.string+'弦 '+next.fret+'フレット'+(next.bend?' ↑'+BEND[next.bend]:'')+'</b><em>'+noteName(next.midi)+'</em>';}
+  if(next&&next!==r.shownNext){r.shownNext=next;$('#stage-next').innerHTML='<span>NEXT'+(next.chord?' ・ '+next.chord+' のルート':'')+'</span><b>'+(next.parts?next.parts.map(p=>p.string+'弦'+p.fret).join(' + ')+'（どれか1音で判定）':next.string+'弦 '+next.fret+'フレット'+(next.bend?' ↑'+BEND[next.bend]:''))+'</b><em>'+(next.midis||[next.midi]).map(noteName).join('・')+'</em>';}
  }else{
   const chord=(next||r.c.items[r.c.items.length-1]).chord;
   if(chord!==r.shownChord){r.shownChord=chord;$('#stage-chord').innerHTML=F.chordDiagram(chord);}
