@@ -58,7 +58,7 @@ r=await mission({kind:'mission',bpm:84,bars:12,down:69,others:[71,72,74,76],shot
 const mastered=await p.evaluate(()=>window.FQDojo.status(window.FQDojo.modules.find(m=>m.id==='bb-box')).every(Boolean));
 check('mission passes and masters the lick',r.title==='ミッション達成！'&&mastered,JSON.stringify(r));
 await p.click('#modal-close');await p.waitForTimeout(300);
-const rank=await p.$eval('#dojo-count',e=>e.textContent);check('mastery count',rank==='1 / 147',rank);
+const rank=await p.$eval('#dojo-count',e=>e.textContent);check('mastery count',rank==='1 / 181',rank);
 
 // Artist groups: switching shows that artist's licks and is remembered.
 await p.click('[data-artist="アルバート・キング"]');
@@ -111,6 +111,11 @@ check('jazz artist groups',jz.artists.length===12&&jz.artists[0]==='基礎'&&jz.
 await p.click('[data-artist="バッキング"]');
 const kept=await p.evaluate(()=>({jazz:localStorage.getItem('fretQuestDojoArtist:JAZZ'),blues:localStorage.getItem('fretQuestDojoArtist')}));
 check('artist choice is kept per genre',kept.jazz==='バッキング'&&kept.blues==='基礎',JSON.stringify(kept));
+// Pops is grouped by style, and its note says so.
+await p.click('[data-genre="POPS"]');await p.click('[data-artist="シティポップ"]');
+const po=await p.evaluate(()=>({artists:[...document.querySelectorAll('#dojo [data-artist]')].map(b=>b.dataset.artist),cards:document.querySelectorAll('#dojo [data-module]').length,note:document.querySelector('.dojo-blurb span')?.textContent||''}));
+check('pops style groups',po.artists.length===7&&po.artists.includes('アニソン')&&po.cards===6&&po.note.includes('このスタイル'),JSON.stringify(po));
+await p.click('[data-genre="JAZZ"]');
 // A comping module and a pop session.
 await p.click('[data-module="shells"]');await p.waitForSelector('.dojo-chords');
 if(OUT)await p.screenshot({path:OUT+'/dojo-comp.png'});

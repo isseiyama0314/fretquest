@@ -128,15 +128,18 @@ const MODULES=[
 const E=4,B=11;
 const SETS={blues:[BLUES_A,'Aブルース・スケール'],amix:[[9,11,0,1,2,3,4,6,7],'Aのメジャー＋マイナー・ペンタ'],
  eblues:[[4,7,9,10,11,2],'Eブルース・スケール'],emix:[[4,6,7,8,9,10,11,1,2],'Eのメジャー＋マイナー・ペンタ'],
- bminor:[[11,1,2,4,6,7,9],'Bナチュラル・マイナー'],bminor7:[[11,1,2,4,6,7,9,10],'Bマイナー＋F♯7のA♯'],cmajor:[MAJOR_C,'Cメジャー・スケール']};
+ bminor:[[11,1,2,4,6,7,9],'Bナチュラル・マイナー'],bminor7:[[11,1,2,4,6,7,9,10],'Bマイナー＋F♯7のA♯'],cmajor:[MAJOR_C,'Cメジャー・スケール'],
+ aharm:[[9,11,0,2,4,5,7,8],'Aマイナー＋E7のG♯'],amixo:[[9,11,1,2,4,6,7],'Aミクソリディアン']};
 const SESSION={'ii-v-i':{root:C,min:24},autumn:{root:G,min:24},fly:{root:A,min:24},billie:{root:5,min:24},bossa:{root:C,min:20},
  rhythm:{root:10,min:24},'minor-blues':{root:C,min:20},modal:{root:2,min:24},
+ oudou:{root:C,name:'C',set:'cmajor',min:16},canon:{root:C,name:'C',set:'cmajor',min:16},citypop:{root:A,min:20},anison:{root:C,min:24},
+ jrock:{root:A,name:'A',set:'aharm',min:20},britrock:{root:A,name:'A',set:'amixo',min:16},
  'blues-a':{root:A,name:'A',set:'blues',min:20},chicago:{root:E,name:'E',set:'eblues',min:20},thrill:{root:B,name:'B',set:'bminor',min:16},ballad:{root:C,name:'C',set:'cmajor',min:12}};
 /* An artist-style lick: [id,title,tag,about,src,opt]. opt: session, bpm, groove, set, min, text, goals, over.
    Sessions with a scale (blues, pops) grade the share of notes in it; chord-change sessions (jazz) grade chord tones.
    "over" names the chords under the learn chart bar by bar; it is used by the content checks, not shown. */
 const lick=(artist,genre='BLUES')=>([id,title,tag,about,src,o={}])=>{
- const s=o.session||(genre==='JAZZ'?'ii-v-i':'blues-a'),d=SESSION[s],bpm=o.bpm||72,set=o.set||d.set,min=o.min||d.min;
+ const s=o.session||({JAZZ:'ii-v-i',POPS:'oudou'})[genre]||'blues-a',d=SESSION[s],bpm=o.bpm||72,set=o.set||d.set,min=o.min||d.min;
  const base=set?{type:'inSet',pcs:SETS[set][0],ratio:.8,label:SETS[set][1]+'の音が80%以上'}:{type:'tones',ratio:.5,label:'コードの音が50%以上'};
  const land=d.set?{type:'land',pcs:[d.root],min:3,label:'小節の頭で'+d.name+'に3回着地'}:{type:'land',min:4,label:'小節の頭でコードの音に4回着地'};
  return {id,genre,kind:'solo',artist,root:d.root,title,tag,about,over:o.over,learn:{bpm,src},groove:{bpm:o.groove||bpm+12},
@@ -490,9 +493,106 @@ JAZZ_MORE.push(
  comp('jc-anticip','先取りのコンプ','4拍目の裏で次のコードへ',['次のコードを、小節線の8分前（4拍目の裏）に先取りして弾く。バンドが前に進む感じが一気に強まります。','先取りした音は次の小節の頭まで伸ばす。小節の頭で弾き直さないのがポイントです。'],
   {bpm:84,src:'Dm7:1.5 Dm7:.5 -:1.5 G7:.5 | -:1.5 G7:.5 -:1.5 Cmaj7:.5 | -:1.5 Cmaj7:.5 -:2 | Cmaj7:1.5 Cmaj7:.5 -:1.5 Dm7:.5'},{bpm:100,src:'Dm7:1.5 Dm7:.5 -:1.5 G7:.5 | -:1.5 G7:.5 -:1.5 Cmaj7:.5 | -:1.5 Cmaj7:.5 -:2 | Cmaj7:1.5 Cmaj7:.5 -:1.5 Dm7:.5 | -:1.5 Dm7:.5 -:1.5 G7:.5 | -:1.5 G7:.5 -:1.5 Cmaj7:.5 | -:1.5 Cmaj7:.5 -:2 | Cmaj7:1.5 Cmaj7:.5 -:2'},'ii–V–I を4周','JAZZ')
 );
+/* ---------------- POPS / STYLES ----------------
+   Pops is grouped by style rather than by player: each style's licks are original phrases in its typical vocabulary.
+   Pops sessions are straight (no swing). */
+ARTISTS.POPS=[
+ ['基礎','メジャー・ペンタと、歌うメロディ。ポップスのソロの土台。'],
+ ['シティポップ','メジャー7、ドリアン、16分のシンコペーション。都会的で洒落たソロ。',[['Tatsuro Yamashita Ride on Time','RIDE ON TIME（山下達郎）','16分で跳ねるカッティングと、洒落たコードの響き'],['Mariya Takeuchi Plastic Love','プラスティック・ラヴ（竹内まりや）','IV–III–viの進行の上で、裏で鳴るギター']]],
+ ['J-ロック','チョーキング、和声的短音階、ユニゾン、タッピング。サビ前で一気に盛り上げる。',[["B'z ultra soul",'ultra soul（B’z）','速いリフと、チョーキングで歌うソロ'],["L'Arc-en-Ciel HONEY",'HONEY（L’Arc〜en〜Ciel）','明るく抜けるリフと、ソロの組み立て']]],
+ ['バラード','長い音、メジャーのチョーキング、sus4、歌の後ろの短いフレーズ。',[['Mr.Children Tomorrow never knows','Tomorrow never knows（Mr.Children）','歌を支える、伸ばす音中心のギター'],['Spitz Robinson','ロビンソン（スピッツ）','アルペジオで歌うようなギターのメロディ']]],
+ ['アニソン','16分の駆け上がり、3連のアルペジオ、オクターブ。速いテンポで決める。',[['LiSA Gurenge','紅蓮華（LiSA）','速いテンポで刻むリフと、駆け上がるソロ'],['Kenshi Yonezu KICK BACK','KICK BACK（米津玄師）','16分で詰め込むギターと、目まぐるしい展開']]],
+ ['ブリティッシュ・ロック','付点8分のアルペジオ、開放弦のドローン、ダブル・ストップ、ミクソリディアン。',[['U2 Where the Streets Have No Name','Where the Streets Have No Name（U2）','付点8分のディレイで広がるアルペジオ'],['Oasis Wonderwall','Wonderwall（Oasis）','開放弦を鳴らし続けるストロークの響き']]],
+ ['バッキング','8ビート、16ビートのカッティング、アルペジオ、パワーコード、ストローク。']
+];
+const PO=a=>lick(a,'POPS');
+const POPS_MORE=[
+...[
+ ['cp-maj7','メジャー7の浮遊感','Fmaj7のEを長く',['Fmaj7のE（7度）、Am7のG（7度）を長めに置く。ルートや3度より宙に浮いたような響きが、シティポップの都会的な空気を作ります。','E7の小節はG♯が主役。1小節だけ和声的短音階の色が差し込みます。'],
+  '-:.5 4.7:.5 4.10:.5 3.9:.5 2.10 3.9 | 3.9:.5 2.9:.5 1.7:.5 1.10:.5 1.7 2.9 | 2.10:.5 1.8:.5 2.10:.5 3.9:.5 2.8:2 | 2.10:4',{session:'citypop',over:'Fmaj7 E7 Am7 Am7',text:'シティポップの進行で、7度の音を長めに置いてソロ。',goals:[{type:'guide',min:8,label:'3度・7度を8回弾く'},{type:'land',min:4,label:'小節の頭でコードの音に4回着地'}]}],
+ ['cp-dorian','ドリアンで都会的に','Am7でF♯を使う',['Am7の上で、F（短6度）ではなくF♯（長6度）を使うとドリアン。暗すぎない、洗練されたマイナーになります。','2弦7フレットのF♯を通るたびに、少しだけ明るさが差します。'],
+  '-:.5 2.5:.5 2.7:.5 2.8:.5 1.5:.5 1.7:.5 1.8:.5 1.7:.5 | 1.5:.5 2.8:.5 2.7:.5 2.5:.5 3.7:2',{session:'citypop',over:'Am7 Am7',text:'Am7の小節でF♯を使ってソロ。',goals:[{type:'pc',pc:6,min:3,label:'F♯（ドリアンの6度）を3回弾く'},{type:'land',min:4,label:'小節の頭でコードの音に4回着地'}]}],
+ ['cp-e7','E7で♭9','G♯・B・D・Fでなめらかに',['E7の3度G♯から、B・D・F（♭9）と積むと、E7♭9の響き。次のAm7へ強く引っ張られます。','Fは次のAm7のEへ、G♯はAへ。どちらも半音で解決します。'],
+  '-:.5 4.6:.5 3.4:.5 3.7:.5 2.6:.5 3.7:.5 3.4:.5 4.6:.5 | 4.7:2 3.5:2',{session:'citypop',over:'E7 Am7',text:'E7の小節で♭9（F）を使い、Am7に解決しよう。',goals:[{type:'pc',pc:8,min:3,label:'G♯（E7の3度）を3回弾く'},{type:'land',min:4,label:'小節の頭でコードの音に4回着地'}]}],
+ ['cp-16th','16分のシンコペーション','拍の頭を休んで跳ねる',['16分音符1つ分遅れて入り、8分の裏で止まる。シティポップのソロは、メロディよりリズムの跳ね方で聴かせます。','2小節目は2拍ずつGm7とC7。それぞれのコードの音で、同じリズムを繰り返します。'],
+  '-:.25 2.5:.25 2.8:.5 1.5:.5 -:.25 2.8:.25 2.5:.5 3.7 3.5:.5 | -:.25 2.3:.25 2.6:.5 3.3 -:.25 3.5:.25 2.5:.5 1.3',{session:'citypop',over:'Am7 Gm7,C7',text:'16分で跳ねるリズムを入れてソロ。'}],
+ ['cp-chromatic','半音で次のコードへ','Fmaj7のFからE7のEへ',['Fmaj7のF（3弦10フレット）から、半音下のE（3弦9フレット）へ。コードがE7に変わる瞬間を、1フレットの移動で伝えます。','E7ではG♯・B・E・Dとコードの音をたどります。'],
+  '-:.5 1.8:.5 2.10:.5 3.10:.5 3.9:2 | 2.9 2.12 3.9:.5 3.7:.5 4.6',{session:'citypop',over:'Fmaj7 E7',text:'1〜2小節目のFmaj7→E7で、半音の動きを入れよう。'}],
+ ['cp-high','高音で歌う','1弦12〜15フレット',['1弦の高い音域で、E・D・C・Aと下りてから、また上がる。音域を上げるだけで、サビのような明るさが出ます。','高い音は細くなりやすいので、ピッキングはしっかり、左手はフレットのすぐ横で。'],
+  '1.12 1.10:.5 1.8:.5 2.10:2 | 1.8:.5 1.10:.5 1.12:.5 1.15:.5 1.12:2',{session:'citypop',over:'Am7 Am7',text:'高い音域で歌うソロ。',goals:[{type:'range',lo:69,hi:90,ratio:.5,label:'高い音域が50%以上'},{type:'land',min:4,label:'小節の頭でコードの音に4回着地'}]}]
+].map(PO('シティポップ')),
+...[
+ ['jr-bend','サビ前のチョーキング','2弦8フレットをAまで',['2弦8フレットのGを1音上げてA。サビの直前、バンドが盛り上がる場所で伸ばすと、一気に視界が開けます。','上げたら下ろさず、そのまま次の音へ。勢いを止めないのがロックです。'],
+  '-:.5 2.8b2:1.5 2.5:.5 3.7:.5 3.5 | 4.7:4',{session:'jrock',text:'J-ロックの進行で、チョーキングを入れてソロ。',goals:[{type:'pc',pc:9,min:4,label:'A（チョーキングの音）を4回'},{type:'land',pcs:[9],min:2,label:'小節の頭でAに2回着地'}]}],
+ ['jr-harm','和声的短音階','E7でG♯を使う',['Aマイナーの曲で、E7の上だけG♯を使う。Gを半音上げるだけで、一気にクラシカルで劇的な響きになります。','E・F・E・D・C・B・A・G♯と8分で下りて、Amに着地します。'],
+  '2.5:.5 2.6:.5 2.5:.5 3.7:.5 3.5:.5 3.4:.5 4.7:.5 4.6:.5 | 4.7:4',{session:'jrock',over:'E7 Am',text:'8小節目のE7でG♯を使い、Amに戻ろう。',goals:[{type:'pc',pc:8,min:2,label:'G♯（E7の3度）を2回弾く'},{type:'land',pcs:[9],min:2,label:'小節の頭でAに2回着地'}]}],
+ ['jr-run','3連の下降','ペンタを3音ずつ',['Aマイナー・ペンタを3連符で下りる。1拍に3音、2弦ずつ形を移していきます。','速さより粒をそろえることが大事。最初はテンポを落として、3連の頭を感じましょう。'],
+  '1.8:1/3 1.5:1/3 2.8:1/3 1.5:1/3 2.8:1/3 2.5:1/3 2.8:1/3 2.5:1/3 3.7:1/3 2.5:1/3 3.7:1/3 3.5:1/3 | 3.5:2 4.7:2',{session:'jrock',over:'Am F',bpm:66,groove:80,text:'3連の下降を入れてソロ。',min:24}],
+ ['jr-climb','同じ音を刻んで上がる','16分で4回ずつ',['同じ音を16分で4回刻んでから、次の音へ。ソロの最後を盛り上げる、J-ロックの決めフレーズです。','D・G・Bと、Gのコードの音を順に上がります。'],
+  '3.7:.25 3.7:.25 3.7:.25 3.7:.25 2.8:.25 2.8:.25 2.8:.25 2.8:.25 1.7:.25 1.7:.25 1.7:.25 1.7:.25 1.10 | 2.9 2.12 1.12:2',{session:'jrock',over:'G E7',bpm:66,groove:84,text:'同じ音を刻んで上がるフレーズで、ソロを盛り上げよう。',min:28}],
+ ['jr-unison','ユニゾン・チョーキング','上げた音と同じ高さの音を同時に',['3弦7フレットを1音上げたEと、2弦5フレットのEを同時に鳴らす。わずかなずれがうねりを生む、ロックの定番です。','上げる方の音程が合うと、うねりが止まって1つの太い音になります。耳で合わせましょう。'],
+  '-:.5 3.7b2+2.5:1.5 3.5:.5 4.7:1.5 | 2.8b2+1.5:2 2.5 3.7',{session:'jrock',over:'Am Am',text:'ユニゾン・チョーキングを入れてソロ。',goals:[{type:'pc',pc:4,min:3,label:'E（5度）を3回弾く'},{type:'land',pcs:[9],min:2,label:'小節の頭でAに2回着地'}]}],
+ ['jr-tap','タッピング','右手で12フレットをたたく',['右手の指で1弦12フレットをたたき（タッピング）、離して5フレット、左手で8フレット。E・A・Cの3音が、3連でぐるぐる回ります。','ピックで弾き直してもOK。マイクは音程で判定するので、まずは3音の粒をそろえましょう。'],
+  '1.12:1/3 1.5:1/3 1.8:1/3 1.12:1/3 1.5:1/3 1.8:1/3 1.12:1/3 1.5:1/3 1.8:1/3 1.12:1/3 1.5:1/3 1.8:1/3 | 1.12:1/3 1.5:1/3 1.8:1/3 1.10:1/3 1.5:1/3 1.8:1/3 1.12:2',{session:'jrock',over:'Am Am',bpm:63,groove:76,text:'タッピングのフレーズを入れてソロ。',min:24}]
+].map(PO('J-ロック')),
+...[
+ ['bl-long','サビで泣く長い音','2拍ずつ伸ばして歌う',['ポップスのバラードのソロは、歌のように長い音でできています。1弦10フレットのDを1音上げてE、2拍伸ばす。','各小節に2〜3音。音を減らした分、1音ごとの音程と長さに気を配ります。'],
+  '-:1 1.8 1.10b2:2 | 1.8 2.10 1.8:2 | 1.10 1.8 2.10:2 | 2.10b2:2 2.8:2',{session:'ballad',over:'C Am F G',min:10,text:'バラードで、長い音を中心に歌うソロ。',goals:[{type:'maxNotes',max:40,label:'弾きすぎない（40音以下）'},{type:'land',min:4,label:'小節の頭でコードの音に4回着地'}]}],
+ ['bl-major-bend','メジャーのチョーキング','DからEへ、Cの3度に',['Cのコードの上で、3弦7フレットのD（2度）を1音上げてE（3度）へ。明るく、晴れやかに響くチョーキングです。','ブルースのチョーキングと形は同じでも、着地する音がメジャーの3度なので、まったく違う表情になります。'],
+  '-:.5 3.7b2:1.5 3.5 4.5 | 3.5:4',{session:'ballad',over:'C C',text:'メジャーのチョーキングを入れて、明るいソロ。',goals:[{type:'pc',pc:4,min:3,label:'E（Cの3度）を3回弾く'},{type:'land',min:4,label:'小節の頭でコードの音に4回着地'}]}],
+ ['bl-sus4','sus4から3度へ','Cを伸ばしてBへ下りる',['Gのコードの上で、C（4度）を伸ばしてからB（3度）へ。解決する瞬間の安心感が、バラードの泣きどころです。','4度の音を長く伸ばすほど、解決したときの気持ちよさが増します。'],
+  '-:1 1.8:2 1.7 | 2.8:4',{session:'ballad',over:'G G',min:10,text:'Gの小節で、4度から3度へ解決するソロ。',goals:[{type:'pc',pc:11,min:3,label:'B（Gの3度）を3回弾く'},{type:'land',min:4,label:'小節の頭でコードの音に4回着地'}]}],
+ ['bl-6th','6度で甘く','Cの上でAを伸ばす',['Cのコードの上で、A（6度）を伸ばす。メジャー・ペンタの音の中でも、とくに甘く柔らかい響きです。','Amの小節ではE→Dと下りて、次へつなぎます。'],
+  '-:.5 1.5:1.5 1.3 2.5 | 2.5:2 2.3:2',{session:'ballad',over:'C Am',min:10,text:'6度（A）を伸ばして、甘いソロ。'}],
+ ['bl-arp','アルペジオで歌う','コードの音を順に鳴らす',['Am・F・G・Cの各コードの音を、低い方から8分で鳴らしてから伸ばす。コードをなぞるだけでメロディになります。','押さえる位置は開放弦の近く。コードを押さえる感覚で、指を置いたまま弾くと音がつながります。'],
+  '3.2:.5 2.1:.5 1.0:.5 2.1:.5 1.0:2 | 4.3:.5 3.2:.5 2.1:.5 3.2:.5 2.1:2 | 4.5:.5 3.4:.5 2.3:.5 3.4:.5 2.3:2 | 3.5:.5 2.5:.5 1.3:.5 2.5:.5 2.1:2',{session:'ballad',over:'Am F G C',text:'コードの音をなぞって歌うソロ。',goals:[{type:'tones',ratio:.7,label:'コードの音が70%以上'},{type:'land',min:4,label:'小節の頭でコードの音に4回着地'}]}],
+ ['bl-fill','歌の後ろで弾く','小節の最後だけ2音',['歌の邪魔をしないよう、各小節の最後の1拍だけ弾く。ボーカルの息継ぎの間に入れる、短い合いの手です。','3拍休んでから入るので、拍を数え続けることが一番の練習です。'],
+  '-:3 1.3:.5 1.5:.5 | 1.3:2 -:2 | -:3 2.1:.5 2.3:.5 | 2.0:2 -:2',{session:'ballad',over:'C Am F G',min:6,text:'各小節の終わりだけ弾くつもりで、歌の後ろのギター。',goals:[{type:'maxNotes',max:24,label:'弾きすぎない（24音以下）'},{type:'tones',ratio:.5,label:'コードの音が50%以上'}]}]
+].map(PO('バラード')),
+...[
+ ['an-run','16分の駆け上がり','Cメジャーを一気に上がる',['F・G・A・B・C・D・E・Fと、16分音符で1オクターブを駆け上がる。アニソンのソロの入りで定番の勢いです。','4音ずつのまとまりで、頭の音を少し強く。速さはテンポを落として練習してから。'],
+  '4.3:.25 4.5:.25 3.2:.25 3.4:.25 3.5:.25 2.3:.25 2.5:.25 2.6:.25 2.8:.25 1.5:.25 1.7:.25 1.8:.25 1.10 | 1.10:2 1.7 2.8',{session:'anison',over:'F G',bpm:60,groove:76,text:'16分の駆け上がりを入れてソロ。',min:30}],
+ ['an-arp','3連のアルペジオ','Em→Amを3連で',['Emのコードの音（E・G・B）を3連で上下し、Amへ。速い曲では、コードの音をなぞるだけで華やかなソロになります。','手は5〜7フレットに置いたまま。弦を移る動きだけに集中しましょう。'],
+  '5.7:1/3 4.5:1/3 3.4:1/3 2.5:1/3 3.4:1/3 4.5:1/3 5.7:1/3 4.5:1/3 3.4:1/3 2.5:1/3 3.4:1/3 4.5:1/3 | 4.7:1/3 3.5:1/3 2.5:1/3 1.5:1/3 2.5:1/3 3.5:1/3 4.7:1/3 3.5:1/3 2.5:1/3 1.5',{session:'anison',over:'Em Am',bpm:63,groove:80,text:'3連のアルペジオでコードをなぞるソロ。',min:30}],
+ ['an-climax','サビ前の駆け上がり','9〜15フレットを16分で',['E・F・G・A・B・C・D・E・F・Gと、高い音域を16分で駆け上がり、最後のGを伸ばす。サビの直前に入れると、一気に景色が変わります。','上がりきった音は長く。速いフレーズほど、終わりの1音を大切に。'],
+  '3.9:.25 3.10:.25 3.12:.25 2.10:.25 2.12:.25 2.13:.25 1.10:.25 1.12:.25 1.13:.25 1.15:1.75 | 1.15:2 1.12 2.15',{session:'anison',over:'G G',bpm:60,groove:76,text:'サビ前の駆け上がりを入れてソロ。',min:24}],
+ ['an-octave','オクターブ奏法','2本飛ばしの同じ音を同時に',['4弦と2弦で、同じ音を1オクターブ違いで同時に鳴らす。間の3弦は左手で触れてミュートします。','1音より太く、ソロでもリフでも目立ちます。マイクはどちらか1音で判定します。'],
+  '4.3+2.6 4.3+2.6:.5 4.5+2.8:1.5 4.3+2.6 | 4.5+2.8:2 4.7+2.10:2 | 4.2+2.5:2 4.5+2.8:2 | 4.7+2.10:4',{session:'anison',over:'F G Em Am',text:'オクターブ奏法でメロディを弾こう。',min:16}],
+ ['an-sweep','5弦のアルペジオ','Amの音を5本の弦で',['12フレットのAmのコードの音を、5弦から1弦まで1音ずつ上がって下りる。速いアニソンのソロで使われる、華やかな動きです。','実際はピックを流すように弾く（スウィープ）技ですが、まずは1音ずつ確実に。'],
+  '5.12:.25 4.14:.25 3.14:.25 2.13:.25 1.12:.25 1.17:.25 1.12:.25 2.13:.25 3.14:.25 4.14:.25 5.12:.5 4.14 | 1.13:2 2.13 3.14',{session:'anison',over:'Am F',bpm:56,groove:72,text:'Amのアルペジオを入れてソロ。'}],
+ ['an-motif','3音の反復','F・G・Aを形を変えずに',['F・G・Aの3音を、コードが変わるたびに1音ずつ上にずらして繰り返す。速いテンポの中でも、覚えやすい形です。','最後はCを4拍。繰り返しのあとの長い音で、フレーズを締めます。'],
+  '-:.5 2.6:.5 2.8:.5 1.5 -:.5 2.6:.5 2.8:.5 | -:.5 2.8:.5 1.5:.5 1.7 -:.5 2.8:.5 1.5:.5 | 1.8:4',{session:'anison',over:'F G C',text:'3音のモチーフを繰り返してソロ。'}]
+].map(PO('アニソン')),
+...[
+ ['br-dotted','付点8分のアルペジオ','ディレイで広がる響き',['付点8分（8分の1.5倍）でコードの音を鳴らす。ディレイ（やまびこ）を付点8分にすると、自分の音と重なって細かい16分に聴こえます。','アプリではディレイはかかりませんが、付点8分のリズムを体に入れるだけで、あの広がる響きの土台ができます。'],
+  '1.5:.75 2.5:.75 3.6:.75 1.5:.75 2.5 | 1.7:.75 2.8:.75 3.7:.75 1.7:.75 2.8 | 1.5:.75 2.7:.75 3.7:.75 1.5:.75 2.7 | 1.5:.75 2.5:.75 3.6:.75 1.5:.75 2.5',{session:'britrock',over:'A G D A',text:'付点8分のアルペジオで、コードの音を鳴らそう。',goals:[{type:'tones',ratio:.7,label:'コードの音が70%以上'},{type:'land',pcs:[9],min:2,label:'小節の頭でAに2回着地'}]}],
+ ['br-drone','開放弦のドローン','2弦開放を鳴らしながら',['3弦で動くメロディの合間に、2弦開放のBをはさみ続ける。同じ音が鳴り続ける（ドローン）だけで、響きがぐっと広がります。','開放弦は押さえる必要がないので、左手は3弦のメロディだけに集中できます。'],
+  '3.2:.5 2.0:.5 3.4:.5 2.0:.5 3.6:.5 2.0:.5 3.4:.5 2.0:.5 | 3.0:.5 2.0:.5 3.2:.5 2.0:.5 3.4:.5 2.0:.5 3.2:.5 2.0:.5 | 3.7:.5 2.0:.5 3.6:.5 2.0:.5 3.4:.5 2.0:.5 3.2:.5 2.0:.5 | 3.2:4',{session:'britrock',over:'A G D A',text:'開放弦をはさみながらメロディを弾こう。',min:24}],
+ ['br-double','3度のダブル・ストップ','2本の弦を同時に',['3弦と2弦で、3度離れた2音を同時に鳴らす。1本で弾くより厚く、コードの響きを含んだメロディになります。','A→G→D→Aと、コードに合わせて形を移していきます。マイクはどちらか1音で判定します。'],
+  '3.6+2.5 3.7+2.7 3.6+2.5:2 | 3.4+2.3:2 3.0+2.0:2 | 3.2+2.3:2 3.7+2.7:2 | 3.6+2.5:4',{session:'britrock',over:'A G D A',min:12,text:'ダブル・ストップでメロディを弾こう。'}],
+ ['br-mixo','♭7の明るいロック','ミクソリディアンのG',['Aメジャーなのに、7度はG♯ではなくG。この♭7が、明るいのに少しやんちゃなブリティッシュ・ロックの響きです。','4弦・5弦の低い音域で、リフのように弾きます。'],
+  '-:.5 4.2:.5 4.5:.5 4.2:.5 4.0:.5 5.4:.5 5.2:.5 5.0:.5 | 5.0:2 4.5 4.2',{session:'britrock',over:'A A',text:'G（♭7）を使って、明るいロックのソロ。',goals:[{type:'pc',pc:7,min:3,label:'G（♭7）を3回弾く'},{type:'land',pcs:[9],min:2,label:'小節の頭でAに2回着地'}]}],
+ ['br-sus','4度から3度へ','DでGを伸ばしてF♯へ',['Dのコードの上で、G（4度）を伸ばしてからF♯（3度）へ。ロックのコード・ワークでおなじみの動きを、単音で弾きます。','次のAでは、E・C♯・Aとコードの音を下ります。'],
+  '-:.5 2.8:1.5 2.7:2 | 2.5 3.6 3.2:2',{session:'britrock',over:'D A',min:12,text:'4度から3度へ解決する動きを入れてソロ。'}],
+ ['br-slow','ゆったり大きなメロディ','1小節に2音',['1小節に2音だけの、大きなメロディ。A→E、B→G、F♯→A、G♯→E。コードに合わせて、ゆったり置いていきます。','音が少ない分、音程と長さが全部聴こえます。伸ばす音を最後まで保ちましょう。'],
+  '1.5:2 1.0:2 | 1.7:2 1.3:2 | 1.2:2 1.5:2 | 1.4:2 1.0:2',{session:'britrock',over:'A G D E',min:8,text:'1小節に2音くらいの、大きなメロディでソロ。',goals:[{type:'maxNotes',max:32,label:'弾きすぎない（32音以下）'},{type:'tones',ratio:.6,label:'コードの音が60%以上'}]}]
+].map(PO('ブリティッシュ・ロック'))
+];
+/* Pops comping. */
+const EIGHTS='X:.5 X:.5 X:.5 X:.5 X:.5 X:.5 X:.5 X:.5',CUT16='X:.25 -:.25 ^X:.25 X:.25 -:.25 X:.25 ^X:.25 -:.25 X:.25 -:.25 ^X:.25 X:.25 -:.25 X:.25 ^X:.25 -:.25';
+POPS_MORE.push(
+ comp('pc-power','パワーコードの8分','ダウンで刻むロックの基本',['ルートと5度だけのパワーコードを、8分音符のダウン・ピッキングで刻む。J-ロックやアニソンの伴奏の土台です。','右手は手首を小さく、同じ強さで。左手は弾かない弦に軽く触れてノイズを消します。'],
+  {bpm:96,src:bars(EIGHTS,['A5','F5','G5','C5'])},{bpm:112,src:bars(EIGHTS,['A5','F5','G5','C5','A5','F5','G5','E5'])},'J-ロック進行・2回','POPS'),
+ comp('pc-citycut','シティポップのカッティング','メジャー7を16分で',['Fmaj7・E7・Am7を、16分のカッティングで。コードの響きが洒落ているので、リズムがそろうだけで一気にそれらしくなります。','弾かない所も右手は振り続け、左手を浮かせて音を切ります。'],
+  {bpm:76,src:bars(CUT16,['Fmaj7','E7','Am7','Am7'])},{bpm:88,src:bars(CUT16,['Fmaj7','E7','Am7','Gm7','Fmaj7','E7','Am7','C7'])},'シティポップ進行・2回','POPS'),
+ comp('pc-brit','開放弦を鳴らすストローク','A・G・Dをオープン・コードで',['A・G・Dを開放弦を含むコードで、8ビートでストローク。開放弦が鳴り続けることで、コードが変わっても響きがつながります。','ダウンとアップを止めず、アップは高い弦だけ軽く。'],
+  {bpm:84,src:bars('X X:.5 ^X:.5 -:.5 ^X:.5 X:.5 ^X:.5',['A','G','D','A'])},{bpm:100,src:bars('X X:.5 ^X:.5 -:.5 ^X:.5 X:.5 ^X:.5',['A','G','D','A','A','G','D','E'])},'ブリティッシュ・ロック進行・2回','POPS'),
+ comp('pc-drive','疾走8ビート','速い王道進行をダウンで',['F・G・Em・Amを8分のダウンで刻み、速い曲の推進力を作る。アニソンや速いJ-POPの伴奏です。','テンポが速いほど、腕ではなく手首で。疲れたら力を抜いて振りを小さく。'],
+  {bpm:100,src:bars(EIGHTS,['F','G','Em','Am'])},{bpm:120,src:bars(EIGHTS,['F','G','Em','Am','F','G','C','C'])},'アニソン進行・2回','POPS')
+);
 /* The original modules of a genre with artist groups open its 基礎 and バッキング groups. */
 MODULES.forEach(m=>{if(ARTISTS[m.genre]&&!m.artist)m.artist=m.kind==='comp'?'バッキング':'基礎';});
-MODULES.push(...BLUES_MORE,...JAZZ_MORE);
+MODULES.push(...BLUES_MORE,...JAZZ_MORE,...POPS_MORE);
 /* Chords under the charts that leave the session's home chord (used by the backing band and the content checks). */
 const OVER={turnaround:'A7 E7','ec-turn':'A7 E7','srv-turn':'E7 B7','ak-turn':'A7 A7 A7 E7','jm-turn':'A7 E7','bb-gmaj7':'Gmaj7 Gmaj7 F#7 Bm7','pg-resolve':'F#7 Bm7',
  'tb-swing':'A7 D7 A7 A7','tb-dim':'D7 D#dim7 A7 A7','arp-251':'Dm7 G7 Cmaj7 Cmaj7','guide-tones':'Dm7 G7 Cmaj7 Cmaj7','enclosure':'Cmaj7','lick-251':'Dm7 G7 Cmaj7','minor-251':'Am7b5 D7 Gm6',
@@ -581,7 +681,7 @@ function feelOf(m){
 const swingBeat=b=>{const f=b-Math.floor(b);return Math.abs(f-.5)<1e-6?Math.floor(b)+2/3:b;};
 const swingAll=list=>list.map(n=>{const beat=swingBeat(n.beat);return {...n,beat,len:swingBeat(n.beat+n.len)-beat};});
 /* Chords under a tab chart, bar by bar (repeated when the chart is longer): the lick's own "over", else the session's home chord. */
-const HOME_CHORD={'blues-a':'A7',chicago:'E7',thrill:'Bm7',ballad:'C',oudou:'C',canon:'C'};
+const HOME_CHORD={'blues-a':'A7',chicago:'E7',thrill:'Bm7',ballad:'C',oudou:'C',canon:'C',citypop:'Am7',jrock:'Am',anison:'C',britrock:'A'};
 const chordsOf=m=>(m.over||HOME_CHORD[m.use.session]||'').split(' ').filter(Boolean);
 function chartFor(m,step){
  const solo=m.kind==='solo'||m.kind==='line',spec=step===1?m.learn:step===2?m.groove:m.use,type=spec.type||m.learn.type||(solo?'song':'strum');
@@ -646,7 +746,7 @@ function render(){
  $('#dojo-rank').textContent=rank();$('#dojo-count').textContent=mastered()+' / '+LIST.length;
  $('#dojo-tabs').innerHTML=GENRES.map(([g,label])=>'<button type="button" data-genre="'+g+'" aria-pressed="'+(g===genre)+'">'+label+'<small>'+LIST.filter(m=>m.genre===g&&status(m).every(Boolean)).length+' / '+LIST.filter(m=>m.genre===g).length+'</small></button>').join('');
  $('#dojo-tabs').querySelectorAll('[data-genre]').forEach(b=>b.onclick=()=>{genre=b.dataset.genre;try{localStorage.setItem('fretQuestDojoGenre',genre);}catch{}render();});
- el.innerHTML=(groups.length?'<div class="dojo-artists" role="group" aria-label="アーティスト">'+groups.map(([a])=>{const ms=inGenre.filter(m=>m.artist===a);return '<button type="button" data-artist="'+a+'" aria-pressed="'+(a===artist)+'">'+a+'<small>'+ms.filter(m=>status(m).every(Boolean)).length+' / '+ms.length+'</small></button>';}).join('')+'</div><p class="dojo-blurb">'+blurb+(artist==='基礎'||artist==='バッキング'?'':' <span>フレーズはこの人の語法を研究したオリジナルで、実際の曲のソロやメロディではありません。</span>')+'</p>'+refsHtml(genre,artist):'')+[['solo','ソロ・アドリブ'],['comp','伴奏'],['line','ベースライン']].map(([kind,label])=>{const ms=list.filter(m=>m.kind===kind);return ms.length?'<div class="dojo-group"><h3>'+label+'</h3><div class="dojo-grid">'+ms.map(m=>{const st=status(m),done=st.every(Boolean);return '<button type="button" class="dojo-card'+(done?' mastered':'')+'" data-module="'+m.id+'"><span class="jam-genre">'+(done?'MASTERED':kind==='solo'?'SOLO':kind==='line'?'BASS':'COMP')+'</span><strong>'+m.title+'</strong><span class="jam-changes">'+m.tag+'</span><span class="dojo-pips">'+st.map((d,i)=>'<i class="'+(d?'on':'')+'" title="'+STEPS[i][1]+'"></i>').join('')+'</span>'+(window.FQAir&&window.FQAir.status(m).every(Boolean)?'<span class="dojo-air">指板 ✓</span>':'')+'</button>';}).join('')+'</div></div>':'';}).join('');
+ el.innerHTML=(groups.length?'<div class="dojo-artists" role="group" aria-label="アーティスト">'+groups.map(([a])=>{const ms=inGenre.filter(m=>m.artist===a);return '<button type="button" data-artist="'+a+'" aria-pressed="'+(a===artist)+'">'+a+'<small>'+ms.filter(m=>status(m).every(Boolean)).length+' / '+ms.length+'</small></button>';}).join('')+'</div><p class="dojo-blurb">'+blurb+(artist==='基礎'||artist==='バッキング'?'':' <span>フレーズは'+(genre==='POPS'?'このスタイルの語法をもとにした':'この人の語法を研究した')+'オリジナルで、実際の曲のソロやメロディではありません。</span>')+'</p>'+refsHtml(genre,artist):'')+[['solo','ソロ・アドリブ'],['comp','伴奏'],['line','ベースライン']].map(([kind,label])=>{const ms=list.filter(m=>m.kind===kind);return ms.length?'<div class="dojo-group"><h3>'+label+'</h3><div class="dojo-grid">'+ms.map(m=>{const st=status(m),done=st.every(Boolean);return '<button type="button" class="dojo-card'+(done?' mastered':'')+'" data-module="'+m.id+'"><span class="jam-genre">'+(done?'MASTERED':kind==='solo'?'SOLO':kind==='line'?'BASS':'COMP')+'</span><strong>'+m.title+'</strong><span class="jam-changes">'+m.tag+'</span><span class="dojo-pips">'+st.map((d,i)=>'<i class="'+(d?'on':'')+'" title="'+STEPS[i][1]+'"></i>').join('')+'</span>'+(window.FQAir&&window.FQAir.status(m).every(Boolean)?'<span class="dojo-air">指板 ✓</span>':'')+'</button>';}).join('')+'</div></div>':'';}).join('');
  el.querySelectorAll('[data-module]').forEach(b=>b.onclick=()=>open(LIST.find(m=>m.id===b.dataset.module)));
  /* Keep the chosen artist in view inside the scrolling chip row, without moving the page. */
  {const row=el.querySelector('.dojo-artists'),on=row?.querySelector('[aria-pressed="true"]');if(on)row.scrollLeft=on.offsetLeft-row.offsetLeft-24;}

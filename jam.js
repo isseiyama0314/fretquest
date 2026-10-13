@@ -32,6 +32,10 @@ const SESSIONS=[
  {id:'oudou',genre:'POPS',title:'王道進行',feel:'pop',bpm:96,key:0,keyScale:MAJOR,keyName:'Cメジャー・スケール',bars:'Fmaj7 G Em Am Fmaj7 G Em Am',about:'J-POPのサビで最もよく聴く進行（IV–V–iii–vi）。前向きなのに少し切ない響き。メロディはCメジャーの音で。'},
  {id:'canon',genre:'POPS',title:'カノン進行',feel:'pop',bpm:84,key:0,keyScale:MAJOR,keyName:'Cメジャー・スケール',bars:'C G Am Em F C F G',about:'ベースが1音ずつ下がっていく定番進行。各小節の頭でコードの音に着地すると、ぐっと歌って聴こえます。'},
  {id:'ballad',genre:'POPS',title:'ポップ・バラード',feel:'pop',bpm:72,key:0,keyScale:MAJOR,keyName:'Cメジャー・スケール',bars:'C Am F G C Am F G',about:'ゆったりした4コード。音数を減らして、長い音を大事に弾く練習に。'},
+ {id:'citypop',genre:'POPS',title:'シティポップ（IV–III–vi）',feel:'pop',bpm:92,key:9,keyScale:MINOR,keyName:'Aナチュラル・マイナー（E7だけG♯）',bars:'Fmaj7 E7 Am7 Gm7,C7 Fmaj7 E7 Am7 Am7',about:'メジャー7の浮遊感と、E7で一瞬差し込む切なさ。都会的な響きの定番進行。'},
+ {id:'jrock',genre:'POPS',title:'J-ロック（Am–F–G–C）',feel:'pop',bpm:120,key:9,keyScale:MINOR,keyName:'Aナチュラル・マイナー（E7だけG♯）',bars:'Am F G C Am F G E7',about:'マイナーで始まる、疾走感のあるロック進行。最後のE7でG♯を使うと劇的に。'},
+ {id:'anison',genre:'POPS',title:'アニソン疾走（王道進行・速め）',feel:'pop',bpm:144,key:0,keyScale:MAJOR,keyName:'Cメジャー・スケール',bars:'F G Em Am F G C C',about:'王道進行を速いテンポで。コードの音をなぞるだけで、華やかなソロになります。'},
+ {id:'britrock',genre:'POPS',title:'ブリティッシュ・ロック（I–♭VII–IV）',feel:'pop',bpm:108,key:9,keyScale:[0,2,4,5,7,9,10],keyName:'Aミクソリディアン',bars:'A G D A A G D E',about:'Aの曲なのにGのコードが出てくる、明るくやんちゃなロック進行。Gの音（♭7）が似合います。'},
  {id:'bossa',genre:'BOSSA NOVA',title:'Blue Bossa',feel:'bossa',bpm:120,key:0,keyScale:MINOR,keyName:'Cナチュラル・マイナー',bars:'Cm7 Cm7 Fm7 Fm7 Dm7b5 G7 Cm7 Cm7 Ebm7 Ab7 Dbmaj7 Dbmaj7 Dm7b5 G7 Cm7 Dm7b5,G7',about:'ボサノバのリズムで。9〜12小節目はD♭へ転調するので、大きい丸の音に乗り換えます。'}
 ];
 SESSIONS.forEach(s=>{s.chart=s.bars.split(' ').map(bar=>bar.split(',').map(parse));});
