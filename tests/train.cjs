@@ -12,7 +12,8 @@ check('cards',(await p.$$eval('#train-cards [data-train]',e=>e.length))===10,'10
 /* Answers the open question correctly (right=true) or wrongly. */
 async function answer(right){
  const q=await p.evaluate(()=>{const q=window.FQTrain.current();return {choices:q.choices,answer:q.answer,multi:q.multi,frets:q.answerFrets,melody:q.melody};});
- if(q.melody){for(const [k,m] of q.melody.slice(1).entries()){const want=right?m:m+1;await p.locator(`[data-midi="${want}"]`).first().click();}}
+ /* A right answer first taps the given note on another string, which must not use up a slot. */
+ if(q.melody){if(right)await p.locator(`[data-midi="${q.melody[0]}"]`).last().click();for(const [k,m] of q.melody.slice(1).entries()){const want=right?m:m+1;await p.locator(`[data-midi="${want}"]`).first().click();}}
  else if(q.frets){const f=right?q.frets[0]:[...Array(13).keys()].find(x=>!q.frets.includes(x));await p.click(`[data-fret="${f}"]`);}
  else if(q.multi){for(let k=0;k<q.multi;k++){const c=right?q.answer[k]:q.choices.find(x=>x!==q.answer[k]);await p.click(`[data-choice="${q.choices.indexOf(c)}"]`);}}
  else{const c=right?q.answer:q.choices.find(x=>x!==q.answer);await p.click(`[data-choice="${q.choices.indexOf(c)}"]`);}
