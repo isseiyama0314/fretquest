@@ -10,7 +10,7 @@ const PC=['C','C♯','D','E♭','E','F','F♯','G','A♭','A','B♭','B'];
 const QUALITY={
  maj7:{tones:[0,4,7,11],scale:[0,2,4,5,7,9,11]},'6':{tones:[0,4,7,9],scale:[0,2,4,5,7,9,11]},'':{tones:[0,4,7],scale:[0,2,4,5,7,9,11]},
  m7:{tones:[0,3,7,10],scale:[0,2,3,5,7,9,10]},m6:{tones:[0,3,7,9],scale:[0,2,3,5,7,9,11]},m:{tones:[0,3,7],scale:[0,2,3,5,7,8,10]},
- '7':{tones:[0,4,7,10],scale:[0,2,4,5,7,9,10]},m7b5:{tones:[0,3,6,10],scale:[0,1,3,5,6,8,10]},dim7:{tones:[0,3,6,9],scale:[0,2,3,5,6,8,9,11]}
+ '7':{tones:[0,4,7,10],scale:[0,2,4,5,7,9,10]},'9':{tones:[0,4,7,10,2],scale:[0,2,4,5,7,9,10]},m7b5:{tones:[0,3,6,10],scale:[0,1,3,5,6,8,10]},dim7:{tones:[0,3,6,9],scale:[0,2,3,5,6,8,9,11]}
 };
 const DEGREE={0:'R',3:'♭3',4:'3',6:'♭5',7:'5',9:'6',10:'♭7',11:'7'};
 const pretty=sym=>sym.replace(/^([A-G])b/,'$1♭').replace(/^([A-G])#/,'$1♯').replace('m7b5','m7♭5');
@@ -36,6 +36,10 @@ const SESSIONS=[
  {id:'jrock',genre:'POPS',title:'J-ロック（Am–F–G–C）',feel:'pop',bpm:120,key:9,keyScale:MINOR,keyName:'Aナチュラル・マイナー（E7だけG♯）',bars:'Am F G C Am F G E7',about:'マイナーで始まる、疾走感のあるロック進行。最後のE7でG♯を使うと劇的に。'},
  {id:'anison',genre:'POPS',title:'アニソン疾走（王道進行・速め）',feel:'pop',bpm:144,key:0,keyScale:MAJOR,keyName:'Cメジャー・スケール',bars:'F G Em Am F G C C',about:'王道進行を速いテンポで。コードの音をなぞるだけで、華やかなソロになります。'},
  {id:'britrock',genre:'POPS',title:'ブリティッシュ・ロック（I–♭VII–IV）',feel:'pop',bpm:108,key:9,keyScale:[0,2,4,5,7,9,10],keyName:'Aミクソリディアン',bars:'A G D A A G D E',about:'Aの曲なのにGのコードが出てくる、明るくやんちゃなロック進行。Gの音（♭7）が似合います。'},
+ {id:'funk-e9',genre:'FUNK',title:'ワンコード・ファンク（E9）',feel:'funk',bpm:100,key:4,keyScale:[0,2,3,4,7,9,10],keyName:'Eミクソリディアン＋G（短3度）',bars:'E9 E9 E9 E9 E9 E9 E9 E9',about:'コードはE9だけ。16分のグルーヴの上で、リズムで聴かせる練習。'},
+ {id:'funk-minor',genre:'FUNK',title:'マイナー・ファンク（Em7–A7）',feel:'funk',bpm:96,key:4,keyScale:[0,2,3,5,7,9,10],keyName:'Eドリアン',bars:'Em7 A7 Em7 A7 Em7 A7 Em7 A7',about:'Em7とA7を1小節ずつ。A7のC♯が、ドリアンらしい明るさの決め手。'},
+ {id:'motown',genre:'FUNK',title:'モータウン（I–vi–IV–V）',feel:'motown',bpm:112,key:0,keyScale:MAJOR,keyName:'Cメジャー・スケール',bars:'C Am F G C Am F G',about:'4つ打ちに近いドラムと、よく歌うベース。ギターは2拍4拍の刻みと短い合いの手で。'},
+ {id:'neosoul',genre:'FUNK',title:'ネオソウル（IV–iii–ii–I）',feel:'neosoul',bpm:72,key:0,keyScale:MAJOR,keyName:'Cメジャー・スケール',bars:'Fmaj7 Em7 Dm7 Cmaj7 Fmaj7 Em7 Dm7 Cmaj7',about:'メジャー7とマイナー7が1つずつ下りていく、ゆったりした進行。もたれるようなリズムで。'},
  {id:'bossa',genre:'BOSSA NOVA',title:'Blue Bossa',feel:'bossa',bpm:120,key:0,keyScale:MINOR,keyName:'Cナチュラル・マイナー',bars:'Cm7 Cm7 Fm7 Fm7 Dm7b5 G7 Cm7 Cm7 Ebm7 Ab7 Dbmaj7 Dbmaj7 Dm7b5 G7 Cm7 Dm7b5,G7',about:'ボサノバのリズムで。9〜12小節目はD♭へ転調するので、大きい丸の音に乗り換えます。'}
 ];
 SESSIONS.forEach(s=>{s.chart=s.bars.split(' ').map(bar=>bar.split(',').map(parse));});
@@ -63,7 +67,7 @@ const bassNote=(pc,low=28)=>low+((pc-low%12+12)%12);
 function voicing(ch){const base=52+((ch.root-52%12+12)%12);return ch.tones.slice(1).map(i=>base+i).map(n=>n>66?n-12:n).sort((x,y)=>x-y);}
 /* Schedules one beat of the band. Called a second ahead of time, so long sessions stay light. */
 function scheduleBeat(r,beat){
- const {s,b,spb,t0}=r,swing=s.feel==='bossa'||s.feel==='pop'?.5:2/3,bi=Math.floor(beat/4)%s.chart.length,k=beat%4,bar=s.chart[bi];
+ const {s,b,spb,t0}=r,swing=['bossa','pop','funk','motown'].includes(s.feel)?.5:2/3,bi=Math.floor(beat/4)%s.chart.length,k=beat%4,bar=s.chart[bi];
  const ch=bar[Math.min(bar.length-1,Math.floor(k/(4/bar.length)))],nextRoot=s.chart[(bi+1)%s.chart.length][0].root,t=t0+beat*spb;
  if(s.feel==='bossa'){
   if(k===0||k===2)b.kick(t);b.hat(t,false);b.hat(t+spb/2,false);
@@ -71,6 +75,22 @@ function scheduleBeat(r,beat){
   if(Math.floor(beat/4)%2===0){if(k===0||k===3)b.rim(t);if(k===1)b.rim(t+spb/2);}else{if(k===1)b.rim(t);if(k===2)b.rim(t+spb/2);}
   if(k===0)b.bass(t,bassNote(ch.root),spb*1.4);if(k===1)b.bass(t+spb/2,bassNote(ch.root+7),spb*.9);if(k===2)b.bass(t,bassNote(ch.root+7),spb*1.2);if(k===3)b.bass(t+spb/2,bassNote(nextRoot),spb*.5);
   if(k===0||k===2)b.keys(t,voicing(ch),spb*.9);if(k===1||k===3)b.keys(t+spb/2,voicing(ch),spb*.6,.035);
+ }else if(s.feel==='funk'){
+  /* 16th hats, a syncopated kick, snare on 2 and 4, a bass that jumps to the octave on the last 16th, stabs on the offbeats. */
+  for(let i=0;i<4;i++)b.hat(t+i*spb/4,i===0);
+  if(k===0){b.kick(t);b.kick(t+spb*.75);}if(k===2)b.kick(t+spb*.5);if(k%2)b.snare(t);
+  const line=[[0,0],[.5,0],[0,0],[.25,7]][k];b.bass(t+line[0]*spb,bassNote(ch.root+line[1]),spb*.3);if(k===0)b.bass(t+spb*.75,bassNote(ch.root)+12,spb*.2);if(k===2)b.bass(t+spb*.5,bassNote(ch.root+10),spb*.25);
+  if(k===1||k===3)b.keys(t+spb*.5,voicing(ch),spb*.2,.04);
+ }else if(s.feel==='motown'){
+  /* Kick on every beat, snare and tambourine on 2 and 4, a walking eighth-note bass, chords on the backbeat. */
+  b.kick(t);if(k%2){b.snare(t);b.hat(t,true);}b.hat(t+spb/2,false);
+  const walk=[0,7,9,7][k];b.bass(t,bassNote(ch.root+walk),spb*.45);b.bass(t+spb/2,bassNote(k===3?nextRoot+11:ch.root+walk),spb*.35);
+  if(k%2)b.keys(t,voicing(ch),spb*.4,.04);
+ }else if(s.feel==='neosoul'){
+  /* Laid back: the snare a little late on 2 and 4, a kick on 1 and the last 16th of 2, long chords and bass. */
+  b.hat(t,false);b.hat(t+spb*2/3,false);
+  if(k===0)b.kick(t);if(k===1)b.kick(t+spb*.75);if(k%2)b.snare(t+.03);
+  if(k===0){b.bass(t,bassNote(ch.root),spb*1.8);b.keys(t,voicing(ch),spb*3.6,.035);}if(k===2)b.bass(t+spb*.5,bassNote(ch.root+7),spb*1.2);
  }else if(s.feel==='pop'){
   /* Straight 8-beat: kick on 1 and 3, snare on 2 and 4, eighth hats, root eighths in the bass. */
   if(k%2===0)b.kick(t);else b.snare(t);b.hat(t,k===0);b.hat(t+spb/2,false);
@@ -133,7 +153,7 @@ function lobby(s,opts={}){
  F.show(el=>{
   $('.modal-dialog').classList.add('is-stage');
   el.innerHTML='<div class="jam-lobby"><div class="lesson-progress">'+s.genre+' / SESSION</div><h2 id="modal-title">'+s.title+'</h2>'
-   +'<div class="stage-meta"><span>'+s.chart.length+'小節</span><span>'+({swing:'スウィング',shuffle:'シャッフル',slow:'スロー',bossa:'ボサノバ',pop:'8ビート'})[s.feel]+'</span><span class="stage-best">'+(best(s.id)?'BEST '+best(s.id):'NEW')+'</span></div>'
+   +'<div class="stage-meta"><span>'+s.chart.length+'小節</span><span>'+({swing:'スウィング',shuffle:'シャッフル',slow:'スロー',bossa:'ボサノバ',pop:'8ビート',funk:'16ビート',motown:'モータウン',neosoul:'ネオソウル'})[s.feel]+'</span><span class="stage-best">'+(best(s.id)?'BEST '+best(s.id):'NEW')+'</span></div>'
    +(opts.mission?missionHtml(opts.mission):opts.relay?opts.relay.html:'<p>'+s.about+'</p>')
    +'<div class="jam-chart lobby-chart">'+s.chart.map(bar=>'<span>'+bar.map(c=>pretty(c.sym)).join(' ')+'</span>').join('')+'</div>'
    +'<p class="jam-key">'+(BASS?'伴奏はベース抜き。あなたがベーシストです。小節の頭はルート（R）、あとはコードの音（大きい丸）でつなごう。':'使える音：<b>'+s.keyName+'</b>。演奏中は、今のコードの音を大きい丸で表示します。')+'</p>'

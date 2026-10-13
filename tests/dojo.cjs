@@ -60,7 +60,7 @@ r=await mission({kind:'mission',bpm:84,bars:12,down:69,others:[71,72,74,76],shot
 const mastered=await p.evaluate(()=>window.FQDojo.status(window.FQDojo.modules.find(m=>m.id==='bb-box')).every(Boolean));
 check('mission passes and masters the lick',r.title==='ミッション達成！'&&mastered,JSON.stringify(r));
 await p.click('#modal-close');await p.waitForTimeout(300);
-const rank=await p.$eval('#dojo-count',e=>e.textContent);check('mastery count',rank==='1 / 181',rank);
+const rank=await p.$eval('#dojo-count',e=>e.textContent);check('mastery count',rank==='1 / 206',rank);
 
 // Artist groups: switching shows that artist's licks and is remembered.
 await p.click('[data-artist="アルバート・キング"]');
@@ -130,6 +130,9 @@ await p.click('#jam-back');await p.waitForSelector('[data-relay]');await p.click
 await p.click('[data-genre="POPS"]');await p.click('[data-artist="シティポップ"]');
 const po=await p.evaluate(()=>({artists:[...document.querySelectorAll('#dojo [data-artist]')].map(b=>b.dataset.artist),cards:document.querySelectorAll('#dojo [data-module]').length,note:document.querySelector('.dojo-blurb span')?.textContent||''}));
 check('pops style groups',po.artists.length===7&&po.artists.includes('アニソン')&&po.cards===6&&po.note.includes('このスタイル'),JSON.stringify(po));
+await p.click('[data-genre="FUNK"]');
+const fk=await p.evaluate(()=>({tabs:document.querySelectorAll('#dojo-tabs [data-genre]').length,artists:[...document.querySelectorAll('#dojo [data-artist]')].map(b=>b.dataset.artist),kinds:[...new Set(window.FQDojo.modules.filter(m=>m.genre==='FUNK').map(m=>m.kind))]}));
+check('funk tab with its groups, cutting and solos',fk.tabs===4&&fk.artists.length===7&&fk.artists[0]==='カッティング基礎'&&fk.kinds.includes('comp')&&fk.kinds.includes('solo'),JSON.stringify(fk));
 await p.click('[data-genre="JAZZ"]');
 // A comping module and a pop session.
 await p.click('[data-module="shells"]');await p.waitForSelector('.dojo-chords');

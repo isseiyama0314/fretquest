@@ -129,17 +129,18 @@ const E=4,B=11;
 const SETS={blues:[BLUES_A,'Aブルース・スケール'],amix:[[9,11,0,1,2,3,4,6,7],'Aのメジャー＋マイナー・ペンタ'],
  eblues:[[4,7,9,10,11,2],'Eブルース・スケール'],emix:[[4,6,7,8,9,10,11,1,2],'Eのメジャー＋マイナー・ペンタ'],
  bminor:[[11,1,2,4,6,7,9],'Bナチュラル・マイナー'],bminor7:[[11,1,2,4,6,7,9,10],'Bマイナー＋F♯7のA♯'],cmajor:[MAJOR_C,'Cメジャー・スケール'],
- aharm:[[9,11,0,2,4,5,7,8],'Aマイナー＋E7のG♯'],amixo:[[9,11,1,2,4,6,7],'Aミクソリディアン']};
+ aharm:[[9,11,0,2,4,5,7,8],'Aマイナー＋E7のG♯'],efunk:[[4,6,7,8,9,11,1,2],'Eミクソリディアン＋G'],edorian:[[4,6,7,9,11,1,2],'Eドリアン'],amixo:[[9,11,1,2,4,6,7],'Aミクソリディアン']};
 const SESSION={'ii-v-i':{root:C,min:24},autumn:{root:G,min:24},fly:{root:A,min:24},billie:{root:5,min:24},bossa:{root:C,min:20},
  rhythm:{root:10,min:24},'minor-blues':{root:C,min:20},modal:{root:2,min:24},
  oudou:{root:C,name:'C',set:'cmajor',min:16},canon:{root:C,name:'C',set:'cmajor',min:16},citypop:{root:A,min:20},anison:{root:C,min:24},
  jrock:{root:A,name:'A',set:'aharm',min:20},britrock:{root:A,name:'A',set:'amixo',min:16},
+ 'funk-e9':{root:E,name:'E',set:'efunk',min:24},'funk-minor':{root:E,name:'E',set:'edorian',min:24},motown:{root:C,name:'C',set:'cmajor',min:16},neosoul:{root:C,min:16},
  'blues-a':{root:A,name:'A',set:'blues',min:20},chicago:{root:E,name:'E',set:'eblues',min:20},thrill:{root:B,name:'B',set:'bminor',min:16},ballad:{root:C,name:'C',set:'cmajor',min:12}};
 /* An artist-style lick: [id,title,tag,about,src,opt]. opt: session, bpm, groove, set, min, text, goals, over.
    Sessions with a scale (blues, pops) grade the share of notes in it; chord-change sessions (jazz) grade chord tones.
    "over" names the chords under the learn chart bar by bar; it is used by the content checks, not shown. */
 const lick=(artist,genre='BLUES')=>([id,title,tag,about,src,o={}])=>{
- const s=o.session||({JAZZ:'ii-v-i',POPS:'oudou'})[genre]||'blues-a',d=SESSION[s],bpm=o.bpm||72,set=o.set||d.set,min=o.min||d.min;
+ const s=o.session||({JAZZ:'ii-v-i',POPS:'oudou',FUNK:'funk-e9'})[genre]||'blues-a',d=SESSION[s],bpm=o.bpm||72,set=o.set||d.set,min=o.min||d.min;
  const base=set?{type:'inSet',pcs:SETS[set][0],ratio:.8,label:SETS[set][1]+'の音が80%以上'}:{type:'tones',ratio:.5,label:'コードの音が50%以上'};
  const land=d.set?{type:'land',pcs:[d.root],min:3,label:'小節の頭で'+d.name+'に3回着地'}:{type:'land',min:4,label:'小節の頭でコードの音に4回着地'};
  return {id,genre,kind:'solo',artist,root:d.root,title,tag,about,over:o.over,learn:{bpm,src},groove:{bpm:o.groove||bpm+12},
@@ -590,9 +591,87 @@ POPS_MORE.push(
  comp('pc-drive','疾走8ビート','速い王道進行をダウンで',['F・G・Em・Amを8分のダウンで刻み、速い曲の推進力を作る。アニソンや速いJ-POPの伴奏です。','テンポが速いほど、腕ではなく手首で。疲れたら力を抜いて振りを小さく。'],
   {bpm:100,src:bars(EIGHTS,['F','G','Em','Am'])},{bpm:120,src:bars(EIGHTS,['F','G','Em','Am','F','G','C','C'])},'アニソン進行・2回','POPS')
 );
+/* ---------------- FUNK / SOUL / R&B ----------------
+   Funk is mostly rhythm guitar: cutting charts are judged on the timing of each stroke, which is most of what funk is.
+   Ghost (muted) strokes are left out of the charts and named in the text; the arm keeps moving through them. */
+ARTISTS.FUNK=[
+ ['カッティング基礎','16分の空ピッキング、チャンク、全部の16分、2コードの切り替え。ファンクの右手の土台。'],
+ ['ジミー・ノーラン（JB）','E9の短い刻み、低音弦の単音リフ、9thのダブル・ストップ。ジェームス・ブラウンのバンドのギター。',[['James Brown Sex Machine','Get Up (I Feel Like Being a) Sex Machine（ジェームス・ブラウン）','同じ形を延々と刻む、9thコードのカッティング'],['James Brown Papa’s Got a Brand New Bag','Papa’s Got a Brand New Bag','短く鋭いチャンクと、休符の切れ味']]],
+ ['ナイル・ロジャース','高い音のコードを16分で、チャック、コードの上の単音。ディスコの推進力。',[['Chic Le Freak','Le Freak（シック）','途切れない16分のカッティング'],['Chic Good Times','Good Times（シック）','2コードを行き来する、軽く跳ねる刻み']]],
+ ['カーティス・メイフィールド','ソウルのダブル・ストップ、ハンマリングの装飾、メジャー・ペンタの合いの手。',[['Curtis Mayfield Move On Up','Move On Up（カーティス・メイフィールド）','歌の後ろで鳴る、2音の柔らかい合いの手'],['The Impressions People Get Ready','People Get Ready（インプレッションズ）','ハンマリングで飾るソウルのギター']]],
+ ['モータウン','2拍と4拍のコード、オクターブのライン、高音の合いの手。',[['The Temptations My Girl','My Girl（テンプテーションズ）','覚えやすい単音のリフと、2拍4拍の刻み'],['Marvin Gaye What’s Going On','What’s Going On（マーヴィン・ゲイ）','ゆったりした歌の後ろで鳴る、控えめなギター']]],
+ ['ネオソウル','コードの中のハンマリング、ペンタで流れるライン、メジャー7の柔らかい刻み。',[['D’Angelo Untitled How Does It Feel','Untitled (How Does It Feel)（ディアンジェロ）','もたれるようなリズムと、柔らかいコード'],['Tom Misch Movie','Movie（トム・ミッシュ）','メジャー7の響きと、コードの中で動く装飾']]],
+ ['ファンク・ソロ','Eドリアンの16分、オクターブのライン、クロマチック、短いチョーキング。',[['Cory Wong Vulfpeck','Cory Wong（ヴルフペック）','16分の歯切れのいい単音と、カッティングの往復'],['Prince Kiss','Kiss（プリンス）','音数を極端に絞った、鋭いギター']]]
+];
+const FK=a=>lick(a,'FUNK');
+const fcomp=(artist,...args)=>({...comp(...args,'FUNK'),artist});
+const FUNK_MORE=[
+ fcomp('カッティング基礎','fk-mute','16分の空ピッキング','腕は止めずに、鳴らす所だけ',['右手は16分音符で上下に振り続け、決まった所だけ弦に当てる。当てない所は空振り（空ピッキング）です。','この形は1拍目・2拍目・2拍目の裏の16分・3拍目…と鳴らします。腕の振りを止めないことが、ファンクの一番の基本です。'],
+  {bpm:72,src:bars('X:.25 -:.75 X:.25 ^X:.25 -:.5 X:.25 -:.75 X:.25 ^X:.25 -:.5',['E9','E9','E9','E9'])},{bpm:88,src:bars('X:.25 -:.75 X:.25 ^X:.25 -:.5 X:.25 -:.75 X:.25 ^X:.25 -:.5',Array(8).fill('E9'))},'ワンコード・ファンク・2回'),
+ fcomp('カッティング基礎','fk-chank','チャンク','16分の裏だけを鳴らす',['1拍を4つに分けた、2つ目と4つ目（16分の裏）だけを鳴らす。表を休むことで、リズムが前に転がります。','ダウンで空振り、アップで当てる…の繰り返し。腕の往復は一定のままです。'],
+  {bpm:72,src:bars('-:.25 X:.25 -:.25 ^X:.25 -:.25 X:.25 -:.25 ^X:.25 -:.25 X:.25 -:.25 ^X:.25 -:.25 X:.25 -:.25 ^X:.25',['E9','E9','E9','E9'])},{bpm:86,src:bars('-:.25 X:.25 -:.25 ^X:.25 -:.25 X:.25 -:.25 ^X:.25 -:.25 X:.25 -:.25 ^X:.25 -:.25 X:.25 -:.25 ^X:.25',Array(8).fill('E9'))},'ワンコード・ファンク・2回'),
+ fcomp('カッティング基礎','fk-all16','16分を全部弾く','ダウン・アップを均等に',['16分音符を全部鳴らす。速さより、ダウンとアップの音量と長さをそろえることが目標です。','左手は押さえる力を少し抜き、音を短く切る。それだけでカッティングらしい歯切れが出ます。'],
+  {bpm:66,src:bars('X:.25 ^X:.25 X:.25 ^X:.25 X:.25 ^X:.25 X:.25 ^X:.25 X:.25 ^X:.25 X:.25 ^X:.25 X:.25 ^X:.25 X:.25 ^X:.25',['E9','E9','E9','E9'])},{bpm:80,src:bars('X:.25 ^X:.25 X:.25 ^X:.25 X:.25 ^X:.25 X:.25 ^X:.25 X:.25 ^X:.25 X:.25 ^X:.25 X:.25 ^X:.25 X:.25 ^X:.25',Array(8).fill('E9'))},'ワンコード・ファンク・2回'),
+ fcomp('カッティング基礎','fk-twochord','2コードの切り替え','Em7とA7を1小節ずつ',['Em7とA7を1小節ずつ。前半は16分のシンコペーション、後半は8分で間を空けます。','コードが変わる瞬間も右手は止めない。左手だけが、次の形に移ります。'],
+  {bpm:72,src:bars('X:.25 -:.25 ^X:.25 X:.25 -:.25 X:.25 ^X:.25 -:.25 X:.5 -:.5 ^X:.25 X:.25 -:.5',['Em7','A7','Em7','A7'])},{bpm:88,src:bars('X:.25 -:.25 ^X:.25 X:.25 -:.25 X:.25 ^X:.25 -:.25 X:.5 -:.5 ^X:.25 X:.25 -:.5',['Em7','A7','Em7','A7','Em7','A7','Em7','A7'])},'マイナー・ファンク・2回'),
+ fcomp('ジミー・ノーラン（JB）','jb-scratch','E9のチキン・スクラッチ','16分の2つ目と3つ目',['E9を、16分の2つ目と3つ目だけ短く鳴らす。ニワトリがつつくような「チキン・スクラッチ」と呼ばれる刻みです。','音は極端に短く。弾いた直後に左手を浮かせて止めます。'],
+  {bpm:72,src:bars('-:.25 X:.25 ^X:.25 -:.25 -:.25 X:.25 ^X:.25 -:.25 -:.25 X:.25 ^X:.25 -:.25 -:.25 X:.25 ^X:.25 -:.25',['E9','E9','E9','E9'])},{bpm:90,src:bars('-:.25 X:.25 ^X:.25 -:.25 -:.25 X:.25 ^X:.25 -:.25 -:.25 X:.25 ^X:.25 -:.25 -:.25 X:.25 ^X:.25 -:.25',Array(8).fill('E9'))},'ワンコード・ファンク・2回'),
+ fcomp('ナイル・ロジャース','nr-disco','高い音のコードを16分で','2拍ごとに少し休む',['高い弦の小さなコードを、16分で軽く刻む。ディスコの推進力は、この途切れないカッティングから生まれます。','4つのうち3つ目だけ休むと、刻みに呼吸が生まれます。'],
+  {bpm:76,src:bars('X:.25 ^X:.25 -:.25 ^X:.25 X:.25 ^X:.25 -:.25 ^X:.25 X:.25 ^X:.25 -:.25 ^X:.25 X:.25 ^X:.25 -:.25 ^X:.25',['Em7','A7','Em7','A7'])},{bpm:92,src:bars('X:.25 ^X:.25 -:.25 ^X:.25 X:.25 ^X:.25 -:.25 ^X:.25 X:.25 ^X:.25 -:.25 ^X:.25 X:.25 ^X:.25 -:.25 ^X:.25',['Em7','A7','Em7','A7','Em7','A7','Em7','A7'])},'マイナー・ファンク・2回'),
+ fcomp('ナイル・ロジャース','nr-chuck','チャック','8分の裏だけ打ち込む',['8分の裏だけを、ミュート気味に短く打ち込む。ドラムのハイハットと一緒に、裏拍で踊らせる役目です。','表は空振り。左手は軽く触れるだけにして、音程より「チャッ」という音を。'],
+  {bpm:80,src:bars('-:.5 ^X:.5 -:.5 ^X:.5 -:.5 ^X:.5 -:.5 ^X:.5',['Em7','A7','Em7','A7'])},{bpm:96,src:bars('-:.5 ^X:.5 -:.5 ^X:.5 -:.5 ^X:.5 -:.5 ^X:.5',['Em7','A7','Em7','A7','Em7','A7','Em7','A7'])},'マイナー・ファンク・2回'),
+ fcomp('モータウン','mt-backbeat','2拍と4拍のコード','スネアと一緒に',['2拍目と4拍目だけ、スネアと一緒に短くコードを鳴らす。モータウンのギターは、ドラムの一部のように働きます。','1拍目と3拍目は休み。ベースとキックに任せます。'],
+  {bpm:84,src:bars('-:1 X:.5 -:.5 -:1 X:.5 -:.5',['C','Am','F','G'])},{bpm:104,src:bars('-:1 X:.5 -:.5 -:1 X:.5 -:.5',['C','Am','F','G','C','Am','F','G'])},'モータウン進行・2回'),
+ fcomp('ネオソウル','ns-comp','メジャー7の柔らかい刻み','付点4分でゆったり',['Fmaj7・Em7・Dm7・Cmaj7を、付点4分と8分でゆったり。ネオソウルは刻みより、コードの響きを聴かせます。','強く弾かず、指で弾くくらいの柔らかさで。'],
+  {bpm:66,src:bars('X:1.5 ^X:.5 -:1 X:.5 -:.5',['Fmaj7','Em7','Dm7','Cmaj7'])},{bpm:72,src:bars('X:1.5 ^X:.5 -:1 X:.5 -:.5',['Fmaj7','Em7','Dm7','Cmaj7','Fmaj7','Em7','Dm7','Cmaj7'])},'ネオソウル進行・2回'),
+...[
+ ['jb-riff','低音弦の単音リフ','6弦開放とG・G♯',['6弦開放のEを軸に、G→G♯（短3度→長3度）で跳ねる単音リフ。ベースと一緒に鳴らす、JBファンクの定番です。','休符は短く、きっちり止める。止める音もリズムの一部です。'],
+  '6.0:.25 -:.25 6.0:.25 6.3:.25 -:.25 6.4:.25 6.0:.5 5.2:.25 -:.25 5.0:.25 6.3:.25 6.0 | 6.0:.25 -:.25 6.0:.25 6.3:.25 -:.25 6.4:.25 6.0:.5 4.0:.25 -:.25 4.2:.25 5.2:.25 6.0',{session:'funk-e9',over:'E9 E9',bpm:66,groove:80,text:'ワンコード・ファンクで、低音弦の単音リフを繰り返そう。',goals:[{type:'range',lo:40,hi:52,ratio:.6,label:'低い音域（5・6弦）が60%以上'},{type:'land',pcs:[4],min:3,label:'小節の頭でEに3回着地'}]}],
+ ['jb-double','9thのダブル・ストップ','3弦7と2弦7を16分で',['3弦7フレット（D）と2弦7フレット（F♯）の2音は、E9の7度と9度。この2音だけで、E9の響きが出ます。','16分の裏で短く鳴らして、すぐ止める。マイクはどちらか1音で判定します。'],
+  '-:.25 3.7+2.7:.25 -:.5 -:.25 3.7+2.7:.25 -:.5 -:.25 3.7+2.7:.25 3.6+2.5:.25 -:.25 3.7+2.7 | -:.25 3.7+2.7:.25 -:.5 3.6+2.5:.5 -:.5 3.4+2.5:.5 -:.5 3.7+2.7:.5 -:.5',{session:'funk-e9',over:'E9 E9',min:16,text:'9thのダブル・ストップを、16分の裏で刻もう。'}]
+].map(FK('ジミー・ノーラン（JB）')),
+...[
+ ['nr-line','コードの上の単音の合いの手','12フレットで短く',['カッティングの合間に、1弦12〜14フレットで短い単音を入れる。コードの刻みと単音を行き来するのが、ナイル・ロジャース流です。','単音のあとは2拍休む。休んでいる間はカッティングに戻るつもりで。'],
+  '1.12:.25 -:.25 1.14:.25 -:.25 1.12:.5 2.15:.5 -:2 | 2.14:.25 -:.25 1.12:.25 -:.25 2.14:.5 2.12:.5 -:2',{session:'funk-minor',over:'Em7 A7',min:12,text:'短い単音の合いの手を入れて、あいだは休もう。',goals:[{type:'maxNotes',max:48,label:'弾きすぎない（48音以下）'},{type:'land',min:3,label:'小節の頭でコードの音に3回着地'}]}]
+].map(FK('ナイル・ロジャース')),
+...[
+ ['cm-double','ソウルのダブル・ストップ','3度の2音で歌う',['3弦と2弦で3度離れた2音を、コードに合わせて動かす。ソウルの歌の後ろで鳴る、柔らかい合いの手です。','C→Am→F→Gと、指の形をほとんど変えずに移ります。'],
+  '-:.5 3.5+2.5:.5 3.7+2.6:.5 3.5+2.5:2.5 | 3.2+2.1:2 3.5+2.5:2 | 3.2+2.1 3.5+2.6 3.2+2.1:2 | 3.4+2.3:2 3.0+2.0:2',{session:'motown',over:'C Am F G',min:12,text:'ダブル・ストップで、歌の後ろの合いの手を。'}],
+ ['cm-hammer','ハンマリングの装飾','2音を1フレット持ち上げる',['A+D の2音から、3弦だけハンマリングでBへ。sus4から3度へ解決するのと同じ動きを、指1本で。','ソウルやゴスペルのギターに欠かせない、明るく飾る音です。'],
+  '-:.5 3.2+2.3:.25 3.4+2.3:1.25 -:.5 3.2+2.3:.25 3.4+2.3:1.25 | -:.5 3.4+2.5:.25 3.5+2.5:1.25 -:.5 3.4+2.5:.25 3.5+2.5:1.25',{session:'motown',over:'G C',min:12,text:'ハンマリングで飾るダブル・ストップを入れよう。'}],
+ ['cm-pent','メジャー・ペンタの合いの手','2拍休んでから',['2拍休んで、後半の2拍だけメジャー・ペンタの短いフレーズ。歌が休むところに入れる、ソウルの合いの手です。','フレーズの終わりはコードの音（E、C）で。'],
+  '-:2 1.3:.25 1.5:.25 1.3:.5 2.5 | -:2 2.5:.25 1.3:.25 2.5:.5 3.5',{session:'motown',over:'C C',min:10,text:'小節の後半だけ弾く合いの手で。',goals:[{type:'maxNotes',max:40,label:'弾きすぎない（40音以下）'},{type:'tones',ratio:.5,label:'コードの音が50%以上'}]}]
+].map(FK('カーティス・メイフィールド')),
+...[
+ ['mt-octave','オクターブのライン','C→B→A、A→G→F',['5弦と3弦、6弦と4弦で同じ音を1オクターブ違いで。コードの切り替わりを、ベースのように下りるラインで示します。','オクターブは2本飛ばしの形。間の弦は左手で触れてミュートします。'],
+  '5.3+3.5:1.5 5.3+3.5:.5 5.2+3.4 5.0+3.2 | 5.0+3.2:1.5 5.0+3.2:.5 6.3+4.5 6.1+4.3 | 6.1+4.3:1.5 6.1+4.3:.5 6.3+4.5:2 | 6.3+4.5:2 -:2',{session:'motown',over:'C Am F G',min:12,text:'オクターブのラインで、コードの切り替わりを示そう。'}],
+ ['mt-high','高音の合いの手','1弦8〜12フレット',['1弦の高い音域で、C・D・Eと上がり、次はE・D・Cと下りる。歌の合間に入る、短く明るい合いの手です。','前半2拍は休み。歌の邪魔をしないことがモータウンのギターの役目です。'],
+  '-:2 1.8:.5 1.10:.5 1.12 | -:2 1.12:.5 1.10:.5 1.8',{session:'motown',over:'C Am',min:10,text:'小節の後半だけ、高音の合いの手を入れよう。',goals:[{type:'maxNotes',max:40,label:'弾きすぎない（40音以下）'},{type:'range',lo:64,hi:90,ratio:.6,label:'高い音域が60%以上'}]}]
+].map(FK('モータウン')),
+...[
+ ['ns-hammer','コードの中のハンマリング','2音を同時に持ち上げる',['Fmaj7の上で、D+Gの2音からE+Aへハンマリング。コードを鳴らしながら、その中で音を動かすのがネオソウルの装飾です。','2本の指で同時にたたく。音量より、2音がそろって鳴ることを大切に。'],
+  '-:.5 2.3+1.3:.25 2.5+1.5:1.25 -:2 | -:.5 2.3+1.2:.25 2.3+1.3:1.25 -:2',{session:'neosoul',over:'Fmaj7 Em7',min:8,text:'コードの中のハンマリングを入れて、柔らかいソロ。'}],
+ ['ns-pent','ペンタで流れるライン','Dm7からCmaj7へ',['Dマイナー・ペンタの音で、16分の頭を休んで流れるように。最後はCmaj7の7度Bを通って、3度のEに着地します。','強弱をつけず、なめらかに。ネオソウルのラインは、指で撫でるような柔らかさです。'],
+  '-:.25 2.6:.25 2.8:.25 1.5:.25 1.8:.5 2.8:.5 2.6:.5 3.7:1.5 | 3.5:.5 3.4:.5 2.5:3',{session:'neosoul',over:'Dm7 Cmaj7',text:'Dm7→Cmaj7で、ペンタの流れるラインを。'}],
+ ['ns-color','9度と13度','Fmaj7でGとDを伸ばす',['Fmaj7の上で、9度のGと13度（6度）のDを長めに使う。コードの音より少し外側の色が、ネオソウルの浮遊感です。','最後のDは長く。響きが溶けていくのを聴きましょう。'],
+  '-:.5 2.8:.5 2.10 1.8:.5 1.10:1.5',{session:'neosoul',over:'Fmaj7',min:10,text:'9度と13度を使って、浮遊感のあるソロ。',goals:[{type:'pc',pc:7,min:2,label:'G（Fmaj7の9度）を2回弾く'},{type:'land',min:3,label:'小節の頭でコードの音に3回着地'}]}],
+ ['ns-lazy','もたれる16分','拍の少し後ろから入る',['16分3つ分遅れて入る。拍の頭からずらして入ることで、もたれかかるような、ゆったりしたノリになります。','あわてず、遅れて入ったフレーズを最後まで大きく歌いきりましょう。'],
+  '-:.75 2.8:.25 2.5:.5 3.7:.5 2.5 3.7 | -:.75 2.6:.25 3.7:.5 3.5:.5 4.7:2',{session:'neosoul',over:'Em7 Dm7',min:12,text:'拍の少し後ろから入るフレーズで、ゆったりしたソロ。'}]
+].map(FK('ネオソウル')),
+...[
+ ['fs-dorian','Eドリアンの16分','12フレットで歯切れよく',['Eドリアン（E・F♯・G・A・B・C♯・D）を16分で。1弦12〜15フレットの短い動きを、カッティングと同じ右手の振りで弾きます。','A7の小節ではC♯（A7の3度）を強調。2コードの違いを単音で示します。'],
+  '1.12:.25 1.14:.25 1.15:.25 1.14:.25 1.12:.5 2.15:.5 2.12:2 | 2.14:.25 2.15:.25 2.14:.25 2.12:.25 3.14 2.14:2',{session:'funk-minor',over:'Em7 A7',text:'Em7–A7のファンクで、Eドリアンの16分を。',goals:[{type:'pc',pc:1,min:3,label:'C♯（A7の3度）を3回弾く'},{type:'land',min:4,label:'小節の頭でコードの音に4回着地'}]}],
+ ['fs-octave','オクターブのファンク・ライン','5弦と3弦で同時に',['5弦と3弦でオクターブを同時に鳴らし、E→G→Aと動く。単音より太く、ファンクのソロでもリフでも映えます。','間の4弦は左手で触れてミュート。マイクはどちらか1音で判定します。'],
+  '5.7+3.9:.25 -:.25 5.7+3.9:.25 5.10+3.12:.25 -:.5 5.12+3.14:.5 5.10+3.12:.5 5.7+3.9:1.5',{session:'funk-e9',over:'E9',min:12,text:'オクターブのラインを入れたファンクのソロ。'}],
+ ['fs-chromatic','クロマチックで寄る','G→G♯→A、D→C♯→B',['3弦12〜14フレットをG・G♯・Aと半音で上がり、2弦でD・C♯・Bと半音で下りる。半音の動きが、ファンクらしい粘りを作ります。','16分の頭を休んでから入る。最初の休符が、跳ねるノリを作ります。'],
+  '-:.25 3.12:.25 3.13:.25 3.14:.25 2.12:.5 3.14:.5 -:.5 2.15:.25 2.14:.25 2.12',{session:'funk-e9',over:'E9',min:16,text:'半音で寄るフレーズを入れて、E9のファンク。'}],
+ ['fs-bend','短いチョーキング','上げてすぐ止める',['2弦15フレットのDを1音上げてE。伸ばさずに、上げた瞬間に止めます。2回繰り返してから、1弦12フレットのEで答えます。','ファンクのチョーキングは歌うためではなく、リズムのアクセントです。'],
+  '-:.5 2.15b2:.5 -:.5 2.15b2:.5 1.12:.25 -:.25 1.12:.25 2.15:.25 2.12',{session:'funk-e9',over:'E9',min:14,text:'短いチョーキングをアクセントに、E9のファンク。'}]
+].map(FK('ファンク・ソロ'))
+];
 /* The original modules of a genre with artist groups open its 基礎 and バッキング groups. */
 MODULES.forEach(m=>{if(ARTISTS[m.genre]&&!m.artist)m.artist=m.kind==='comp'?'バッキング':'基礎';});
-MODULES.push(...BLUES_MORE,...JAZZ_MORE,...POPS_MORE);
+MODULES.push(...BLUES_MORE,...JAZZ_MORE,...POPS_MORE,...FUNK_MORE);
 /* Chords under the charts that leave the session's home chord (used by the backing band and the content checks). */
 const OVER={turnaround:'A7 E7','ec-turn':'A7 E7','srv-turn':'E7 B7','ak-turn':'A7 A7 A7 E7','jm-turn':'A7 E7','bb-gmaj7':'Gmaj7 Gmaj7 F#7 Bm7','pg-resolve':'F#7 Bm7',
  'tb-swing':'A7 D7 A7 A7','tb-dim':'D7 D#dim7 A7 A7','arp-251':'Dm7 G7 Cmaj7 Cmaj7','guide-tones':'Dm7 G7 Cmaj7 Cmaj7','enclosure':'Cmaj7','lick-251':'Dm7 G7 Cmaj7','minor-251':'Am7b5 D7 Gm6',
@@ -650,7 +729,7 @@ const PHRASE_CHORDS={'arp-251':'Dm7 G7 Cmaj7 Cmaj7','guide-tones':'Dm7 G7 Cmaj7 
 [...MODULES,...BASS_MODULES].forEach(m=>{if(PHRASE_CHORDS[m.id])m.chords=PHRASE_CHORDS[m.id].split(' ');});
 /* Comping modules without their own full form reuse the groove chart twice. */
 MODULES.forEach(m=>{if(m.kind==='comp'&&m.use.form&&!m.use.src)m.use.src=m.groove.src+' | '+m.groove.src;});
-const GENRES=[['BLUES','ブルース'],['JAZZ','ジャズ'],['POPS','ポップス']];
+const GENRES=[['BLUES','ブルース'],['JAZZ','ジャズ'],['POPS','ポップス'],['FUNK','ファンク']];
 const STEPS=[['learn','覚える','タブ譜どおりに弾く'],['groove','合わせる','テンポを上げてバンドと'],['use','使う','実践で使いこなす']];
 /* Bass players see the bass lines instead of the guitar modules; each instrument keeps its own count. */
 const BASS=window.FQInst.isBass(),BASS_OPEN=window.FQInst.kinds.bass.open,LIST=BASS?BASS_MODULES:MODULES;
@@ -681,7 +760,7 @@ function feelOf(m){
 const swingBeat=b=>{const f=b-Math.floor(b);return Math.abs(f-.5)<1e-6?Math.floor(b)+2/3:b;};
 const swingAll=list=>list.map(n=>{const beat=swingBeat(n.beat);return {...n,beat,len:swingBeat(n.beat+n.len)-beat};});
 /* Chords under a tab chart, bar by bar (repeated when the chart is longer): the lick's own "over", else the session's home chord. */
-const HOME_CHORD={'blues-a':'A7',chicago:'E7',thrill:'Bm7',ballad:'C',oudou:'C',canon:'C',citypop:'Am7',jrock:'Am',anison:'C',britrock:'A'};
+const HOME_CHORD={'blues-a':'A7',chicago:'E7',thrill:'Bm7',ballad:'C',oudou:'C',canon:'C',citypop:'Am7',jrock:'Am',anison:'C',britrock:'A','funk-e9':'E9','funk-minor':'Em7',motown:'C',neosoul:'Fmaj7'};
 const chordsOf=m=>(m.over||HOME_CHORD[m.use.session]||'').split(' ').filter(Boolean);
 function chartFor(m,step){
  const solo=m.kind==='solo'||m.kind==='line',spec=step===1?m.learn:step===2?m.groove:m.use,type=spec.type||m.learn.type||(solo?'song':'strum');
@@ -744,7 +823,7 @@ function render(){
  let artist=artistBy[genre];if(groups.length&&!groups.some(([a])=>a===artist))artist=groups[0][0];
  const list=groups.length?inGenre.filter(m=>m.artist===artist):inGenre,blurb=groups.length?groups.find(([a])=>a===artist)[1]:'';
  $('#dojo-rank').textContent=rank();$('#dojo-count').textContent=mastered()+' / '+LIST.length;
- $('#dojo-tabs').innerHTML=GENRES.map(([g,label])=>'<button type="button" data-genre="'+g+'" aria-pressed="'+(g===genre)+'">'+label+'<small>'+LIST.filter(m=>m.genre===g&&status(m).every(Boolean)).length+' / '+LIST.filter(m=>m.genre===g).length+'</small></button>').join('');
+ $('#dojo-tabs').innerHTML=GENRES.filter(([g])=>LIST.some(m=>m.genre===g)).map(([g,label])=>'<button type="button" data-genre="'+g+'" aria-pressed="'+(g===genre)+'">'+label+'<small>'+LIST.filter(m=>m.genre===g&&status(m).every(Boolean)).length+' / '+LIST.filter(m=>m.genre===g).length+'</small></button>').join('');
  $('#dojo-tabs').querySelectorAll('[data-genre]').forEach(b=>b.onclick=()=>{genre=b.dataset.genre;try{localStorage.setItem('fretQuestDojoGenre',genre);}catch{}render();});
  el.innerHTML='<button type="button" class="dojo-relay" id="dojo-relay"><b>リック・リレー</b><span>覚えたリックをセッションでつなぐ</span></button>'+(groups.length?'<div class="dojo-artists" role="group" aria-label="アーティスト">'+groups.map(([a])=>{const ms=inGenre.filter(m=>m.artist===a);return '<button type="button" data-artist="'+a+'" aria-pressed="'+(a===artist)+'">'+a+'<small>'+ms.filter(m=>status(m).every(Boolean)).length+' / '+ms.length+'</small></button>';}).join('')+'</div><p class="dojo-blurb">'+blurb+(artist==='基礎'||artist==='バッキング'?'':' <span>フレーズは'+(genre==='POPS'?'このスタイルの語法をもとにした':'この人の語法を研究した')+'オリジナルで、実際の曲のソロやメロディではありません。</span>')+'</p>'+refsHtml(genre,artist):'')+[['solo','ソロ・アドリブ'],['comp','伴奏'],['line','ベースライン']].map(([kind,label])=>{const ms=list.filter(m=>m.kind===kind);return ms.length?'<div class="dojo-group"><h3>'+label+'</h3><div class="dojo-grid">'+ms.map(m=>{const st=status(m),done=st.every(Boolean);return '<button type="button" class="dojo-card'+(done?' mastered':'')+'" data-module="'+m.id+'"><span class="jam-genre">'+(done?'MASTERED':kind==='solo'?'SOLO':kind==='line'?'BASS':'COMP')+'</span><strong>'+m.title+'</strong><span class="jam-changes">'+m.tag+'</span><span class="dojo-pips">'+st.map((d,i)=>'<i class="'+(d?'on':'')+'" title="'+STEPS[i][1]+'"></i>').join('')+'</span>'+(window.FQAir&&window.FQAir.status(m).every(Boolean)?'<span class="dojo-air">指板 ✓</span>':'')+'</button>';}).join('')+'</div></div>':'';}).join('');
  el.querySelectorAll('[data-module]').forEach(b=>b.onclick=()=>open(LIST.find(m=>m.id===b.dataset.module)));

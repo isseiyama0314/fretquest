@@ -138,7 +138,7 @@
 
 /* Phrase dojo */
 .genre-pops:before{background:radial-gradient(circle,#ff8fb8 0%,transparent 65%)}
-.dojo-tabs{margin-bottom:14px}
+.dojo-tabs{margin-bottom:14px;grid-template-columns:repeat(auto-fit,minmax(64px,1fr))}
 .dojo-tabs small{display:block;font:800 9px "DM Sans",sans-serif;opacity:.7}
 .dojo-artists{display:flex;gap:6px;margin:0 -2px 8px;padding:2px 2px 6px;overflow-x:auto;scrollbar-width:none;-webkit-overflow-scrolling:touch}
 .dojo-artists::-webkit-scrollbar{display:none}
