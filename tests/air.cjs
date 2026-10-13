@@ -39,7 +39,7 @@ const ring=await p.evaluate(()=>{const board=document.createElement('div');board
  const w=a.boxSizing==='border-box'?parseFloat(a.width):parseFloat(a.width)+2*parseFloat(a.borderLeftWidth),left=cell.clientWidth/2+parseFloat(a.marginLeft);
  const r={ringCentre:left+w/2,dotCentre:dot.left-c.left+dot.width/2,ringSize:w,dotSize:dot.width};board.remove();return r;});
 check('the approach ring is centred on the dot',Math.abs(ring.ringCentre-ring.dotCentre)<.5&&ring.ringSize===26,JSON.stringify(ring));
-check('every guitar module fits its board',data.bad.length===0&&data.n===147,JSON.stringify(data));
+check('every guitar module fits its board',data.bad.length===0&&data.n===226,JSON.stringify(data));
 const cards=await p.$$eval('#air-cards .air-card',x=>x.length);check('training cards',cards===2,cards);
 if(OUT){await p.evaluate(()=>document.querySelector('#air-cards').scrollIntoView({block:'center'}));await p.screenshot({path:OUT+'/air-cards.png'});}
 

@@ -10,7 +10,7 @@ const PC=['C','C♯','D','E♭','E','F','F♯','G','A♭','A','B♭','B'];
 const QUALITY={
  maj7:{tones:[0,4,7,11],scale:[0,2,4,5,7,9,11]},'6':{tones:[0,4,7,9],scale:[0,2,4,5,7,9,11]},'':{tones:[0,4,7],scale:[0,2,4,5,7,9,11]},
  m7:{tones:[0,3,7,10],scale:[0,2,3,5,7,9,10]},m6:{tones:[0,3,7,9],scale:[0,2,3,5,7,9,11]},m:{tones:[0,3,7],scale:[0,2,3,5,7,8,10]},
- '7':{tones:[0,4,7,10],scale:[0,2,4,5,7,9,10]},m7b5:{tones:[0,3,6,10],scale:[0,1,3,5,6,8,10]},dim7:{tones:[0,3,6,9],scale:[0,2,3,5,6,8,9,11]}
+ '7':{tones:[0,4,7,10],scale:[0,2,4,5,7,9,10]},'9':{tones:[0,4,7,10,2],scale:[0,2,4,5,7,9,10]},m7b5:{tones:[0,3,6,10],scale:[0,1,3,5,6,8,10]},dim7:{tones:[0,3,6,9],scale:[0,2,3,5,6,8,9,11]}
 };
 const DEGREE={0:'R',3:'♭3',4:'3',6:'♭5',7:'5',9:'6',10:'♭7',11:'7'};
 const pretty=sym=>sym.replace(/^([A-G])b/,'$1♭').replace(/^([A-G])#/,'$1♯').replace('m7b5','m7♭5');
@@ -32,6 +32,17 @@ const SESSIONS=[
  {id:'oudou',genre:'POPS',title:'王道進行',feel:'pop',bpm:96,key:0,keyScale:MAJOR,keyName:'Cメジャー・スケール',bars:'Fmaj7 G Em Am Fmaj7 G Em Am',about:'J-POPのサビで最もよく聴く進行（IV–V–iii–vi）。前向きなのに少し切ない響き。メロディはCメジャーの音で。'},
  {id:'canon',genre:'POPS',title:'カノン進行',feel:'pop',bpm:84,key:0,keyScale:MAJOR,keyName:'Cメジャー・スケール',bars:'C G Am Em F C F G',about:'ベースが1音ずつ下がっていく定番進行。各小節の頭でコードの音に着地すると、ぐっと歌って聴こえます。'},
  {id:'ballad',genre:'POPS',title:'ポップ・バラード',feel:'pop',bpm:72,key:0,keyScale:MAJOR,keyName:'Cメジャー・スケール',bars:'C Am F G C Am F G',about:'ゆったりした4コード。音数を減らして、長い音を大事に弾く練習に。'},
+ {id:'citypop',genre:'POPS',title:'シティポップ（IV–III–vi）',feel:'pop',bpm:92,key:9,keyScale:MINOR,keyName:'Aナチュラル・マイナー（E7だけG♯）',bars:'Fmaj7 E7 Am7 Gm7,C7 Fmaj7 E7 Am7 Am7',about:'メジャー7の浮遊感と、E7で一瞬差し込む切なさ。都会的な響きの定番進行。'},
+ {id:'jrock',genre:'POPS',title:'J-ロック（Am–F–G–C）',feel:'pop',bpm:120,key:9,keyScale:MINOR,keyName:'Aナチュラル・マイナー（E7だけG♯）',bars:'Am F G C Am F G E7',about:'マイナーで始まる、疾走感のあるロック進行。最後のE7でG♯を使うと劇的に。'},
+ {id:'anison',genre:'POPS',title:'アニソン疾走（王道進行・速め）',feel:'pop',bpm:144,key:0,keyScale:MAJOR,keyName:'Cメジャー・スケール',bars:'F G Em Am F G C C',about:'王道進行を速いテンポで。コードの音をなぞるだけで、華やかなソロになります。'},
+ {id:'britrock',genre:'POPS',title:'ブリティッシュ・ロック（I–♭VII–IV）',feel:'pop',bpm:108,key:9,keyScale:[0,2,4,5,7,9,10],keyName:'Aミクソリディアン',bars:'A G D A A G D E',about:'Aの曲なのにGのコードが出てくる、明るくやんちゃなロック進行。Gの音（♭7）が似合います。'},
+ {id:'funk-e9',genre:'FUNK',title:'ワンコード・ファンク（E9）',feel:'funk',bpm:100,key:4,keyScale:[0,2,3,4,7,9,10],keyName:'Eミクソリディアン＋G（短3度）',bars:'E9 E9 E9 E9 E9 E9 E9 E9',about:'コードはE9だけ。16分のグルーヴの上で、リズムで聴かせる練習。'},
+ {id:'funk-minor',genre:'FUNK',title:'マイナー・ファンク（Em7–A7）',feel:'funk',bpm:96,key:4,keyScale:[0,2,3,5,7,9,10],keyName:'Eドリアン',bars:'Em7 A7 Em7 A7 Em7 A7 Em7 A7',about:'Em7とA7を1小節ずつ。A7のC♯が、ドリアンらしい明るさの決め手。'},
+ {id:'motown',genre:'FUNK',title:'モータウン（I–vi–IV–V）',feel:'motown',bpm:112,key:0,keyScale:MAJOR,keyName:'Cメジャー・スケール',bars:'C Am F G C Am F G',about:'4つ打ちに近いドラムと、よく歌うベース。ギターは2拍4拍の刻みと短い合いの手で。'},
+ {id:'neosoul',genre:'FUNK',title:'ネオソウル（IV–iii–ii–I）',feel:'neosoul',bpm:72,key:0,keyScale:MAJOR,keyName:'Cメジャー・スケール',bars:'Fmaj7 Em7 Dm7 Cmaj7 Fmaj7 Em7 Dm7 Cmaj7',about:'メジャー7とマイナー7が1つずつ下りていく、ゆったりした進行。もたれるようなリズムで。'},
+ {id:'country-g',genre:'COUNTRY',title:'カントリー（G）',feel:'country',bpm:108,key:7,keyScale:MAJOR,keyName:'Gメジャー・スケール',bars:'G G C G D D G G',about:'I–IV–Vだけの、明るく素朴なカントリー。開放弦を使うと、からっとした響きに。'},
+ {id:'country-a',genre:'COUNTRY',title:'チキン・ピッキング（A）',feel:'country',bpm:116,key:9,keyScale:[0,2,4,5,7,9,10],keyName:'Aミクソリディアン',bars:'A A D A E D A E',about:'少し速めのAのカントリー。短く切った音と、G（♭7）の跳ねる響きで。'},
+ {id:'bluegrass',genre:'COUNTRY',title:'ブルーグラス（G）',feel:'bluegrass',bpm:126,key:7,keyScale:MAJOR,keyName:'Gメジャー・スケール',bars:'G C G D G C D G',about:'ドラムなしの速い2ビート。ベースが1拍目と3拍目、マンドリンのチョップが2拍目と4拍目を刻みます。'},
  {id:'bossa',genre:'BOSSA NOVA',title:'Blue Bossa',feel:'bossa',bpm:120,key:0,keyScale:MINOR,keyName:'Cナチュラル・マイナー',bars:'Cm7 Cm7 Fm7 Fm7 Dm7b5 G7 Cm7 Cm7 Ebm7 Ab7 Dbmaj7 Dbmaj7 Dm7b5 G7 Cm7 Dm7b5,G7',about:'ボサノバのリズムで。9〜12小節目はD♭へ転調するので、大きい丸の音に乗り換えます。'}
 ];
 SESSIONS.forEach(s=>{s.chart=s.bars.split(' ').map(bar=>bar.split(',').map(parse));});
@@ -59,7 +70,7 @@ const bassNote=(pc,low=28)=>low+((pc-low%12+12)%12);
 function voicing(ch){const base=52+((ch.root-52%12+12)%12);return ch.tones.slice(1).map(i=>base+i).map(n=>n>66?n-12:n).sort((x,y)=>x-y);}
 /* Schedules one beat of the band. Called a second ahead of time, so long sessions stay light. */
 function scheduleBeat(r,beat){
- const {s,b,spb,t0}=r,swing=s.feel==='bossa'||s.feel==='pop'?.5:2/3,bi=Math.floor(beat/4)%s.chart.length,k=beat%4,bar=s.chart[bi];
+ const {s,b,spb,t0}=r,swing=['bossa','pop','funk','motown','country','bluegrass'].includes(s.feel)?.5:2/3,bi=Math.floor(beat/4)%s.chart.length,k=beat%4,bar=s.chart[bi];
  const ch=bar[Math.min(bar.length-1,Math.floor(k/(4/bar.length)))],nextRoot=s.chart[(bi+1)%s.chart.length][0].root,t=t0+beat*spb;
  if(s.feel==='bossa'){
   if(k===0||k===2)b.kick(t);b.hat(t,false);b.hat(t+spb/2,false);
@@ -67,6 +78,28 @@ function scheduleBeat(r,beat){
   if(Math.floor(beat/4)%2===0){if(k===0||k===3)b.rim(t);if(k===1)b.rim(t+spb/2);}else{if(k===1)b.rim(t);if(k===2)b.rim(t+spb/2);}
   if(k===0)b.bass(t,bassNote(ch.root),spb*1.4);if(k===1)b.bass(t+spb/2,bassNote(ch.root+7),spb*.9);if(k===2)b.bass(t,bassNote(ch.root+7),spb*1.2);if(k===3)b.bass(t+spb/2,bassNote(nextRoot),spb*.5);
   if(k===0||k===2)b.keys(t,voicing(ch),spb*.9);if(k===1||k===3)b.keys(t+spb/2,voicing(ch),spb*.6,.035);
+ }else if(s.feel==='funk'){
+  /* 16th hats, a syncopated kick, snare on 2 and 4, a bass that jumps to the octave on the last 16th, stabs on the offbeats. */
+  for(let i=0;i<4;i++)b.hat(t+i*spb/4,i===0);
+  if(k===0){b.kick(t);b.kick(t+spb*.75);}if(k===2)b.kick(t+spb*.5);if(k%2)b.snare(t);
+  const line=[[0,0],[.5,0],[0,0],[.25,7]][k];b.bass(t+line[0]*spb,bassNote(ch.root+line[1]),spb*.3);if(k===0)b.bass(t+spb*.75,bassNote(ch.root)+12,spb*.2);if(k===2)b.bass(t+spb*.5,bassNote(ch.root+10),spb*.25);
+  if(k===1||k===3)b.keys(t+spb*.5,voicing(ch),spb*.2,.04);
+ }else if(s.feel==='motown'){
+  /* Kick on every beat, snare and tambourine on 2 and 4, a walking eighth-note bass, chords on the backbeat. */
+  b.kick(t);if(k%2){b.snare(t);b.hat(t,true);}b.hat(t+spb/2,false);
+  const walk=[0,7,9,7][k];b.bass(t,bassNote(ch.root+walk),spb*.45);b.bass(t+spb/2,bassNote(k===3?nextRoot+11:ch.root+walk),spb*.35);
+  if(k%2)b.keys(t,voicing(ch),spb*.4,.04);
+ }else if(s.feel==='country'){
+  /* Boom-chick: root on 1 and the fifth on 3 in the bass, a brushed snare and short chords on 2 and 4. */
+  b.hat(t,false);b.hat(t+spb/2,false);if(k%2){b.snare(t);b.keys(t,voicing(ch),spb*.25,.04);}else{b.kick(t);b.bass(t,bassNote(ch.root+(k?7:0)),spb*.9);}
+ }else if(s.feel==='bluegrass'){
+  /* No drums: the bass on 1 and 3 (root, then fifth) and a short high mandolin-style chop on 2 and 4. */
+  if(k%2){b.rim(t);b.keys(t,voicing(ch).map(n=>n+12),spb*.15,.035);}else b.bass(t,bassNote(ch.root+(k?7:0)),spb*.9);
+ }else if(s.feel==='neosoul'){
+  /* Laid back: the snare a little late on 2 and 4, a kick on 1 and the last 16th of 2, long chords and bass. */
+  b.hat(t,false);b.hat(t+spb*2/3,false);
+  if(k===0)b.kick(t);if(k===1)b.kick(t+spb*.75);if(k%2)b.snare(t+.03);
+  if(k===0){b.bass(t,bassNote(ch.root),spb*1.8);b.keys(t,voicing(ch),spb*3.6,.035);}if(k===2)b.bass(t+spb*.5,bassNote(ch.root+7),spb*1.2);
  }else if(s.feel==='pop'){
   /* Straight 8-beat: kick on 1 and 3, snare on 2 and 4, eighth hats, root eighths in the bass. */
   if(k%2===0)b.kick(t);else b.snare(t);b.hat(t,k===0);b.hat(t+spb/2,false);
@@ -129,8 +162,8 @@ function lobby(s,opts={}){
  F.show(el=>{
   $('.modal-dialog').classList.add('is-stage');
   el.innerHTML='<div class="jam-lobby"><div class="lesson-progress">'+s.genre+' / SESSION</div><h2 id="modal-title">'+s.title+'</h2>'
-   +'<div class="stage-meta"><span>'+s.chart.length+'小節</span><span>'+({swing:'スウィング',shuffle:'シャッフル',slow:'スロー',bossa:'ボサノバ',pop:'8ビート'})[s.feel]+'</span><span class="stage-best">'+(best(s.id)?'BEST '+best(s.id):'NEW')+'</span></div>'
-   +(opts.mission?missionHtml(opts.mission):'<p>'+s.about+'</p>')
+   +'<div class="stage-meta"><span>'+s.chart.length+'小節</span><span>'+({swing:'スウィング',shuffle:'シャッフル',slow:'スロー',bossa:'ボサノバ',pop:'8ビート',funk:'16ビート',motown:'モータウン',neosoul:'ネオソウル',country:'ブーム・チック',bluegrass:'2ビート'})[s.feel]+'</span><span class="stage-best">'+(best(s.id)?'BEST '+best(s.id):'NEW')+'</span></div>'
+   +(opts.mission?missionHtml(opts.mission):opts.relay?opts.relay.html:'<p>'+s.about+'</p>')
    +'<div class="jam-chart lobby-chart">'+s.chart.map(bar=>'<span>'+bar.map(c=>pretty(c.sym)).join(' ')+'</span>').join('')+'</div>'
    +'<p class="jam-key">'+(BASS?'伴奏はベース抜き。あなたがベーシストです。小節の頭はルート（R）、あとはコードの音（大きい丸）でつなごう。':'使える音：<b>'+s.keyName+'</b>。演奏中は、今のコードの音を大きい丸で表示します。')+'</p>'
    +'<div class="stage-options"><label class="jam-tempo">テンポ <b id="jam-bpm-label">'+bpm+'</b><input type="range" id="jam-bpm" min="'+Math.round(s.bpm*.6)+'" max="'+Math.round(s.bpm*1.3)+'" value="'+bpm+'"></label>'
@@ -163,18 +196,20 @@ async function start(){
  const r={s,ctx,mic,air,audio,b:band(ctx,audio),spb,tapComp:(ctx.outputLatency||ctx.baseLatency||0)+.01+latency(),choruses:mission?Math.max(prefs.choruses,mission.choruses||1):prefs.choruses,mission,opts:currentOpts,log:[],t0:ctx.currentTime+.4+4*spb,comp:(ctx.outputLatency||ctx.baseLatency||0)+.045+latency(),
   onset:K.onsetDetector(),lastOnset:-99,stable:0,lastMidi:null,scoredMidi:null,scoredAt:-99,heard:null,points:0,notes:0,tones:0,inside:0,combo:0,maxCombo:0,shownBar:-1,shownHeard:null};
  r.total=s.chart.length*4*r.choruses*spb;
+ /* Lick relay: called licks at fixed bars, each note expected at its time (seconds from the first downbeat). */
+ if(currentOpts.relay)r.relay=currentOpts.relay.plan(s.chart.length*r.choruses).map(sl=>({...sl,expect:sl.notes.map(n=>({t:(sl.bar*4+n.beat)*spb,midis:n.midis}))}));
  for(let i=0;i<4;i++)audio.click(r.t0-(4-i)*spb,i===0);
  r.beats=s.chart.length*4*r.choruses;r.nextBeat=0;
  const el=$('#modal-inner');
  el.innerHTML='<div class="jam-play"><div class="stage-hud"><div><small>SCORE</small><strong id="jam-score">'+(mic||air?0:'—')+'</strong></div><div class="stage-title"><small>♩ '+bpm+' ・ <span id="jam-chorus">1</span> / '+r.choruses+'</small><b id="modal-title">'+s.title+'</b></div><div class="stage-combo" id="jam-combo-box"><small>COMBO</small><strong id="jam-combo">'+(mic||air?0:'—')+'</strong></div></div>'
   +'<div class="stage-track"><span id="jam-progress"></span></div>'
   +'<div class="jam-now"><div><small>NOW</small><b id="jam-now">—</b></div><div class="jam-next"><small>NEXT</small><b id="jam-next">—</b></div><div class="jam-beats" id="jam-beats"><i></i><i></i><i></i><i></i></div></div>'
-  +'<div class="jam-board-wrap" id="jam-board"></div><div class="jam-legend"><span><i class="lg tone"></i>コードの音</span><span><i class="lg scale"></i>使える音</span>'+(mic||air?'<span>'+(air?'タップした音':'きこえた音')+' <b id="jam-heard">—</b></span>':'')+'</div>'+(air?'<div class="air-shift"><button type="button" id="air-left" aria-label="低いフレットへ">◀</button><span id="air-range"></span><button type="button" id="air-right" aria-label="高いフレットへ">▶</button></div>':'')
+  +(r.relay?'<div class="relay-box" id="jam-relay"></div>':'')+'<div class="jam-board-wrap" id="jam-board"></div><div class="jam-legend"><span><i class="lg tone"></i>コードの音</span><span><i class="lg scale"></i>使える音</span>'+(mic||air?'<span>'+(air?'タップした音':'きこえた音')+' <b id="jam-heard">—</b></span>':'')+'</div>'+(air?'<div class="air-shift"><button type="button" id="air-left" aria-label="低いフレットへ">◀</button><span id="air-range"></span><button type="button" id="air-right" aria-label="高いフレットへ">▶</button></div>':'')
   +(r.mission?'<div class="mission-box live" id="jam-mission">'+goalsHtml(r.mission,[],true)+'</div>':'')+'<div id="stage-judge" class="stage-judge jam-judge" aria-live="polite"></div>'
   +'<div class="jam-chart" id="jam-chart">'+s.chart.map((bar,i)=>'<span data-bar="'+i+'">'+bar.map(c=>pretty(c.sym)).join(' ')+'</span>').join('')+'</div>'
   +(mic?'<div class="stage-mic"><span>MIC</span><div class="stage-level"><span id="jam-level"></span></div></div>':'')
   +'<button type="button" class="action-button secondary-action" id="jam-stop">終わる</button></div>';
- run=r;F.setCleanup(stop);
+ run=r;F.setCleanup(stop);if(r.relay)relayBox(r,-1);
  r.onHide=()=>{if(document.hidden){stop();lobby(s);}};document.addEventListener('visibilitychange',r.onHide);
  $('#jam-stop').onclick=()=>finish(r);
  if(air)airBoard(r,typeof currentOpts.air==='object'?currentOpts.air:null);
@@ -193,12 +228,13 @@ async function start(){
     if(r.stable===2&&at>=0&&(midi!==r.scoredMidi||r.lastOnset>r.scoredAt))judge(r,midi,ch,BASS&&at-r.lastOnset<.25&&r.lastOnset>=0?r.lastOnset:at);}
    r.heard=midi;
   }
-  if(barIndex!==r.shownBar){r.shownBar=barIndex;
+  if(barIndex!==r.shownBar){r.shownBar=barIndex;if(r.relay)relayBox(r,view<0?-1:barIndex);
    document.querySelectorAll('#jam-chart [data-bar]').forEach(x=>x.classList.toggle('on',Number(x.dataset.bar)===((barIndex%s.chart.length)+s.chart.length)%s.chart.length&&view>=0));
    const cur=$('#jam-chart .on');if(cur){const box=$('#jam-chart');box.scrollTop=cur.offsetTop-box.offsetTop-6;}
    $('#jam-chorus').textContent=Math.min(r.choruses,Math.max(1,Math.floor(barIndex/s.chart.length)+1));}
   const nextBar=s.chart[(((barIndex+1)%s.chart.length)+s.chart.length)%s.chart.length];
-  const key=ch.sym+'|'+r.heard;
+  /* The bar is part of the key: the count-in shows the last bar's chord as NEXT, and the first bar may keep the same chord. */
+  const key=ch.sym+'|'+r.heard+'|'+barIndex;
   if(key!==r.shownHeard){r.shownHeard=key;$('#jam-now').textContent=pretty(ch.sym);$('#jam-next').textContent=pretty(bar.length>1&&ch===bar[0]?bar[1].sym:nextBar[0].sym);if(air){r.ch=ch;colorBoard(r);}else $('#jam-board').innerHTML=fretboard(s,ch,r.heard);if(mic||air)$('#jam-heard').textContent=r.heard!=null?K.noteName(r.heard):'—';}
   document.querySelectorAll('#jam-beats i').forEach((x,i)=>x.classList.toggle('on',view>=-4*spb&&((beatIndex%4)+4)%4===i));
   $('#jam-progress').style.width=Math.max(0,Math.min(100,view/r.total*100))+'%';
@@ -233,7 +269,7 @@ function chordAt(s,beat){const bi=Math.floor(beat),barIndex=Math.floor(bi/4),bar
 function judge(r,midi,ch,at){
  r.scoredMidi=midi;r.scoredAt=at;r.notes++;
  const inBar=(((at/r.spb)%4)+4)%4,rel=(midi%12-ch.root+12)%12;
- r.log.push({midi,rel,tone:ch.tones.includes(rel),down:inBar<.5||inBar>3.8});
+ r.log.push({midi,rel,tone:ch.tones.includes(rel),down:inBar<.5||inBar>3.8,at});
  if(r.mission){const el=$('#jam-mission');if(el)el.innerHTML=goalsHtml(r.mission,r.log,true);}
  const pc=(midi%12-ch.root+12)%12,keyPc=(midi%12-r.s.key+12)%12;let label,cls,pts;
  if(ch.tones.includes(pc)){label='CHORD TONE';cls='perfect';pts=100;r.tones++;r.inside++;r.combo++;}
@@ -243,6 +279,24 @@ function judge(r,midi,ch,at){
  const el=$('#stage-judge');if(el){el.className='stage-judge jam-judge '+cls;el.innerHTML=label+'<small>'+PC[midi%12]+(pts?' ・ '+(DEGREE[pc]||''):'')+'</small>';void el.offsetWidth;el.classList.add('show');}
 }
 
+/* ---------- Lick relay ---------- */
+/* The box over the board: the lick to play now with its positions, or a free stretch and what comes next. */
+function relayBox(r,bar){
+ const el=$('#jam-relay');if(!el)return;
+ const cur=r.relay.find(sl=>bar>=sl.bar&&bar<sl.bar+sl.bars),next=r.relay.find(sl=>sl.bar>bar);
+ el.className='relay-box'+(cur?' on':'');
+ el.innerHTML=cur?'<div class="relay-now"><small>この'+cur.bars+'小節で弾く</small><b>'+cur.title+'</b><span>'+cur.tag+'</span></div>'+cur.html
+  :'<div class="relay-now"><small>フリー</small><b>自由にアドリブ</b>'+(next?'<span>次：'+next.title+'（'+(next.bar-bar)+'小節後）</span>':'<span>最後まで自由に</span>')+'</div>'+(next&&next.bar-bar<=1?next.html:'');
+}
+/* A called note counts when a judged note of the same pitch (or an octave away) lands within 0.3 s of it. */
+function relayResult(r,played){
+ const used=new Set(),rows=[];
+ for(const sl of r.relay){if(sl.bar*4*r.spb>played)break;
+  let hits=0;for(const e of sl.expect){const i=r.log.findIndex((x,k)=>!used.has(k)&&Math.abs(x.at-e.t)<=.3&&e.midis.some(m=>m===x.midi||Math.abs(m-x.midi)===12));if(i>=0){used.add(i);hits++;}}
+  rows.push({title:sl.title,pct:Math.round(hits/sl.expect.length*100)});}
+ const pct=rows.length?Math.round(rows.reduce((a,x)=>a+x.pct,0)/rows.length):0;
+ return {pct,rows,html:'<div class="mission-box relay-result"><div class="mission-title">LICK RELAY '+pct+'%</div>'+rows.map(x=>'<div class="goal '+(x.pct>=60?'ok':'')+'"><i>'+(x.pct>=60?'✓':'・')+'</i><span>'+x.title+'</span><b>'+x.pct+'%</b></div>').join('')+'<p>'+(pct>=60?'リックをセッションの中で使えています。次は別のセッションやテンポで。':'リックの最初の音を、指定の小節の頭に合わせることから始めよう。')+'</p></div>'};
+}
 function finish(r){
  const s=r.s,played=r.ctx.currentTime-r.t0;stop();
  /* A session counts as practice after a full pass or at least 30 seconds of playing. */
@@ -250,11 +304,13 @@ function finish(r){
  const scored=(!!r.mic||r.air)&&r.notes>0,goals=r.mission?r.mission.goals.map(g=>evalGoal(g,r.log)):null,missionPassed=!!goals&&scored&&goals.every(g=>g.ok);
  if(r.mission)r.opts.onDone?.(missionPassed);
  if(scored&&r.points>best(s.id)){prefs.best=prefs.best||{};prefs.best[s.id]=r.points;save();}
+ const relay=r.relay&&scored?relayResult(r,played):null;
+ if(relay){r.opts.onRelay?.(relay.pct);if(relay.pct>(prefs.relayBest?.[s.id]||0)){prefs.relayBest=prefs.relayBest||{};prefs.relayBest[s.id]=relay.pct;save();}}
  renderCards();
  F.show(el=>{
   $('.modal-dialog').classList.add('is-stage');
   el.innerHTML='<div class="stage-result'+(scored?' passed':'')+'"><div class="lesson-progress">'+s.genre+' / SESSION</div><h2 id="modal-title">'+(r.mission?(missionPassed?'ミッション達成！':'ミッション未達成'):scored?'ナイス・セッション！':'おつかれさま！')+'</h2>'
-   +(goals?'<div class="mission-box">'+goals.map(g=>'<div class="goal '+(g.ok?'ok':'')+'"><i>'+(g.ok?'✓':'・')+'</i><span>'+g.label+'</span><b>'+g.shown+'</b></div>').join('')+'</div>':'')
+   +(relay?relay.html:'')+(goals?'<div class="mission-box">'+goals.map(g=>'<div class="goal '+(g.ok?'ok':'')+'"><i>'+(g.ok?'✓':'・')+'</i><span>'+g.label+'</span><b>'+g.shown+'</b></div>').join('')+'</div>':'')
    +(scored?'<div class="result-score"><strong>'+r.points+'</strong><small>PTS</small></div>'
     +'<div class="result-grid"><div><b>'+r.notes+'</b><small>NOTES</small></div><div><b>'+Math.round(r.tones/r.notes*100)+'%</b><small>CHORD TONES</small></div><div><b>'+Math.round(r.inside/r.notes*100)+'%</b><small>IN KEY</small></div><div><b>'+r.maxCombo+'</b><small>MAX COMBO</small></div></div>'
     +'<p>'+(r.tones/r.notes>=.4?'コードの音をしっかり狙えています。次はテンポを上げてみよう。':'まずは大きい丸（コードの音）を、コードが変わった瞬間に1音だけ狙ってみよう。')+'</p>'
@@ -267,6 +323,6 @@ function finish(r){
 }
 
 window.addEventListener('fq:progress',()=>{try{prefs.best=JSON.parse(localStorage.getItem('fretQuestJam'))?.best||prefs.best;}catch{}renderCards();});
-window.FQJam={sessions:SESSIONS,renderCards,lobby,parse};
+window.FQJam={sessions:SESSIONS,renderCards,lobby,parse,relayBest:id=>prefs.relayBest?.[id]||0};
 renderCards();
 })();

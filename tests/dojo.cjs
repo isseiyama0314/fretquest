@@ -16,6 +16,8 @@ await p.addInitScript(()=>{
   /* Lick steps: each note plucked on time; a bend starts at the fretted pitch and glides up in 0.15 s (or stays there when plan.flat). */
   if(plan.kind==='lick'){const spb=60/plan.bpm,t0=ctx.currentTime+.35+4*spb;plan.notes.forEach(n=>{const t=t0+n.beat*spb,d=Math.max(.2,n.len*spb*.95),o=ctx.createOscillator(),g=ctx.createGain(),f=ctx.createBiquadFilter(),hz=m=>440*Math.pow(2,(m-69)/12),from=n.midi-(n.bend||0);
    o.type='sawtooth';o.frequency.setValueAtTime(hz(from),t);if(n.bend&&!plan.flat)o.frequency.linearRampToValueAtTime(hz(n.midi),t+.15);f.type='lowpass';f.frequency.value=2500;g.gain.setValueAtTime(.0001,t);g.gain.exponentialRampToValueAtTime(.3,t+.005);g.gain.exponentialRampToValueAtTime(.001,t+d);o.connect(f);f.connect(g);g.connect(dest);o.start(t);o.stop(t+d+.05);});}
+  /* Lick relay: each called note at its beat from the session's first downbeat. */
+  if(plan.kind==='relay')setTimeout(()=>{const spb=60/plan.bpm,t0=ctx.currentTime+.4+4*spb;plan.notes.forEach(n=>pluck(t0+n.beat*spb+.02,n.midi,Math.max(.15,n.len*spb*.9)));},0);
   if(plan.kind==='mission')setTimeout(()=>{const T=ctx.currentTime,spb=60/plan.bpm,t0=T+.4+4*spb;for(let beat=0;beat<plan.bars*4;beat++)pluck(t0+beat*spb+.03,beat%4===0?plan.down:plan.others[beat%plan.others.length],spb*.7);},0);
   return dest.stream;};
 });
@@ -58,7 +60,7 @@ r=await mission({kind:'mission',bpm:84,bars:12,down:69,others:[71,72,74,76],shot
 const mastered=await p.evaluate(()=>window.FQDojo.status(window.FQDojo.modules.find(m=>m.id==='bb-box')).every(Boolean));
 check('mission passes and masters the lick',r.title==='ミッション達成！'&&mastered,JSON.stringify(r));
 await p.click('#modal-close');await p.waitForTimeout(300);
-const rank=await p.$eval('#dojo-count',e=>e.textContent);check('mastery count',rank==='1 / 147',rank);
+const rank=await p.$eval('#dojo-count',e=>e.textContent);check('mastery count',rank==='1 / 226',rank);
 
 // Artist groups: switching shows that artist's licks and is remembered.
 await p.click('[data-artist="アルバート・キング"]');
@@ -111,6 +113,30 @@ check('jazz artist groups',jz.artists.length===12&&jz.artists[0]==='基礎'&&jz.
 await p.click('[data-artist="バッキング"]');
 const kept=await p.evaluate(()=>({jazz:localStorage.getItem('fretQuestDojoArtist:JAZZ'),blues:localStorage.getItem('fretQuestDojoArtist')}));
 check('artist choice is kept per genre',kept.jazz==='バッキング'&&kept.blues==='基礎',JSON.stringify(kept));
+// Lick relay: the band plays the blues, the screen calls licks at set bars; playing exactly the called notes scores high.
+await p.click('[data-genre="BLUES"]');await p.click('#dojo-relay');await p.waitForSelector('[data-relay="blues-a"]');
+const sessions=await p.$$eval('[data-relay]',x=>x.map(b=>b.dataset.relay));
+await p.click('[data-relay="blues-a"]');await p.waitForSelector('#jam-start');await p.click('[data-ch="1"]');await p.click('[data-mic="1"]');
+const relayPlan=await p.evaluate(()=>{const R=window.FQDojo.lastRelay(),bpm=window.FQJam.sessions.find(s=>s.id==='blues-a').bpm,slots=R.plan(12);
+ return {bpm,slots:slots.map(s=>({bar:s.bar,bars:s.bars,id:s.id})),notes:slots.flatMap(s=>s.notes.map(n=>({beat:s.bar*4+n.beat,midi:n.midis[0],len:.5})))};});
+await p.evaluate(pl=>{window.__plan=pl;},{kind:'relay',bpm:relayPlan.bpm,notes:relayPlan.notes});
+await p.click('#jam-start');await p.waitForSelector('#jam-relay');
+const box=await p.$eval('#jam-relay',e=>e.textContent);
+await p.waitForSelector('.stage-result',{timeout:120000});
+const rr=await p.evaluate(()=>({head:document.querySelector('.relay-result .mission-title')?.textContent||'',rows:[...document.querySelectorAll('.relay-result .goal b')].map(b=>b.textContent)}));
+check('lick relay: sessions offered, the box calls licks, the called notes score',sessions.includes('blues-a')&&sessions.includes('chicago')&&relayPlan.slots.length>=2&&/リック|フリー|小節/.test(box)&&/LICK RELAY (\d+)%/.test(rr.head)&&Number(rr.head.match(/(\d+)%/)[1])>=80,JSON.stringify({sessions:sessions.length,slots:relayPlan.slots,box:box.slice(0,40),rr}));
+await p.click('#jam-back');await p.waitForSelector('[data-relay]');await p.click('#modal-close');await p.waitForTimeout(300);
+// Pops is grouped by style, and its note says so.
+await p.click('[data-genre="POPS"]');await p.click('[data-artist="シティポップ"]');
+const po=await p.evaluate(()=>({artists:[...document.querySelectorAll('#dojo [data-artist]')].map(b=>b.dataset.artist),cards:document.querySelectorAll('#dojo [data-module]').length,note:document.querySelector('.dojo-blurb span')?.textContent||''}));
+check('pops style groups',po.artists.length===7&&po.artists.includes('アニソン')&&po.cards===6&&po.note.includes('このスタイル'),JSON.stringify(po));
+await p.click('[data-genre="FUNK"]');
+const fk=await p.evaluate(()=>({tabs:document.querySelectorAll('#dojo-tabs [data-genre]').length,artists:[...document.querySelectorAll('#dojo [data-artist]')].map(b=>b.dataset.artist),kinds:[...new Set(window.FQDojo.modules.filter(m=>m.genre==='FUNK').map(m=>m.kind))]}));
+check('funk tab with its groups, cutting and solos',fk.tabs===5&&fk.artists.length===7&&fk.artists[0]==='カッティング基礎'&&fk.kinds.includes('comp')&&fk.kinds.includes('solo'),JSON.stringify(fk));
+await p.click('[data-genre="COUNTRY"]');
+const ct=await p.evaluate(()=>({artists:[...document.querySelectorAll('#dojo [data-artist]')].map(b=>b.dataset.artist),chords:window.FQDojo.modules.filter(m=>m.genre==='COUNTRY'&&/\+/.test(m.learn.src||'')).length}));
+check('country tab with picking groups and charted double stops',ct.artists.length===6&&ct.artists.includes('トラビス奏法')&&ct.chords>=6,JSON.stringify(ct));
+await p.click('[data-genre="JAZZ"]');
 // A comping module and a pop session.
 await p.click('[data-module="shells"]');await p.waitForSelector('.dojo-chords');
 if(OUT)await p.screenshot({path:OUT+'/dojo-comp.png'});
