@@ -129,7 +129,7 @@ const MODES_DEF={
    const frets=[...Array(13).keys()].filter(f=>(OPEN[s]+f)%12===pc);
    return {prompt:s+'弦で「'+NOTE_NAMES[pc]+'」はどこ？',fretString:s,answerFrets:frets,answer:frets[0],explain:s+'弦 '+frets.join('・')+'フレット'};}},
 
- melody:{title:'メロディ耳コピ',tag:'聴いたメロディを指板で再現',icon:'music',about:'短いメロディを聴いて、画面の指板をタップして再現するソルフェージュ。最初の音は教えます。タップした音はその場で鳴るので、耳で確かめながら探しましょう。同じ高さならどの弦で押さえてもOK。',
+ melody:{title:'メロディ耳コピ',tag:'聴いたメロディを指板で再現',icon:'music',about:'短いメロディを聴いて、画面の指板をタップして再現するソルフェージュ。最初の音は教えます（その音をタップしても大丈夫）。タップした音はその場で鳴るので、耳で確かめながら探しましょう。同じ高さならどの弦で押さえてもOK。',
   levels:['3音・となりの音へ','4音・3度の跳躍も','5音・Cメジャー','Aマイナーペンタのリック','ブルーノート入りのフレーズ'],
   make(lv){let notes;
    if(lv<=3){const len=lv+2,maxStep=lv===1?1:lv===2?2:4;let i=3+Math.floor(Math.random()*6);notes=[C_MAJOR[i]];
@@ -222,11 +222,12 @@ function run(id,level){
    const ok=c===q.answer;b.classList.add(ok?'correct':'wrong');if(!ok)el.querySelectorAll('[data-choice]').forEach(x=>{if(q.choices[Number(x.dataset.choice)]===q.answer)x.classList.add('correct');});done(ok,c);});
   el.querySelectorAll('[data-fret]').forEach(b=>b.onclick=()=>{if(answered)return;const f=Number(b.dataset.fret),ok=q.answerFrets.includes(f);b.classList.add(ok?'correct':'wrong');el.querySelectorAll('[data-fret]').forEach(x=>{if(q.answerFrets.includes(Number(x.dataset.fret)))x.classList.add('correct');});done(ok);});
   if(q.melody){
-   /* The first note is given; each tap sounds and fills the next slot; the answer is checked once every slot is filled. */
+   /* The first note is given; each tap sounds and fills the next slot; the answer is checked once every slot is filled.
+      Tapping the given note again before anything else only sounds it: players often start by finding the note they heard first. */
    const slots=el.querySelectorAll('#train-slots span'),entered=[q.melody[0]],show=()=>slots.forEach((x,k)=>{x.textContent=entered[k]!=null?SOLFA[entered[k]%12]:'？';x.classList.toggle('filled',entered[k]!=null);});
    show();
    el.querySelectorAll('[data-midi]').forEach(b=>b.onclick=async()=>{if(answered)return;const m=Number(b.dataset.midi);
-    entered.push(m);show();b.classList.add('tapped');setTimeout(()=>b.classList.remove('tapped'),180);
+    if(!(entered.length===1&&m===q.melody[0])){entered.push(m);show();}b.classList.add('tapped');setTimeout(()=>b.classList.remove('tapped'),180);
     if(entered.length===q.melody.length){const ok=entered.every((x,k)=>x===q.melody[k]);slots.forEach((x,k)=>x.classList.add(entered[k]===q.melody[k]?'ok':'ng'));done(ok);}
     const s=await sound();s?.a.pluck(s.ctx.currentTime+.02,m,.6,.16);});
    $('#train-undo').onclick=()=>{if(!answered&&entered.length>1){entered.pop();show();}};
