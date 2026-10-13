@@ -56,7 +56,8 @@ const stopKit=()=>{if(kit){kit.a.stop();kit.dead=true;kit=null;}};
 /* A tapped note sounds right away. Bass notes play an octave up so a phone speaker can carry them. */
 const voice=m=>BASS?m+12:m;
 async function tapSound(midi){const k=await sound();k?.a.pluck(k.ctx.currentTime+.005,voice(midi),.45,.15);}
-async function playPhrase(notes,bpm){const k=await sound();if(!k)return;const spb=60/bpm,t=k.ctx.currentTime+.1;notes.forEach(n=>k.a.pluck(t+n.beat*spb,voice(n.midi),n.len*spb,.15,n.bend||0));}
+/* The whole phrase is scheduled ahead, so leaving the screen (close, back, next screen) must cut it. */
+async function playPhrase(notes,bpm){const generation=F.generation(),k=await sound();if(!k||generation!==F.generation())return;const spb=60/bpm,t=k.ctx.currentTime+.1;notes.forEach(n=>k.a.pluck(t+n.beat*spb,voice(n.midi),n.len*spb,.15,n.bend||0));F.setCleanup(stopAll);}
 function strumShape(name){sound().then(k=>{if(!k)return;const ms=K.chordMidis(name),t=k.ctx.currentTime+.02;ms.forEach((m,i)=>k.a.pluck(t+i*.018,m,.9,.07));});}
 
 /* ---------- Shared screens ---------- */
@@ -87,6 +88,7 @@ function resultScreen({kicker,title,score,passed,lines,again,back,next}){
    a wrong pitch costs points and leaves the note open. */
 let run=null;
 function stopRun(){if(!run)return;const r=run;run=null;cancelAnimationFrame(r.raf);r.audio.stop();document.removeEventListener('visibilitychange',r.onHide);}
+const stopAll=()=>{stopKit();stopRun();};
 function traceLobby(spec){
  const prefs=traceLobby.prefs||(traceLobby.prefs={speed:.75,guide:true});
  F.show(el=>{
@@ -129,7 +131,7 @@ async function traceStart(spec,prefs){
    +'<div class="air-board-wrap play">'+boardHtml(spec.w)+'<div id="air-judge" class="stage-judge air-judge" aria-live="polite"></div></div>'
    +'<button type="button" class="action-button secondary-action" id="air-quit">やめる</button></div>';
  });
- const root=$('.air-play');run=r;F.setCleanup(stopRun);
+ const root=$('.air-play');run=r;F.setCleanup(stopAll);
  r.onHide=()=>{if(document.hidden){stopRun();traceLobby(spec);}};document.addEventListener('visibilitychange',r.onHide);
  $('#air-quit').onclick=()=>{stopRun();traceLobby(spec);};
  /* tapped: the cell actually tapped, when it is the same pitch in another position. */
@@ -201,9 +203,9 @@ function recall(spec){
     else if(!wrongHere)clean++;root.querySelectorAll('.air-cell.hint').forEach(x=>x.classList.remove('hint'));
     flashCell(b,'hit');slots[idx].textContent=s+'-'+f;slots[idx].classList.add('filled',wrongHere?'ng':'ok');$('#air-msg').textContent=n.string!==s?'OK！ タブ譜では '+n.string+'弦'+n.fret+'フレット。':' ';idx++;wrongHere=0;nowChord();
     if(idx>=notes.length){const score=Math.round(clean/(notes.length-1)*100),passed=score>=PASS;spec.onResult?.(score,passed);
-     setTimeout(()=>{playPhrase(notes,spec.bpm);resultScreen({kicker:spec.kicker,title:'何も見ずに再現できた！',score,passed,next:spec.next,
+     setTimeout(()=>{resultScreen({kicker:spec.kicker,title:'何も見ずに再現できた！',score,passed,next:spec.next,
       lines:'<div class="result-grid"><div><b>'+clean+' / '+(notes.length-1)+'</b><small>一発で正解</small></div><div><b>'+mistakes+'</b><small>まちがい</small></div></div>',
-      again:()=>recall(spec),back:()=>{stopKit();spec.back();}});},500);}
+      again:()=>recall(spec),back:()=>{stopKit();spec.back();}});playPhrase(notes,spec.bpm);},500);}
     return;}
    flashCell(b,'wrong');if(idx===0){$('#air-msg').textContent='光っている場所から始めよう。';return;}wrongHere++;mistakes++;
    $('#air-msg').textContent=wrongHere>=2?'正しい場所を光らせました。':'ちがう音です。もう一度。';
@@ -281,7 +283,7 @@ async function changesStart(spec,speed){
    +'<div class="air-board-wrap play">'+boardHtml(w)+'<div id="air-judge" class="stage-judge air-judge" aria-live="polite"></div></div>'
    +'<button type="button" class="action-button secondary-action" id="air-quit">やめる</button></div>';
  });
- const root=$('.air-play');run=r;F.setCleanup(stopRun);
+ const root=$('.air-play');run=r;F.setCleanup(stopAll);
  r.onHide=()=>{if(document.hidden){stopRun();changes(spec);}};document.addEventListener('visibilitychange',r.onHide);
  $('#air-quit').onclick=()=>{stopRun();changes(spec);};
  let left=[],placed=0;
