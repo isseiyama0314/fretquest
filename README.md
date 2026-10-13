@@ -58,7 +58,7 @@ Today's menu replaces the retired daily quests (35-second chord change, note-nam
 
 ## Phrase dojo
 
-`licks.js` teaches 206 guitar modules across blues (91), jazz (51), pops (39) and funk (25), split into solo/improvisation and comping. Each module has three steps: learn (play the lick or comping pattern from a tab/strum chart), groove (at tempo over drums, with space between repeats) and use (a session mission for solos, the full form for comping). Steps one and two clear at ★1; a mission clears when every goal is met. Clearing all three masters the module; titles rise with the number mastered.
+`licks.js` teaches 226 guitar modules across blues (91), jazz (51), pops (39), funk (25) and country (20), split into solo/improvisation and comping. Each module has three steps: learn (play the lick or comping pattern from a tab/strum chart), groove (at tempo over drums, with space between repeats) and use (a session mission for solos, the full form for comping). Steps one and two clear at ★1; a mission clears when every goal is met. Clearing all three masters the module; titles rise with the number mastered.
 
 - Blues is grouped by artist, chosen from a scrolling chip row (the choice stays in this browser, `fretQuestDojoArtist`). Each group studies one player's vocabulary through licks written for this app; none are transcribed solos or song melodies, and the page says so.
   - 基礎 (9): pentatonic box 1, B.B. box, blue note (♭5), turnaround, call and answer, bending basics, box 2, triplet roll, major 3rd hammer-on.
@@ -84,6 +84,10 @@ Blues and jazz charts are written straight and played swung (`feelOf` in `licks.
   - カッティング基礎 (4): 16th air-picking, the chank on the 16th offbeats, all sixteenths, switching Em7–A7.
   - Jimmy Nolen / JB (3): E9 chicken scratch, a low-string single-note riff, 9th double stops. Nile Rodgers (3): high chords in 16ths, offbeat chucks, single-note answers. Curtis Mayfield (3): soul double stops, hammered double stops, major-pentatonic answers. Motown (3): chords on 2 and 4, octave lines, high answers. Neo-soul (5): hammer-ons inside the chord, a flowing pentatonic line, 9ths and 13ths, laid-back entries, soft maj7 comping. Funk solo (4): E dorian 16ths, octaves, chromatic approaches, short bends.
   - Sessions: a one-chord E9 vamp and Em7–A7 minor funk (16-beat band: 16th hats, a syncopated kick, an octave-jumping bass, offbeat stabs), Motown I–vi–IV–V (kick on every beat, tambourine and snare on 2 and 4, walking eighths) and neo-soul IV–iii–ii–I (a slightly late snare, long chords). Tabs show only the genres the current instrument has modules in.
+
+- Country and bluegrass (`fretQuestDojoArtist:COUNTRY`) lean on notes played together, written with `+`: they count when one of their notes is heard, so these charts teach the moves more than they judge them exactly.
+  - カントリー基礎 (3): boom-chick (bass on 1 and 3, chord on 2 and 4), G major pentatonic with open strings, falling sixths. Chicken picking (4): short snapped notes, open strings between fretted notes, double stops, the ♭7. Pedal-steel style (3): bending one note while holding another, pre-bend releases, high oblique bends. Travis picking (3): alternating thumb bass, melody on the offbeats, pinches. Bluegrass (4): the G run, crosspicking, fiddle-tune eighths, a D run. バッキング (3): boom-chick strumming, the bluegrass chop on 2 and 4, a 16th train beat.
+  - Sessions: country in G and chicken picking in A (boom-chick band: bass root and fifth on 1 and 3, brushed snare and short chords on 2 and 4) and bluegrass in G (no drums: bass on 1 and 3, a high chop on 2 and 4).
 
 ### Lick relay
 

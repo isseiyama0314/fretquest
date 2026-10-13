@@ -129,18 +129,19 @@ const E=4,B=11;
 const SETS={blues:[BLUES_A,'Aブルース・スケール'],amix:[[9,11,0,1,2,3,4,6,7],'Aのメジャー＋マイナー・ペンタ'],
  eblues:[[4,7,9,10,11,2],'Eブルース・スケール'],emix:[[4,6,7,8,9,10,11,1,2],'Eのメジャー＋マイナー・ペンタ'],
  bminor:[[11,1,2,4,6,7,9],'Bナチュラル・マイナー'],bminor7:[[11,1,2,4,6,7,9,10],'Bマイナー＋F♯7のA♯'],cmajor:[MAJOR_C,'Cメジャー・スケール'],
- aharm:[[9,11,0,2,4,5,7,8],'Aマイナー＋E7のG♯'],efunk:[[4,6,7,8,9,11,1,2],'Eミクソリディアン＋G'],edorian:[[4,6,7,9,11,1,2],'Eドリアン'],amixo:[[9,11,1,2,4,6,7],'Aミクソリディアン']};
+ aharm:[[9,11,0,2,4,5,7,8],'Aマイナー＋E7のG♯'],gmajor:[[7,9,11,0,2,4,6],'Gメジャー・スケール'],gblue:[[7,9,10,11,0,2,4,6],'Gメジャー＋B♭'],efunk:[[4,6,7,8,9,11,1,2],'Eミクソリディアン＋G'],edorian:[[4,6,7,9,11,1,2],'Eドリアン'],amixo:[[9,11,1,2,4,6,7],'Aミクソリディアン']};
 const SESSION={'ii-v-i':{root:C,min:24},autumn:{root:G,min:24},fly:{root:A,min:24},billie:{root:5,min:24},bossa:{root:C,min:20},
  rhythm:{root:10,min:24},'minor-blues':{root:C,min:20},modal:{root:2,min:24},
  oudou:{root:C,name:'C',set:'cmajor',min:16},canon:{root:C,name:'C',set:'cmajor',min:16},citypop:{root:A,min:20},anison:{root:C,min:24},
  jrock:{root:A,name:'A',set:'aharm',min:20},britrock:{root:A,name:'A',set:'amixo',min:16},
  'funk-e9':{root:E,name:'E',set:'efunk',min:24},'funk-minor':{root:E,name:'E',set:'edorian',min:24},motown:{root:C,name:'C',set:'cmajor',min:16},neosoul:{root:C,min:16},
+ 'country-g':{root:G,name:'G',set:'gmajor',min:20},'country-a':{root:A,name:'A',set:'amixo',min:20},bluegrass:{root:G,name:'G',set:'gblue',min:24},
  'blues-a':{root:A,name:'A',set:'blues',min:20},chicago:{root:E,name:'E',set:'eblues',min:20},thrill:{root:B,name:'B',set:'bminor',min:16},ballad:{root:C,name:'C',set:'cmajor',min:12}};
 /* An artist-style lick: [id,title,tag,about,src,opt]. opt: session, bpm, groove, set, min, text, goals, over.
    Sessions with a scale (blues, pops) grade the share of notes in it; chord-change sessions (jazz) grade chord tones.
    "over" names the chords under the learn chart bar by bar; it is used by the content checks, not shown. */
 const lick=(artist,genre='BLUES')=>([id,title,tag,about,src,o={}])=>{
- const s=o.session||({JAZZ:'ii-v-i',POPS:'oudou',FUNK:'funk-e9'})[genre]||'blues-a',d=SESSION[s],bpm=o.bpm||72,set=o.set||d.set,min=o.min||d.min;
+ const s=o.session||({JAZZ:'ii-v-i',POPS:'oudou',FUNK:'funk-e9',COUNTRY:'country-g'})[genre]||'blues-a',d=SESSION[s],bpm=o.bpm||72,set=o.set||d.set,min=o.min||d.min;
  const base=set?{type:'inSet',pcs:SETS[set][0],ratio:.8,label:SETS[set][1]+'の音が80%以上'}:{type:'tones',ratio:.5,label:'コードの音が50%以上'};
  const land=d.set?{type:'land',pcs:[d.root],min:3,label:'小節の頭で'+d.name+'に3回着地'}:{type:'land',min:4,label:'小節の頭でコードの音に4回着地'};
  return {id,genre,kind:'solo',artist,root:d.root,title,tag,about,over:o.over,learn:{bpm,src},groove:{bpm:o.groove||bpm+12},
@@ -669,9 +670,74 @@ const FUNK_MORE=[
   '-:.5 2.15b2:.5 -:.5 2.15b2:.5 1.12:.25 -:.25 1.12:.25 2.15:.25 2.12',{session:'funk-e9',over:'E9',min:14,text:'短いチョーキングをアクセントに、E9のファンク。'}]
 ].map(FK('ファンク・ソロ'))
 ];
+/* ---------------- COUNTRY / BLUEGRASS ----------------
+   Country picking leans on notes played together (Travis picking, pedal-steel bends): they are written with + and count
+   when one of their notes is heard, so these charts are for learning the moves more than for exact judging. */
+ARTISTS.COUNTRY=[
+ ['カントリー基礎','ブーム・チック、Gメジャー・ペンタ、6度の下降。カントリーの土台。'],
+ ['チキン・ピッキング','短く弾いて切る、開放弦と混ぜる、ダブル・ストップ。テレキャスターの跳ねる音。',[['Brad Paisley Ticks','Ticks（ブラッド・ペイズリー）','歌の合間の、短く跳ねるフレーズ'],['Albert Lee Country Boy','Country Boy（アルバート・リー）','速く、ぱちぱちと弾ける単音と開放弦']]],
+ ['ペダル・スチール風','片方の音を保ったまま、もう片方を上げるチョーキング。',[['Brent Mason Hot Wired','Hot Wired（ブレント・メイソン）','2音のうち1音だけ上げる、スチール・ギターのような響き'],['Vince Gill Oklahoma Swing','Oklahoma Swing（ヴィンス・ギル）','カントリーらしい甘いチョーキング']]],
+ ['トラビス奏法','親指で低音を交互に、ほかの指でメロディ。1本のギターでベースとメロディ。',[['Chet Atkins Mister Sandman','Mister Sandman（チェット・アトキンス）','親指の低音の上で歌うメロディ'],['Merle Travis Cannonball Rag','Cannonball Rag（マール・トラヴィス）','親指の交互ベースの元祖']]],
+ ['ブルーグラス','Gラン、クロスピッキング、速い8分のフラットピッキング。',[['Tony Rice Church Street Blues','Church Street Blues（トニー・ライス）','力強いフラットピッキングとGラン'],['Doc Watson Black Mountain Rag','Black Mountain Rag（ドック・ワトソン）','途切れない速い8分の単音']]],
+ ['バッキング','ブーム・チックのストローク、ブルーグラスのチョップ、トレイン・ビート。']
+];
+const CT=a=>lick(a,'COUNTRY');
+const ccomp=(artist,...args)=>({...comp(...args,'COUNTRY'),artist});
+const COUNTRY_MORE=[
+...[
+ ['ct-boomchick','ブーム・チック','低音とコードを交互に',['1拍目と3拍目に低音（ルートと5度）、2拍目と4拍目に高い弦のコード。カントリーの伴奏の一番の基本で、1人でベースとリズムを兼ねます。','Gなら6弦3フレットのGと5弦2フレットのB、Cなら5弦3フレットのCと4弦2フレットのE。コードは押さえたまま、弾く弦だけを変えます。'],
+  '6.3 4.0+3.0+2.0 5.2 4.0+3.0+2.0 | 5.3 4.2+3.0+2.1 4.2 4.2+3.0+2.1 | 6.3 4.0+3.0+2.0 5.2 4.0+3.0+2.0 | 4.0 3.2+2.3+1.2 5.0 3.2+2.3+1.2',{session:'country-g',over:'G C G D',text:'カントリー（G）の伴奏を、ブーム・チックで。',goals:[{type:'roots',min:6,label:'小節の頭でルートを6回'},{type:'tones',ratio:.7,label:'コードの音が70%以上'}]}],
+ ['ct-pent','Gメジャー・ペンタ','開放弦を使って',['G・A・B・D・Eの5音。開放弦の近くで弾くと、明るく、からっとしたカントリーの響きになります。','B→A→Gと下りて、最後はルートのGで締めます。'],
+  '-:.5 2.0:.5 2.3:.5 1.0:.5 2.3:.5 2.0:.5 3.2:.5 3.0:.5 | 4.2:.5 4.0:.5 5.2:.5 5.0:.5 6.3:2',{session:'country-g',over:'G G',text:'Gメジャー・ペンタでカントリーのソロ。'}],
+ ['ct-sixths','6度の下降','2本の弦を飛ばして2音',['3弦と1弦で6度離れた2音を、順に下げていく。カントリーやスティール・ギターでおなじみの、甘く広い響きです。','間の2弦は鳴らさない。右手の指で3弦と1弦を同時につまむように弾きます。'],
+  '3.4+1.3 3.2+1.2 3.0+1.0 3.2+1.2 | 3.4+1.3:4',{session:'country-g',over:'G G',min:10,text:'6度の2音を使って、甘いソロ。'}]
+].map(CT('カントリー基礎')),
+...[
+ ['ck-snap','短く弾いて切る','16分で弾いて、すぐ止める',['音を出した直後に左手を浮かせて止める。伸ばさない短い音が、ニワトリのような「チキン」の響きです。','実際は指で弦を引っかけて弾く（ハイブリッド・ピッキング）と鋭くなりますが、まずはピックで短く切ることから。'],
+  '2.5:.25 -:.25 2.5:.25 -:.25 3.6:.25 -:.25 2.5:.5 2.2:.25 -:.25 3.2:.25 -:.25 3.4:.25 3.2:.25 4.2:.5 | 5.0:2 -:2',{session:'country-a',over:'A A',text:'短く切った音で、跳ねるカントリーのソロ。'}],
+ ['ck-open','開放弦と混ぜる','押さえた音と開放のE・Bを交互に',['押さえた音のあとに1弦・2弦の開放を鳴らす。左手を大きく動かさなくても、速くきらびやかに聴こえます。','開放弦は押さえる必要がないので、そのあいだに左手は次の音へ。'],
+  '2.5:.5 1.0:.5 2.3:.5 1.0:.5 2.2:.5 2.0:.5 3.2:.5 2.0:.5 | 3.4:.5 2.0:.5 3.2:.5 2.0:.5 4.2:2',{session:'country-a',over:'A A',text:'開放弦を混ぜて、きらびやかなソロ。',min:24}],
+ ['ck-dbl','3弦と2弦のダブル・ストップ','A→Dで2音を動かす',['3弦と2弦の2音を一緒に鳴らして、上下にずらす。カントリーのギター・ソロで定番の、2音で歌う動きです。','D（IV）の小節では、F♯とAの2音に移ります。'],
+  '3.6+2.5 3.7+2.7 3.6+2.5:2 | 3.7+2.7:.5 3.6+2.5:.5 3.4+2.3:1 3.2+2.2:2',{session:'country-a',over:'A D',min:12,text:'ダブル・ストップで歌うソロ。'}],
+ ['ck-mixo','♭7で跳ねる','Gを通ってAへ',['Aの曲で、G（♭7）を通ってAへ戻る。ブルースの色が少し混ざった、カントリー・ロックの響きです。','A→G→E→G→Aと、ルートの周りを素早く回ります。'],
+  '-:.5 3.2:.25 3.0:.25 2.0:.5 3.0:.5 3.2:.5 2.2:.5 3.2:1 | 4.2:.5 4.0:.5 5.0:3',{session:'country-a',over:'A A',text:'G（♭7）を使って、ルートの周りで跳ねるソロ。',goals:[{type:'pc',pc:7,min:3,label:'G（♭7）を3回弾く'},{type:'land',pcs:[9],min:2,label:'小節の頭でAに2回着地'}]}]
+].map(CT('チキン・ピッキング')),
+...[
+ ['ps-oblique','片方だけ上げる','2弦を押さえたまま3弦を上げる',['2弦5フレットのEを鳴らしたまま、3弦4フレットのBを1音上げてC♯へ。2音のうち1音だけが動く、ペダル・スチールのような響きです。','押さえたままの2弦が鳴り続けるよう、3弦を上げる指は2弦に触れないように。'],
+  '-:.5 3.4b2+2.5:1.5 3.4+2.5:.5 3.2+2.2:1.5 | 3.4b2+2.5:2 3.2+2.2:2',{session:'country-a',over:'A A',min:8,text:'片方だけ上げるチョーキングで、スチールのような響きを。'}],
+ ['ps-pull','上げてから戻す','上げた音をゆっくり下ろす',['3弦をあらかじめ上げた状態で弾き、ゆっくり下ろす（リリース）。上から下りてくる響きが、スチール・ギターの泣きです。','画面では「上げた音→戻った音」の2つ。2つ目は弾き直さず、指を戻すだけです。'],
+  '3.7b2+2.7 3.7+2.7:3 | 3.4b2+2.5 3.4+2.5 3.2+2.2:2',{session:'country-a',over:'D A',min:8,text:'上げた音をゆっくり戻して、スチールのような泣きを。'}],
+ ['ps-high','高い音のスチール風','1弦を保って2弦を上げる',['1弦10フレットのDを保ったまま、2弦10フレットのAを1音上げてB。高い音域で、きらめくような響きになります。','上げる幅が正確だと、2音がきれいな3度の和音に聴こえます。'],
+  '-:.5 2.10b2+1.10:1.5 2.10+1.10 2.8+1.8 | 2.10b2+1.10:2 2.10+1.10:2',{session:'country-g',over:'G G',min:8,text:'高い音域で、スチール風のチョーキングを。'}]
+].map(CT('ペダル・スチール風')),
+...[
+ ['tr-basic','親指の交互ベース','6弦と4弦を交互に',['親指で6弦と4弦（Gの場合）を交互に弾き続け、ほかの指で上の弦のメロディを足す。1本のギターでベースとメロディを同時に鳴らすのがトラビス奏法です。','まずは親指だけで交互ベースを安定させ、それからメロディを足しましょう。'],
+  '6.3+1.3:.5 2.0:.5 4.0:.5 2.0:.5 6.3:.5 2.3:.5 4.0+1.0:.5 2.0:.5 | 5.3+2.1:.5 3.0:.5 4.2:.5 1.0:.5 5.3:.5 2.1:.5 4.2+1.0:.5 3.0:.5',{session:'country-g',over:'G C',text:'親指の交互ベースの上で、メロディを足そう。',goals:[{type:'roots',min:4,label:'小節の頭でルートを4回'},{type:'tones',ratio:.6,label:'コードの音が60%以上'}]}],
+ ['tr-melody','ベースの上で歌う','拍の頭は低音、メロディは裏で',['拍の頭は親指の低音、メロディの音は裏拍に置く。ベースとメロディが交互に鳴るので、2人で弾いているように聴こえます。','メロディはB・D・E・Dと、コードの上の弦で。'],
+  '6.3:.5 2.0:.5 4.0:.5 2.3:.5 6.3:.5 1.0:.5 4.0:.5 2.3:.5 | 4.0:.5 1.2:.5 3.2:.5 2.3:.5 4.0:.5 1.2:.5 3.2:.5 2.3:.5',{session:'country-g',over:'G D',text:'低音とメロディを交互に鳴らそう。'}],
+ ['tr-pinch','ピンチ','低音とメロディを同時に',['親指の低音と、メロディの音を同時につまむ（ピンチ）。小節の頭を力強く始める、トラビス奏法の決めの形です。','つまんだ2音は同じ強さで。片方だけ大きくならないように。'],
+  '6.3+1.3 4.0 5.2+2.0 4.0 | 5.3+1.0 4.2 5.3+2.1 4.2',{session:'country-g',over:'G C',min:10,text:'ピンチで小節の頭を決めて、カントリーの伴奏を。'}]
+].map(CT('トラビス奏法')),
+...[
+ ['bg-grun','Gラン','ブルーグラスの決まり文句',['フレーズの終わりに、低音弦でD・E・B♭・B・Gと下から駆け上がってGに着地する。ブルーグラスで最もよく聴く決まり文句です。','B♭→Bの半音が、ブルースのような粘りを一瞬だけ加えます。'],
+  '-:2 4.0:.5 4.2:.5 5.1:.5 5.2:.5 | 6.3:4',{session:'bluegrass',over:'G G',min:8,text:'フレーズの終わりにGランを入れよう。',goals:[{type:'pc',pc:10,min:1,label:'B♭（Gランの半音）を1回'},{type:'land',pcs:[7],min:2,label:'小節の頭でGに2回着地'}]}],
+ ['bg-cross','クロスピッキング','3本の弦を順に繰り返す',['3本の弦をダウン・アップで順に弾き、1拍に収まらない3音の繰り返しで、うねるような響きを作る。マンドリンやバンジョーのような流れです。','押さえる形はコードのまま。右手の順番だけに集中しましょう。'],
+  '3.0:.5 2.0:.5 1.3:.5 3.0:.5 2.0:.5 1.3:.5 3.0:.5 2.0:.5 | 3.0:.5 2.1:.5 1.0:.5 3.0:.5 2.1:.5 1.0:.5 3.0:.5 2.1:.5',{session:'bluegrass',over:'G C',min:24,text:'クロスピッキングで、コードを流れるように鳴らそう。'}],
+ ['bg-fiddle','フィドル風の8分','開放弦を混ぜて途切れずに',['フィドル（バイオリン）の曲のように、8分音符を途切れずに弾き続ける。開放弦を混ぜると、速くても指が追いつきます。','ダウン・アップを厳密に交互に。リズムがよれないことが最優先です。'],
+  '3.0:.5 3.2:.5 2.0:.5 2.1:.5 2.3:.5 2.1:.5 2.0:.5 3.2:.5 | 3.0:.5 4.2:.5 4.0:.5 4.2:.5 3.0:.5 3.2:.5 2.0:.5 3.2:.5 | 4.0:.5 4.2:.5 3.0:.5 3.2:.5 2.3:.5 2.0:.5 3.2:.5 3.0:.5 | 6.3:4',{session:'bluegrass',over:'G C D G',bpm:80,groove:100,text:'途切れない8分で、ブルーグラスのソロ。',min:30}],
+ ['bg-drun','Dのラン','IVからVへ渡る',['Dのコードの小節で、D・E・F♯・Aと上がってGに戻る。Gランと同じ考え方を、Vのコードで使います。','最後のGは次の小節の頭。小節線をまたいで着地する感覚で。'],
+  '4.0:.5 4.2:.5 4.4:.5 3.2:.5 2.3:.5 3.2:.5 4.4:.5 4.2:.5 | 3.0:4',{session:'bluegrass',over:'D G',min:12,text:'Dの小節でランを入れて、Gに戻ろう。'}]
+].map(CT('ブルーグラス')),
+ ccomp('バッキング','cb-boom','ブーム・チックのストローク','1と3は低音、2と4はコード',['1拍目と3拍目は低音弦だけを軽く、2拍目と4拍目は高い弦のコードを短く。ストロークだけで弾く、ブーム・チックの簡単な形です。','2と4のコードは短く切る。低音とコードの役割がはっきり分かれます。'],
+  {bpm:84,src:bars('X -:.5 ^X:.5 X -:.5 ^X:.5',['G','C','G','D'])},{bpm:100,src:bars('X -:.5 ^X:.5 X -:.5 ^X:.5',['G','G','C','G','D','D','G','G'])},'カントリー（G）・2回'),
+ ccomp('バッキング','cb-chop','ブルーグラスのチョップ','2と4だけ短く',['2拍目と4拍目だけ、コードを押さえた手の力を抜きながら短く「チャッ」と刻む。マンドリンのチョップと同じ、ブルーグラスのスネアの役目です。','1拍目と3拍目は休み。ベースに任せます。'],
+  {bpm:96,src:bars('-:1 X:.5 -:.5 -:1 X:.5 -:.5',['G','C','G','D'])},{bpm:120,src:bars('-:1 X:.5 -:.5 -:1 X:.5 -:.5',['G','C','G','D','G','C','D','G'])},'ブルーグラス・2回'),
+ ccomp('バッキング','cb-train','トレイン・ビート','16分で汽車のように',['16分で刻み続け、2拍目と4拍目を強く。汽車の音のような、カントリーの疾走感の刻みです。','ミュート気味に短く。アクセント以外は小さく弾きます。'],
+  {bpm:80,src:bars('X:.25 ^X:.25 X:.25 ^X:.25 X:.25 ^X:.25 X:.25 ^X:.25 X:.25 ^X:.25 X:.25 ^X:.25 X:.25 ^X:.25 X:.25 ^X:.25',['A','A','D','A'])},{bpm:96,src:bars('X:.25 ^X:.25 X:.25 ^X:.25 X:.25 ^X:.25 X:.25 ^X:.25 X:.25 ^X:.25 X:.25 ^X:.25 X:.25 ^X:.25 X:.25 ^X:.25',['A','A','D','A','E','D','A','E'])},'チキン・ピッキング（A）・2回')
+];
 /* The original modules of a genre with artist groups open its 基礎 and バッキング groups. */
 MODULES.forEach(m=>{if(ARTISTS[m.genre]&&!m.artist)m.artist=m.kind==='comp'?'バッキング':'基礎';});
-MODULES.push(...BLUES_MORE,...JAZZ_MORE,...POPS_MORE,...FUNK_MORE);
+MODULES.push(...BLUES_MORE,...JAZZ_MORE,...POPS_MORE,...FUNK_MORE,...COUNTRY_MORE);
 /* Chords under the charts that leave the session's home chord (used by the backing band and the content checks). */
 const OVER={turnaround:'A7 E7','ec-turn':'A7 E7','srv-turn':'E7 B7','ak-turn':'A7 A7 A7 E7','jm-turn':'A7 E7','bb-gmaj7':'Gmaj7 Gmaj7 F#7 Bm7','pg-resolve':'F#7 Bm7',
  'tb-swing':'A7 D7 A7 A7','tb-dim':'D7 D#dim7 A7 A7','arp-251':'Dm7 G7 Cmaj7 Cmaj7','guide-tones':'Dm7 G7 Cmaj7 Cmaj7','enclosure':'Cmaj7','lick-251':'Dm7 G7 Cmaj7','minor-251':'Am7b5 D7 Gm6',
@@ -729,7 +795,7 @@ const PHRASE_CHORDS={'arp-251':'Dm7 G7 Cmaj7 Cmaj7','guide-tones':'Dm7 G7 Cmaj7 
 [...MODULES,...BASS_MODULES].forEach(m=>{if(PHRASE_CHORDS[m.id])m.chords=PHRASE_CHORDS[m.id].split(' ');});
 /* Comping modules without their own full form reuse the groove chart twice. */
 MODULES.forEach(m=>{if(m.kind==='comp'&&m.use.form&&!m.use.src)m.use.src=m.groove.src+' | '+m.groove.src;});
-const GENRES=[['BLUES','ブルース'],['JAZZ','ジャズ'],['POPS','ポップス'],['FUNK','ファンク']];
+const GENRES=[['BLUES','ブルース'],['JAZZ','ジャズ'],['POPS','ポップス'],['FUNK','ファンク'],['COUNTRY','カントリー']];
 const STEPS=[['learn','覚える','タブ譜どおりに弾く'],['groove','合わせる','テンポを上げてバンドと'],['use','使う','実践で使いこなす']];
 /* Bass players see the bass lines instead of the guitar modules; each instrument keeps its own count. */
 const BASS=window.FQInst.isBass(),BASS_OPEN=window.FQInst.kinds.bass.open,LIST=BASS?BASS_MODULES:MODULES;
@@ -760,7 +826,7 @@ function feelOf(m){
 const swingBeat=b=>{const f=b-Math.floor(b);return Math.abs(f-.5)<1e-6?Math.floor(b)+2/3:b;};
 const swingAll=list=>list.map(n=>{const beat=swingBeat(n.beat);return {...n,beat,len:swingBeat(n.beat+n.len)-beat};});
 /* Chords under a tab chart, bar by bar (repeated when the chart is longer): the lick's own "over", else the session's home chord. */
-const HOME_CHORD={'blues-a':'A7',chicago:'E7',thrill:'Bm7',ballad:'C',oudou:'C',canon:'C',citypop:'Am7',jrock:'Am',anison:'C',britrock:'A','funk-e9':'E9','funk-minor':'Em7',motown:'C',neosoul:'Fmaj7'};
+const HOME_CHORD={'blues-a':'A7',chicago:'E7',thrill:'Bm7',ballad:'C',oudou:'C',canon:'C',citypop:'Am7',jrock:'Am',anison:'C',britrock:'A','funk-e9':'E9','funk-minor':'Em7',motown:'C',neosoul:'Fmaj7','country-g':'G','country-a':'A',bluegrass:'G'};
 const chordsOf=m=>(m.over||HOME_CHORD[m.use.session]||'').split(' ').filter(Boolean);
 function chartFor(m,step){
  const solo=m.kind==='solo'||m.kind==='line',spec=step===1?m.learn:step===2?m.groove:m.use,type=spec.type||m.learn.type||(solo?'song':'strum');
