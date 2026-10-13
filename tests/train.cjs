@@ -49,12 +49,12 @@ check('poor rhythm run stays at Lv1 and fills the rhythm book',r.title==='あと
  check('every answer is logged per item',by('melody').length===2*5&&by('melody').every(r=>/度[上下]$/.test(r.it))&&by('prog').length===3*5&&by('interval').length===5&&!by('rhythm').length&&by('timing').every(r=>/ズレ$/.test(r.it)),JSON.stringify({melody:by('melody').length,prog:by('prog').length,interval:by('interval').length,rhythm:by('rhythm').length,timing:[...new Set(by('timing').map(r=>r.it))]}));
  await p.evaluate(()=>window.FQTrain.run('melody',1));await p.waitForSelector('[data-midi]');
  const q=await p.evaluate(()=>window.FQTrain.current().melody);await p.click('#train-listen');
- await p.locator(`[data-midi="${q[1]+1}"]`).first().click();await p.click('#train-undo');for(const m of q.slice(1))await p.locator(`[data-midi="${m}"]`).first().click();
+ await p.locator(`[data-midi="${q[1]+1===q[0]?q[1]-1:q[1]+1}"]`).first().click();await p.click('#train-undo');for(const m of q.slice(1))await p.locator(`[data-midi="${m}"]`).first().click();
  const last=await p.evaluate(()=>window.FQTrain.log().slice(-2));
  check('undo and replay are recorded on the melody slot',last.length===2&&last[0].ok===1&&last[0].ud===1&&!last[1].ud&&last.every(r=>r.rp===1&&r.ms>=0),JSON.stringify(last));
  await p.evaluate(()=>window.FretQuest.close());}
 /* The estimate: repeated misses with the same wrong answer, and right answers far slower than usual, both rank as weak; the lobby lists them. */
-{const r=await p.evaluate(()=>{const now=Date.now(),row=(it,ok,ms,c)=>({at:now,m:'chord',lv:2,it,ok,ms,rp:0,...(c?{c}:{})}),rows=[];
+{const r=await p.evaluate(()=>{let now=Date.now();const row=(it,ok,ms,c)=>({at:now++,m:'chord',lv:2,it,ok,ms,rp:0,...(c?{c}:{})}),rows=[];
   for(let i=0;i<6;i++)rows.push(row('メジャー',1,1500));
   for(let i=0;i<3;i++)rows.push(row('セブンス（7）',0,2000,'メジャー'));
   for(let i=0;i<3;i++)rows.push(row('マイナー',1,5000));
@@ -63,6 +63,19 @@ check('poor rhythm run stays at Lv1 and fills the rhythm book',r.title==='あと
  const lv=Object.fromEntries(r.w.map(x=>[x[0],x[1]]));
  check('weak spots from misses and slow answers',lv['セブンス（7）']==='苦手'&&lv['マイナー']==='やや苦手'&&lv['メジャー']==='得意'&&r.w[0][2]==='メジャー'&&/セブンス（7）[\s\S]*メジャーと取り違え 3回/.test(r.box)&&r.box.indexOf('セブンス')<r.box.indexOf('マイナー')&&/3 \/ 3回正解・うち迷い 3回/.test(r.box),JSON.stringify(r));
  if(OUT)await p.screenshot({path:OUT+'/train-weak.png'});
+ await p.evaluate(()=>window.FretQuest.close());}
+/* Weak items come up more often: with セブンス（7） marked weak at Lv2 (3 choices) it should be well over a third of draws; with no log, about a third. */
+{const r=await p.evaluate(()=>{const share=()=>{let n=0;for(let i=0;i<900;i++)if(window.FQTrain.pick('chord',2).answer==='セブンス（7）')n++;return n/900;};
+  const weak=share(),saved=localStorage.getItem('fretQuestTrainLog');localStorage.removeItem('fretQuestTrainLog');const plain=share();localStorage.setItem('fretQuestTrainLog',saved);return {weak,plain};});
+ check('weak items are asked more often',r.weak>.42&&r.plain>.27&&r.plain<.40,JSON.stringify(r));}
+/* Backup: progress and the log go into the record file; importing merges without duplicates, drops malformed rows and shows imported text escaped. */
+{const r=await p.evaluate(()=>{const F=window.FretQuest,T=window.FQTrain,backup=F.exportState(),n=T.log().length,unlocked=JSON.parse(localStorage.getItem('fretQuestTrain')).theory.unlocked;
+  localStorage.removeItem('fretQuestTrainLog');localStorage.removeItem('fretQuestTrain');F.importState(backup);F.importState(backup);
+  const after={n:T.log().length,unlocked:JSON.parse(localStorage.getItem('fretQuestTrain')).theory.unlocked};
+  const bad={at:Date.now(),m:'chord',lv:2,it:'<img src=x id=pwn>',ok:0,ms:100,rp:0};T.importData({log:[bad,bad,{...bad,at:bad.at+1},{...bad,lv:9},{...bad,m:'nope'},{...bad,k:'x'},'junk']});
+  T.lobby('chord');const html=document.querySelector('.train-weak').innerHTML;
+  return {n,after,unlocked,inBackup:!!backup.train?.log?.length,added:T.log().length-after.n,img:!!document.querySelector('#pwn'),escaped:html.includes('&lt;img')};});
+ check('training progress and log survive a backup round trip',r.inBackup&&r.after.n===r.n&&r.after.unlocked===r.unlocked&&r.added===2&&!r.img&&r.escaped,JSON.stringify(r));
  await p.evaluate(()=>window.FretQuest.close());}
 const st=await p.evaluate(()=>{const s=window.FretQuest.getState(),d=s.history[window.FretQuest.today()];return {xp:s.xp,extra:d.extra,menu:document.querySelector('#menu-count').textContent};});
 /* 10 modes × 20 XP, plus 20 for reaching today's goal (one item). */
