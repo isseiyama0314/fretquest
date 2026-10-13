@@ -93,11 +93,26 @@ function schedule(r){
  });
 }
 
+/* Microphone sensitivity: a software gain between the microphone and the analyser. Raw phone input (no voice processing, see openMic)
+   is quiet. The detectors follow the room's noise floor, so the boost mostly lifts the meter and clears their fixed minimum levels.
+   It amplifies room noise just as much. Analyser data is not clipped, so a loud boosted signal stays usable. Kept in this browser. */
+const GAIN_KEY='fretQuestMicGain',GAINS=[1,4,12],GAIN_DEFAULT=4,liveGains=new Set();
+const micGain=()=>{try{const g=Number(localStorage.getItem(GAIN_KEY));return GAINS.includes(g)?g:GAIN_DEFAULT;}catch{return GAIN_DEFAULT;}};
+function setMicGain(g){
+ if(!GAINS.includes(g))return;try{localStorage.setItem(GAIN_KEY,String(g));}catch{}
+ for(const x of liveGains){if(x.stream.getTracks().every(t=>t.readyState==='ended'))liveGains.delete(x);else x.node.gain.value=g;}
+ document.querySelectorAll('[data-mic-gain]').forEach(b=>b.textContent='MIC ×'+g);
+}
+/* The MIC label beside each level meter shows the sensitivity; tapping it steps ×1 → ×4 → ×12 while listening. */
+const micBadge=()=>'<button type="button" class="mic-gain" data-mic-gain aria-label="マイク感度（タップで切り替え）">MIC ×'+micGain()+'</button>';
+document.addEventListener('click',e=>{if(!e.target.closest?.('[data-mic-gain]'))return;const g=micGain();setMicGain(GAINS[(GAINS.indexOf(g)+1)%GAINS.length]);});
+/* Gain for an analyser chain built outside openMic (the lesson pitch check). */
+function micGainNode(ctx,stream){const node=ctx.createGain();node.gain.value=micGain();liveGains.add({node,stream});return node;}
 async function openMic(ctx){
  /* Raw instrument input: iOS voice processing (echo cancellation) treats a sustained guitar note as noise and suppresses it. */
  const stream=await F.openMicStream({audio:{echoCancellation:false,noiseSuppression:false,autoGainControl:false}});
- const src=ctx.createMediaStreamSource(stream),an=ctx.createAnalyser();an.fftSize=INST.fft;src.connect(an);
- return {stream,src,an,buf:new Float32Array(an.fftSize)};
+ const src=ctx.createMediaStreamSource(stream),gain=micGainNode(ctx,stream),an=ctx.createAnalyser();an.fftSize=INST.fft;src.connect(gain);gain.connect(an);
+ return {stream,src,gain,an,buf:new Float32Array(an.fftSize)};
 }
 
 /* Rhythm book: one-bar rhythms (16 steps, x = attack) the player missed, from any game or stage.
@@ -326,7 +341,7 @@ async function start(mode){
   +'<div class="stage-track"><span id="stage-progress"></span></div>'
   +'<div class="stage-screen" id="stage-screen"><canvas id="stage-canvas" aria-label="流れてくる譜面"></canvas><div id="stage-judge" class="stage-judge" aria-live="polite"></div></div>'
   +(c.song?'<div class="stage-info"><div class="stage-next" id="stage-next"></div><div class="stage-heard"><small>きこえた音</small><b id="stage-heard">—</b></div></div>':'<div class="stage-info"><div class="stage-chord" id="stage-chord"></div><div class="stage-tip">↓ ダウン<br>↑ アップ<br><small>コードの形は自己チェック</small></div></div>')
-  +(input==='mic'?'<div class="stage-mic"><span>MIC</span><div class="stage-level"><span id="stage-level"></span></div></div>':'')
+  +(input==='mic'?'<div class="stage-mic">'+micBadge()+'<div class="stage-level"><span id="stage-level"></span></div></div>':'')
   +(input==='tap'?'<button type="button" class="stage-pad" id="stage-pad">TAP</button>':'')
   +'<button type="button" class="action-button secondary-action" id="stage-quit">やめる</button></div>';
  const comp=(ctx.outputLatency||ctx.baseLatency||0)+(input==='mic'?.045:.01)+(Number(prefs.latency)||0);
@@ -404,5 +419,5 @@ function preview(cv,l){
  requestAnimationFrame(frame);
 }
 const setLatency=v=>{prefs.latency=v;savePrefs();};
-window.FQStage={lobby,preview,starsFor,starText,stop,setLatency,kit:{synth,openMic,onsetDetector,meterPct,chordMidis,noteName,rhythmBook}};
+window.FQStage={lobby,preview,starsFor,starText,stop,setLatency,kit:{synth,openMic,micGain,setMicGain,micBadge,micGainNode,onsetDetector,meterPct,chordMidis,noteName,rhythmBook}};
 })();

@@ -66,7 +66,7 @@ async function start(id){
  const r={id,ctx,mic,audio:K.synth(ctx),onset:K.onsetDetector(),comp:out+.045+latency(),out,level:0,lastOnset:-99,stable:0,lastMidi:null,firstMatch:0,state:{}};
  $('#modal-inner').innerHTML='<div class="game-play drill-play drill-'+id+'"><div class="stage-hud"><div><small id="d-left-label">SCORE</small><strong id="d-left">0</strong></div><div class="stage-title"><small>GUITAR DRILL</small><b id="modal-title">'+GAMES[id].title+'</b></div><div class="stage-combo"><small id="d-right-label">TIME</small><strong id="d-right">—</strong></div></div>'
   +'<div class="game-stage"><div class="game-phase" id="d-phase">READY</div><div class="drill-target" id="d-target">&nbsp;</div><div class="game-sub" id="d-sub">&nbsp;</div><div id="d-extra" class="drill-extra"></div><div class="drill-heard">聞こえた音 <b id="d-heard">—</b></div></div>'
-  +'<div class="stage-mic"><span>MIC</span><div class="stage-level"><span id="d-level"></span></div></div>'
+  +'<div class="stage-mic">'+K.micBadge()+'<div class="stage-level"><span id="d-level"></span></div></div>'
   +'<button type="button" class="action-button secondary-action" id="d-quit">やめる</button></div>';
  run=r;F.setCleanup(stop);
  r.onHide=()=>{if(document.hidden){stop();lobby(id);}};document.addEventListener('visibilitychange',r.onHide);

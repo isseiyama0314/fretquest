@@ -60,6 +60,7 @@
 .stage-tip{font:800 14px/1.8 "Noto Sans JP",sans-serif;color:#fff;align-self:center}
 .stage-tip small{font-size:10px;color:#8f88ad;font-weight:700}
 .stage-mic{display:flex;align-items:center;gap:10px;margin:12px 2px 4px;font:800 9px "DM Sans",sans-serif;letter-spacing:.14em;color:#8f88ad}
+.mic-gain{flex:none;border:0;border-radius:999px;padding:5px 9px;background:#ffffff12;color:#ddd7f5;font:inherit;letter-spacing:.08em;cursor:pointer;box-shadow:inset 0 0 0 1px #ffffff1f}
 .stage-level{flex:1;height:6px;border-radius:9px;background:#ffffff14;overflow:hidden}
 .stage-level span{display:block;height:100%;width:0;background:#c7ef75;transition:width .08s}
 .stage-pad{display:block;width:100%;margin:12px 0 4px;height:92px;border:0;border-radius:22px;background:linear-gradient(180deg,#3d3463,#2a2446);color:#fff;font:900 22px "DM Sans",sans-serif;letter-spacing:.2em;box-shadow:inset 0 0 0 1px #ffffff26,0 6px 0 #0000004d;touch-action:manipulation;cursor:pointer}

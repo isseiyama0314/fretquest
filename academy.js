@@ -131,7 +131,7 @@ async function microphone(target){
   if(cancelled||generation!==F.generation()){stop();return;}
   stream=await F.openMicStream({audio:{echoCancellation:false,noiseSuppression:false,autoGainControl:false},video:false});
   if(cancelled||generation!==F.generation()){stop();return;}
-  source=context.createMediaStreamSource(stream);analyser=context.createAnalyser();analyser.fftSize=4096;source.connect(analyser);
+  source=context.createMediaStreamSource(stream);analyser=context.createAnalyser();analyser.fftSize=4096;source.connect(window.FQStage.kit.micGainNode(context,stream)).connect(analyser);
   const samples=new Float32Array(analyser.fftSize);let previousText='';session.mode='mic';$('#mic-state').textContent='MIC / LISTENING';button.disabled=false;button.textContent='■ マイクを停止';$('#pitch-listen').disabled=true;
   button.onclick=()=>{stop();$('#mic-state').textContent='MIC / OFF';$('#mic-feedback').textContent='マイクを停止しました。';$('#pitch-listen').disabled=false;button.textContent='マイクを再開';button.onclick=()=>microphone(target);};
   const poll=()=>{if(cancelled||generation!==F.generation())return;analyser.getFloatTimeDomainData(samples);const detected=window.FQPitch.detect(samples,context.sampleRate);let text='1音だけ、ゆっくり鳴らそう。';

@@ -22,7 +22,7 @@ function tuner(){
    +'<p>1本ずつ鳴らすと、いちばん近い弦を自動で選びます。弦をタップすると、その弦に固定してお手本の音が鳴ります。</p>'
    +'<div class="tuner-face"><div class="tuner-note" id="tn-note">—</div><div class="tuner-cents" id="tn-cents">弦を1本鳴らそう</div>'
    +'<div class="tuner-meter"><span class="tuner-zone"></span><i class="tuner-needle" id="tn-needle"></i><span class="tuner-scale"><b>♭</b><b>0</b><b>♯</b></span></div>'
-   +'<div class="tuner-hint" id="tn-hint">&nbsp;</div><div class="stage-mic tuner-mic"><span>MIC</span><div class="stage-level"><span id="tn-level"></span></div></div></div>'
+   +'<div class="tuner-hint" id="tn-hint">&nbsp;</div><div class="stage-mic tuner-mic">'+K.micBadge()+'<div class="stage-level"><span id="tn-level"></span></div></div></div>'
    +'<div class="tuner-strings" role="group" aria-label="弦を選ぶ">'+STRINGS.map(s=>'<button type="button" data-tn="'+s.midi+'"><small>'+s.n+'弦</small><b>'+s.name+'</b><i aria-hidden="true">✓</i></button>').join('')+'</div>'
    +'<button type="button" class="action-button" id="tn-start">マイクをオンにする</button>'
    +'<p class="lesson-caption">'+(BASS?'4弦ベースの標準チューニング（E A D G、A4=440Hz）。お手本の音は聴きやすいよう1オクターブ上で鳴らします。':'標準チューニング（E A D G B E、A4=440Hz）。')+'±5セント以内が合格の目安です。</p></div>';

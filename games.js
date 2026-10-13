@@ -77,7 +77,7 @@ async function start(id){
  const r={id,ctx,mic,audio:K.synth(ctx),onsets:[],onset:K.onsetDetector(),comp:out+(mic?.045:.01)+latency(),out,level:0};
  $('#modal-inner').innerHTML='<div class="game-play game-'+id+'"><div class="stage-hud"><div><small id="g-left-label">LEVEL</small><strong id="g-left">1</strong></div><div class="stage-title"><small>RHYTHM GAME</small><b id="modal-title">'+GAMES[id].title+'</b></div><div class="stage-combo"><small id="g-right-label">LIFE</small><strong id="g-right" class="g-lives">♥♥♥</strong></div></div>'
   +'<div class="game-stage"><div class="game-phase" id="g-phase">READY</div><div class="game-sub" id="g-sub">&nbsp;</div><div class="game-grid" id="g-grid"></div><div class="game-beats" id="g-beats"><i></i><i></i><i></i><i></i></div><div id="g-extra"></div></div>'
-  +(mic?'<div class="stage-mic"><span>MIC</span><div class="stage-level"><span id="g-level"></span></div></div>':'<button type="button" class="stage-pad" id="g-pad">TAP</button>')
+  +(mic?'<div class="stage-mic">'+K.micBadge()+'<div class="stage-level"><span id="g-level"></span></div></div>':'<button type="button" class="stage-pad" id="g-pad">TAP</button>')
   +'<button type="button" class="action-button secondary-action" id="g-quit">やめる</button></div>';
  run=r;F.setCleanup(stop);
  r.onHide=()=>{if(document.hidden){stop();lobby(id);}};document.addEventListener('visibilitychange',r.onHide);

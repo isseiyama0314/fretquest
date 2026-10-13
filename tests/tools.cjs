@@ -10,7 +10,7 @@ await p.addInitScript(()=>{
  navigator.mediaDevices.getUserMedia=async()=>{
   const ctx=window.FretQuest.audioContext(),dest=ctx.createMediaStreamDestination(),T=ctx.currentTime,plan=window.__plan;
   const pluck=(t,freq,dur,v=.3)=>{const o=ctx.createOscillator(),g=ctx.createGain(),f=ctx.createBiquadFilter();o.type='sawtooth';o.frequency.value=freq;f.type='lowpass';f.frequency.value=2500;g.gain.setValueAtTime(.0001,t);g.gain.exponentialRampToValueAtTime(v,t+.005);g.gain.exponentialRampToValueAtTime(.001,t+dur);o.connect(f);f.connect(g);g.connect(dest);o.start(t);o.stop(t+dur+.05);};
-  if(plan.kind==='tone')pluck(T+.05,plan.freq,30,.25);
+  if(plan.kind==='tone')pluck(T+.05,plan.freq,30,plan.v||.25);
   /* The app reads its start time just after the microphone opens, so schedule from the next task to share that clock reading. */
   if(plan.kind==='cal')setTimeout(()=>{const T2=ctx.currentTime,spb=60/90;for(let i=0;i<8;i++)[82.4,110,146.8].forEach((f,k)=>pluck(T2+.5+(4+i)*spb+plan.off+k*.006,f,.09,.12));},0);
   if(plan.kind==='stage'){const l=window.FQCourses.flatMap(c=>c.lessons).find(x=>x.id===plan.id),e=l.exercise,spb=60/e.bpm,t0=T+.35+4*spb+plan.off;e.notes.forEach(n=>pluck(t0+n.beat*spb,440*Math.pow(2,(n.midi-69)/12),n.len*spb*.95));}
@@ -31,6 +31,15 @@ async function tune(freq,expect){
 await tune(110*Math.pow(2,8/1200),r=>r.note==='A'&&r.cents==='+8 セント'&&!r.inTune);
 await tune(110,r=>r.note==='A'&&r.inTune&&r.done==='A');
 await tune(196*Math.pow(2,-20/1200),r=>r.note==='G'&&r.cents==='-20 セント');
+
+// Mic sensitivity: a very quiet string is below the tuner's gate at ×1; tapping the MIC badge to ×4 makes it readable while listening, and ×12 is kept.
+{await p.evaluate(()=>{localStorage.setItem('fretQuestMicGain','1');window.__plan={kind:'tone',freq:110,v:.002};});
+ await p.click('#open-tuner');await p.click('#tn-start');await p.waitForTimeout(1800);
+ const read=()=>p.evaluate(()=>({badge:document.querySelector('[data-mic-gain]').textContent,note:document.querySelector('#tn-note').textContent,level:parseFloat(document.querySelector('#tn-level').style.width)||0}));
+ const x1=await read();await p.click('[data-mic-gain]');await p.waitForTimeout(1500);const x4=await read();
+ await p.click('[data-mic-gain]');await p.waitForTimeout(600);const x12=await read(),saved=await p.evaluate(()=>localStorage.getItem('fretQuestMicGain'));
+ check('mic sensitivity lifts a quiet string',x1.badge==='MIC ×1'&&x1.note!=='A'&&x4.badge==='MIC ×4'&&x4.note==='A'&&x4.level>x1.level+10&&x12.level>x4.level&&saved==='12',JSON.stringify({x1,x4,x12,saved}));
+ await p.evaluate(()=>localStorage.removeItem('fretQuestMicGain'));await p.click('#modal-close');await p.waitForTimeout(300);}
 
 // Timing: a player 0.2 s late on every click; the measured offset must fix a stage played 0.2 s late.
 await p.evaluate(()=>{window.__plan={kind:'cal',off:.2};});
