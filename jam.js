@@ -207,7 +207,7 @@ async function start(){
   +(r.relay?'<div class="relay-box" id="jam-relay"></div>':'')+'<div class="jam-board-wrap" id="jam-board"></div><div class="jam-legend"><span><i class="lg tone"></i>コードの音</span><span><i class="lg scale"></i>使える音</span>'+(mic||air?'<span>'+(air?'タップした音':'きこえた音')+' <b id="jam-heard">—</b></span>':'')+'</div>'+(air?'<div class="air-shift"><button type="button" id="air-left" aria-label="低いフレットへ">◀</button><span id="air-range"></span><button type="button" id="air-right" aria-label="高いフレットへ">▶</button></div>':'')
   +(r.mission?'<div class="mission-box live" id="jam-mission">'+goalsHtml(r.mission,[],true)+'</div>':'')+'<div id="stage-judge" class="stage-judge jam-judge" aria-live="polite"></div>'
   +'<div class="jam-chart" id="jam-chart">'+s.chart.map((bar,i)=>'<span data-bar="'+i+'">'+bar.map(c=>pretty(c.sym)).join(' ')+'</span>').join('')+'</div>'
-  +(mic?'<div class="stage-mic"><span>MIC</span><div class="stage-level"><span id="jam-level"></span></div></div>':'')
+  +(mic?'<div class="stage-mic">'+K.micBadge()+'<div class="stage-level"><span id="jam-level"></span></div></div>':'')
   +'<button type="button" class="action-button secondary-action" id="jam-stop">終わる</button></div>';
  run=r;F.setCleanup(stop);if(r.relay)relayBox(r,-1);
  r.onHide=()=>{if(document.hidden){stop();lobby(s);}};document.addEventListener('visibilitychange',r.onHide);
