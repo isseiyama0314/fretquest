@@ -197,12 +197,44 @@ function weakness(id){
   return {item,n:rs.length,ok:rs.filter(r=>r.ok).length,slow:rs.filter(r=>r.ok&&evidence(r,base)<1).length,score,level:rs.length<2?null:lv[1],cls:lv[2],confused:top&&top[1]>=2?{with:top[0],n:top[1]}:null};
  }).sort((a,b)=>a.score-b.score);
 }
+const esc=t=>String(t).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+/* The items a question asks about, in the log's terms. */
+const itemsOf=q=>(q.steps||(Array.isArray(q.answer)?q.answer:[q.item??q.answer])).map(String),itemKey=q=>itemsOf(q).join('|');
+/* Once some items have a label, each question is picked from 6 drafts, weighted .25 + (1 − score) per item:
+   a weak item (score .3) comes up about twice as often as an unseen one (.75) and three times as often as a strong one (.95).
+   The previous question's items are not repeated straight away. Rhythm keeps its own pool. */
+function pickQuestion(m,id,level,prev){
+ if(id==='rhythm')return m.make(level);
+ const known=Object.fromEntries(weakness(id).filter(x=>x.level).map(x=>[x.item,x.score]));
+ if(!Object.keys(known).length)return m.make(level);
+ const drafts=Array.from({length:6},()=>m.make(level)),fresh=drafts.filter(q=>itemKey(q)!==prev),use=fresh.length?fresh:drafts;
+ const w=use.map(q=>{const its=itemsOf(q);return .25+its.reduce((a,it)=>a+1-(known[it]??.75),0)/its.length;});
+ let r=Math.random()*w.reduce((a,b)=>a+b,0);for(let i=0;i<use.length;i++){r-=w[i];if(r<=0)return use[i];}return use[use.length-1];
+}
+/* Backup: level progress and the answer log travel with the record file. Import keeps the higher progress and merges the logs without duplicates
+   (a row is its time, mode, level, slot, item, result and think time).
+   Imported text ends up in the page, so it is checked here and escaped when shown. */
+const okText=t=>typeof t==='string'&&t.length>0&&t.length<=60;
+function cleanRow(r){if(!r||typeof r!=='object')return null;const at=Number(r.at),lv=Number(r.lv),ms=Number(r.ms),rp=Number(r.rp||0),ud=Number(r.ud||0),k=r.k==null?null:Number(r.k);
+ if(!Number.isFinite(at)||!MODES_DEF[r.m]||!Number.isInteger(lv)||lv<1||lv>5||!okText(r.it)||(r.ok!==0&&r.ok!==1)||!Number.isFinite(ms)||ms<0||ms>1e7||!Number.isInteger(rp)||rp<0||rp>99||!Number.isInteger(ud)||ud<0||ud>99||r.c!=null&&!okText(r.c)||k!=null&&!(Number.isInteger(k)&&k>=0&&k<12))return null;
+ return {at,m:r.m,lv,ms:Math.round(ms),rp,it:r.it,ok:r.ok,...(k!=null?{k}:{}),...(r.c!=null?{c:r.c}:{}),...(ud?{ud}:{})};}
+function exportData(){return {progress:load(),log:readLog()};}
+function importData(x){if(!x||typeof x!=='object')return;
+ const all=load(),inc=x.progress&&typeof x.progress==='object'?x.progress:{},num=(v,lo,hi)=>Number.isInteger(v)&&v>=lo&&v<=hi;
+ for(const [id,p] of Object.entries(inc)){if(!MODES_DEF[id]||!p||typeof p!=='object')continue;const cur=all[id]||{unlocked:1,best:{}},best={...(cur.best||{})},clears={...(cur.clears||{})};
+  for(let lv=1;lv<=5;lv++){if(num(p.best?.[lv],0,QUESTIONS))best[lv]=Math.max(best[lv]??0,p.best[lv]);if(num(p.clears?.[lv],0,CLEARS))clears[lv]=Math.max(clears[lv]||0,p.clears[lv]);}
+  all[id]={...cur,best,clears,unlocked:Math.max(cur.unlocked||1,num(p.unlocked,1,5)?p.unlocked:1)};}
+ try{localStorage.setItem(KEY,JSON.stringify(all));}catch{}
+ if(Array.isArray(x.log)){const seen=new Set(),rows=[];for(const r of [...readLog(),...x.log.map(cleanRow)]){if(!r)continue;const key=[r.at,r.m,r.lv,r.k,r.it,r.ok,r.ms].join('\t');if(seen.has(key))continue;seen.add(key);rows.push(r);}
+  rows.sort((a,b)=>a.at-b.at);try{localStorage.setItem(LOG_KEY,JSON.stringify(rows.slice(-LOG_MAX)));}catch{}}
+ render();
+}
 function weakHtml(id){
  if(id==='rhythm')return '';
  const all=weakness(id).filter(x=>x.level),weak=all.filter(x=>x.score<.7).slice(0,3);
- const row=x=>'<div class="tw-row"><span class="tw-lv tw-'+x.cls+'">'+x.level+'</span><strong>'+x.item+'</strong><small>'+x.ok+' / '+x.n+'回正解'+(x.slow?'・うち迷い '+x.slow+'回':'')+(x.confused?'・'+x.confused.with+'と取り違え '+x.confused.n+'回':'')+'</small></div>';
+ const row=x=>'<div class="tw-row"><span class="tw-lv tw-'+x.cls+'">'+x.level+'</span><strong>'+esc(x.item)+'</strong><small>'+x.ok+' / '+x.n+'回正解'+(x.slow?'・うち迷い '+x.slow+'回':'')+(x.confused?'・'+esc(x.confused.with)+'と取り違え '+x.confused.n+'回':'')+'</small></div>';
  if(!all.length)return '<div class="train-weak"><b>苦手メモ</b><p>解くたびに、まちがい・答えるまでの時間・聴き直し・1音もどすから項目ごとの苦手を推定して、ここに出します。</p></div>';
- return '<div class="train-weak"><b>苦手メモ</b>'+(weak.length?weak.map(row).join(''):'<p>今のところ目立った苦手はありません。</p>')
+ return '<div class="train-weak"><b>苦手メモ</b>'+(weak.length?weak.map(row).join('')+'<p class="tw-note">苦手な項目は、ほかより多めに出題します。</p>':'<p>今のところ目立った苦手はありません。</p>')
   +'<details><summary>全項目（'+all.length+'）</summary>'+all.map(row).join('')+'<p class="tw-note">まちがいは0点、正解でも「いつもよりかなり遅い」「いつもより多く聴き直した」「1音もどした」と減点し、新しい回答ほど重く平均しています。</p></details></div>';
 }
 const pips=n=>'<span class="train-clears" aria-label="'+n+' / '+CLEARS+'回クリア">'+Array.from({length:CLEARS},(_,i)=>'<i class="'+(i<n?'on':'')+'"></i>').join('')+'</span>';
@@ -230,10 +262,10 @@ function lobby(id,level){
  });
 }
 function run(id,level){
- const m=MODES_DEF[id],st={i:0,correct:0,score:0,combo:0,best:0,rows:[]};
+ const m=MODES_DEF[id],st={i:0,correct:0,score:0,combo:0,best:0,rows:[]};let prev=null;
  const next=()=>{
   if(st.i>=QUESTIONS){finish(id,level,st);return;}
-  const q=m.make(level),picked=[],undos=[];let answered=false,shownAt=0,heardAt=performance.now()+1500,replays=0;current=q;
+  const q=pickQuestion(m,id,level,prev),picked=[],undos=[];prev=itemKey(q);let answered=false,shownAt=0,heardAt=performance.now()+1500,replays=0;current=q;
   const el=$('#modal-inner');
   el.innerHTML='<div class="train-play"><div class="stage-hud"><div><small>QUESTION</small><strong>'+(st.i+1)+'<span class="hud-of"> / '+QUESTIONS+'</span></strong></div><div class="stage-title"><small>Lv'+level+'</small><b id="modal-title">'+m.title+'</b></div><div class="stage-combo'+(st.combo>=5?' hot':'')+'"><small>COMBO</small><strong>'+st.combo+'</strong></div></div>'
    +'<div class="train-prompt">'+q.prompt+'</div>'
@@ -247,7 +279,7 @@ function run(id,level){
   const done=(ok,choice,slots)=>{
    answered=true;st.i++;const fast=Math.max(0,Math.round((6000-(performance.now()-shownAt))/60));
    if(!q.grid){const base={at:Date.now(),m:id,lv:level,ms:Math.round(Math.max(0,performance.now()-heardAt)),rp:replays};
-    const rows=(slots||[{it:q.item??q.answer,ok,c:ok||q.noConfuse?undefined:choice}]).map(x=>({...base,it:String(x.it),ok:x.ok?1:0,...(x.c!=null?{c:String(x.c)}:{}),...(x.ud?{ud:x.ud}:{})}));
+    const rows=(slots||[{it:q.item??q.answer,ok,c:ok||q.noConfuse?undefined:choice}]).map((x,k)=>({...base,it:String(x.it),ok:x.ok?1:0,...(slots?{k}:{}),...(x.c!=null?{c:String(x.c)}:{}),...(x.ud?{ud:x.ud}:{})}));
     st.rows.push(...rows);writeLog(rows);}
    if(ok){st.correct++;st.combo++;st.best=Math.max(st.best,st.combo);st.score+=100+fast+Math.min(50,st.combo*5);}else st.combo=0;
    q.onResult?.(ok);
@@ -304,7 +336,7 @@ function finish(id,level,st){
 /* Items that went badly in this run: wrong, or right but with clear hesitation. */
 function stumbled(id,rows){
  const base=baseOf(readLog().filter(r=>r.m===id)),items=[...new Set(rows.filter(r=>evidence(r,base)<.7).map(r=>r.it))];
- return items.length?'<p class="train-stumbled">つまずいた項目：<b>'+items.slice(0,4).join('・')+'</b>'+(items.length>4?' ほか'+(items.length-4)+'個':'')+'<small>苦手メモに記録しました</small></p>':'';
+ return items.length?'<p class="train-stumbled">つまずいた項目：<b>'+items.slice(0,4).map(esc).join('・')+'</b>'+(items.length>4?' ほか'+(items.length-4)+'個':'')+'<small>苦手メモに記録しました</small></p>':'';
 }
 function render(){
  const el=$('#train-cards');if(!el)return;
@@ -313,5 +345,5 @@ function render(){
 }
 render();
 /* current() exposes the open question for automated tests. */
-window.FQTrain={modes:MODES_DEF,lobby,run,current:()=>current,weakness,log:readLog};
+window.FQTrain={modes:MODES_DEF,lobby,run,current:()=>current,weakness,log:readLog,pick:(id,lv)=>pickQuestion(MODES_DEF[id],id,lv,null),exportData,importData};
 })();

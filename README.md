@@ -126,6 +126,10 @@ The estimate is worked out from the log each time:
 
 The lobby lists the 3 weakest items, how many times each was confused with the same wrong answer (from 2 times), and every item behind a toggle. The result screen names the items that went badly in the run.
 
+**Questions weighted toward weak items.** Once some items have a label, each question is picked from 6 drafts. Each draft is weighted .25 + (1 − score), averaged over its items. A weak item therefore comes up about twice as often as an unseen one and three times as often as a strong one, and the previous question's items are not repeated straight away. Rhythm keeps its own pool.
+
+**Backup.** The record file carries the training progress (`fretQuestTrain`) and the log. Import keeps the higher progress for each level and merges the logs without duplicates. A row is identified by its time, mode, level, slot, item, result and think time. Malformed rows are dropped, and imported text is escaped when shown.
+
 After a wrong answer in interval training, a review panel puts the root, the right interval and the chosen interval on one fretboard (the playable shape from a root on the lowest string), names each interval's character and how many semitones the answer was off, and plays both intervals from the same root for comparison.
 
 
