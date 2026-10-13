@@ -193,7 +193,8 @@ circle.iv-wrong{fill:#ff8fb8;stroke:#ffd3e3;stroke-width:1.5}
 .air-cell.soon>span{transform:scale(.5);background:#ffffff38}
 .air-cell.target>span{transform:scale(1);background:#c7ef75}
 .air-cell.target.second>span{background:#c7ef7566}
-.air-cell.target::after{content:'';position:absolute;left:50%;top:50%;width:26px;height:26px;margin:-13px 0 0 -13px;border-radius:50%;border:3px solid #c7ef75;transform:scale(calc(1 + 1.6*(1 - var(--ap,0))));opacity:calc(.35 + .65*var(--ap,0));pointer-events:none}
+/* The global border-box rule does not reach pseudo-elements: without it the 3px border made the ring 32px and shifted it 3px right and down. */
+.air-cell.target::after{content:'';position:absolute;left:50%;top:50%;width:26px;height:26px;margin:-13px 0 0 -13px;box-sizing:border-box;border-radius:50%;border:3px solid #c7ef75;transform:scale(calc(1 + 1.6*(1 - var(--ap,0))));opacity:calc(.35 + .65*var(--ap,0));pointer-events:none}
 .air-cell.target.second::after{border-color:#c7ef7555}
 .air-cell.tone>span{transform:scale(1);background:#c69cff}.air-cell.tone.root>span{background:#ffc56b}
 .air-cell.scale>span{transform:scale(.42);background:#ffffff70}
