@@ -114,6 +114,22 @@ The リック・リレー button over the dojo cards opens the sessions of the c
 
 Each mode played counts as the daily menu's game and earns 20 XP the first time that day. Progress is kept in this browser (`fretQuestTrain`).
 
+**Weak spots (苦手メモ).** Every answered item is logged in `fretQuestTrainLog` (the latest 1,500). Each entry records the mode, level, item, whether the answer was right, any wrong answer, think time after the sound ended, replays and, for melody slots, undos. Rhythm is left out, since the rhythm book already covers it.
+
+Items are chord types, intervals (direction included at Lv5), progression degrees per slot, melody steps per slot, string × note, theory question types, modulation sizes, meters and early/late shifts.
+
+The estimate is worked out from the log each time:
+- **Per attempt:** a wrong answer scores 0. A right one scores 1, with deductions for each of these:
+  - think time over 1.6× (−.25) or 2.5× (−.4) the player's own median for right answers on that level, judged only after 5 such answers, and ignoring answers over a minute;
+  - more replays than the player's median for the mode (−.15);
+  - an undo (−.2).
+
+  A right answer never scores below .4.
+- **Per item:** a weighted mean in which each older attempt counts .8 of the next. It starts from a prior of 2 attempts at .75, and an item needs 2 attempts before it gets a label.
+- **Labels:** 苦手 below .5, やや苦手 below .7, ふつう below .85, otherwise 得意.
+
+The lobby lists the 3 weakest items, how many times each was confused with the same wrong answer (from 2 times), and every item behind a toggle. The result screen names the items that went badly in the run.
+
 After a wrong answer in interval training, a review panel puts the root, the right interval and the chosen interval on one fretboard (the playable shape from a root on the lowest string), names each interval's character and how many semitones the answer was off, and plays both intervals from the same root for comparison.
 
 
