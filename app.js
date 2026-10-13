@@ -63,17 +63,28 @@ function playThroughSilentMode(){
    and offer a button when iOS only allows resuming from a tap. Returns whether audio is running. */
 let stallEl=null,lastResume=0;
 function clearStall(){stallEl?.remove();stallEl=null;}
+let clockSeen={ctx:null,t:-1,at:0};
 function keepAudio(ctx){
- if(!ctx||ctx.state==='running'){clearStall();return !!ctx;}
+ /* A running context whose clock has not moved for 0.6 s while the page is visible is stalled as well. */
+ const now=performance.now();if(ctx!==clockSeen.ctx||ctx.currentTime!==clockSeen.t)clockSeen={ctx,t:ctx?.currentTime,at:now};
+ const frozen=!!ctx&&ctx.state==='running'&&!document.hidden&&now-clockSeen.at>600;
+ if(!ctx||ctx.state==='running'&&!frozen){clearStall();return !!ctx;}
+ if(frozen){checkClock=true;if(now-lastResume>1000){lastResume=now;ctx.suspend().then(()=>ctx.resume()).catch(()=>{});}}
  const t=performance.now();if(t-lastResume>1000){lastResume=t;ctx.resume().catch(()=>{});}
  if(!stallEl){stallEl=document.createElement('button');stallEl.type='button';stallEl.className='audio-stall';stallEl.innerHTML='<b>音が止まっています</b><small>タップして再開</small>';document.body.appendChild(stallEl);}
- stallEl.onclick=()=>{ctx.resume().catch(()=>{});};return false;
+ stallEl.onclick=()=>{(ctx.state==='running'?ctx.suspend():Promise.resolve()).then(()=>ctx.resume()).catch(()=>{});};return false;
 }
 async function openMicStream(constraints){audioSessionFor('play-and-record');try{const st=await navigator.mediaDevices.getUserMedia(constraints);micStreams.add(st);st.getTracks().forEach(t=>t.addEventListener('ended',()=>micStreams.delete(st)));return st;}catch(e){if(!micLive())audioSessionFor('playback');throw e;}}
 /* iOS can leave the context "interrupted" (after a call, the microphone or an audio-session switch), not just "suspended":
    resume from any non-running state, and replace the context if it will not come back. */
 /* A session switch can interrupt a running context a moment later, so after a switch wait briefly and resume again. */
-let audio=null;async function ensureAudio(){const switched=playThroughSilentMode();const AC=window.AudioContext||window.webkitAudioContext;try{audio=audio||new AC();if(audio.state!=='running'){try{await audio.resume();}catch{}}
+/* After the app has been in the background, iOS can report "running" while the clock no longer moves and nothing sounds.
+   The first ensureAudio after returning checks that the clock advances; if not it suspends and resumes, then replaces the context. */
+let audio=null,checkClock=false;
+document.addEventListener('visibilitychange',()=>{if(document.hidden)checkClock=true;});
+const clockMoves=async ctx=>{const a=ctx.currentTime;await new Promise(r=>setTimeout(r,120));return ctx.currentTime>a;};
+async function ensureAudio(){const switched=playThroughSilentMode();const AC=window.AudioContext||window.webkitAudioContext;try{audio=audio||new AC();if(audio.state!=='running'){try{await audio.resume();}catch{}}
+ if(checkClock&&audio.state==='running'){checkClock=false;if(!await clockMoves(audio)){try{await audio.suspend();await audio.resume();}catch{}if(!await clockMoves(audio)){try{audio.close();}catch{}audio=new AC();try{await audio.resume();}catch{}}}}
  if(switched){await new Promise(r=>setTimeout(r,250));if(audio.state!=='running'){try{await audio.resume();}catch{}}}
  if(audio.state!=='running'){try{audio.close();}catch{}audio=new AC();try{await audio.resume();}catch{}}}catch{notify('この端末では音が使えません')}}function soundClick(accent=false){if(!audio||audio.state!=='running')return;const t=audio.currentTime,o=audio.createOscillator(),g=audio.createGain();o.type='sine';o.frequency.setValueAtTime(accent?1060:740,t);o.frequency.exponentialRampToValueAtTime(accent?520:410,t+.045);g.gain.setValueAtTime(.0001,t);g.gain.exponentialRampToValueAtTime(accent?.21:.13,t+.004);g.gain.exponentialRampToValueAtTime(.0001,t+.075);o.connect(g);g.connect(audio.destination);o.start(t);o.stop(t+.08)}
 let bpm=90,metroInterval=null,metroBeat=0;const dots=$$('.beat-dots span');function setBpm(n){bpm=Math.max(40,Math.min(220,n));$('#bpm-value').textContent=bpm;$('#bpm-slider').value=bpm;if(metroInterval){stopMetro();startMetro()}}function metroTick(){soundClick(metroBeat%4===0);dots.forEach((d,i)=>d.classList.toggle('lit',i===metroBeat%4));metroBeat++}async function startMetro(){const generation=++metroGeneration;await ensureAudio();if(generation!==metroGeneration)return;metroBeat=0;metroTick();metroInterval=setInterval(metroTick,60000/bpm);$('#metro-toggle').textContent='■ ストップ';$('#metro-toggle').classList.add('running');$('#metro-status').textContent='PLAYING'}function stopMetro(){metroGeneration++;clearInterval(metroInterval);metroInterval=null;dots.forEach(d=>d.classList.remove('lit'));$('#metro-toggle').textContent='▶ スタート';$('#metro-toggle').classList.remove('running');$('#metro-status').textContent='READY'}$('#metro-toggle').onclick=()=>metroInterval?stopMetro():startMetro();$$('[data-bpm]').forEach(b=>b.onclick=()=>setBpm(bpm+Number(b.dataset.bpm)));$('#bpm-slider').oninput=e=>setBpm(Number(e.target.value));$$('.nav-link').forEach(a=>a.addEventListener('click',()=>{$$('.nav-link').forEach(x=>x.classList.remove('active'));a.classList.add('active')}));document.addEventListener('visibilitychange',()=>{if(document.hidden&&metroInterval)stopMetro()});window.addEventListener('pagehide',()=>{stopMetro();activeCleanup()});render();

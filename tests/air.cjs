@@ -33,6 +33,12 @@ let p=await page('guitar');
 const data=await p.evaluate(()=>{const bad=[];for(const m of window.FQDojo.modules)for(let st=1;st<=Math.min(2,window.FQAir.steps(m));st++){const s=window.FQAir.specFor(m,st);
  if(s.notes)s.notes.forEach(n=>{if(n.fret<s.w.lo||n.fret>s.w.hi)bad.push(m.id+' '+n.string+'.'+n.fret);});
  if(s.chords)s.chords.forEach(c=>{if(!window.FretQuest.chordShape(c))bad.push(m.id+' '+c);});}return {bad,n:window.FQDojo.modules.length};});
+/* The approach ring is centred on its cell's dot and closes to the dot's size (26px, border included). */
+const ring=await p.evaluate(()=>{const board=document.createElement('div');board.className='air-board';board.innerHTML='<button class="air-cell target" style="width:60px"><span></span></button>';document.body.appendChild(board);
+ const cell=board.firstChild,a=getComputedStyle(cell,'::after'),dot=cell.firstChild.getBoundingClientRect(),c=cell.getBoundingClientRect();
+ const w=a.boxSizing==='border-box'?parseFloat(a.width):parseFloat(a.width)+2*parseFloat(a.borderLeftWidth),left=cell.clientWidth/2+parseFloat(a.marginLeft);
+ const r={ringCentre:left+w/2,dotCentre:dot.left-c.left+dot.width/2,ringSize:w,dotSize:dot.width};board.remove();return r;});
+check('the approach ring is centred on the dot',Math.abs(ring.ringCentre-ring.dotCentre)<.5&&ring.ringSize===26,JSON.stringify(ring));
 check('every guitar module fits its board',data.bad.length===0&&data.n===226,JSON.stringify(data));
 const cards=await p.$$eval('#air-cards .air-card',x=>x.length);check('training cards',cards===2,cards);
 if(OUT){await p.evaluate(()=>document.querySelector('#air-cards').scrollIntoView({block:'center'}));await p.screenshot({path:OUT+'/air-cards.png'});}
