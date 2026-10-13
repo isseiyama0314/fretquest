@@ -134,7 +134,7 @@ function lobby(s,opts={}){
   $('.modal-dialog').classList.add('is-stage');
   el.innerHTML='<div class="jam-lobby"><div class="lesson-progress">'+s.genre+' / SESSION</div><h2 id="modal-title">'+s.title+'</h2>'
    +'<div class="stage-meta"><span>'+s.chart.length+'小節</span><span>'+({swing:'スウィング',shuffle:'シャッフル',slow:'スロー',bossa:'ボサノバ',pop:'8ビート'})[s.feel]+'</span><span class="stage-best">'+(best(s.id)?'BEST '+best(s.id):'NEW')+'</span></div>'
-   +(opts.mission?missionHtml(opts.mission):'<p>'+s.about+'</p>')
+   +(opts.mission?missionHtml(opts.mission):opts.relay?opts.relay.html:'<p>'+s.about+'</p>')
    +'<div class="jam-chart lobby-chart">'+s.chart.map(bar=>'<span>'+bar.map(c=>pretty(c.sym)).join(' ')+'</span>').join('')+'</div>'
    +'<p class="jam-key">'+(BASS?'伴奏はベース抜き。あなたがベーシストです。小節の頭はルート（R）、あとはコードの音（大きい丸）でつなごう。':'使える音：<b>'+s.keyName+'</b>。演奏中は、今のコードの音を大きい丸で表示します。')+'</p>'
    +'<div class="stage-options"><label class="jam-tempo">テンポ <b id="jam-bpm-label">'+bpm+'</b><input type="range" id="jam-bpm" min="'+Math.round(s.bpm*.6)+'" max="'+Math.round(s.bpm*1.3)+'" value="'+bpm+'"></label>'
@@ -167,18 +167,20 @@ async function start(){
  const r={s,ctx,mic,air,audio,b:band(ctx,audio),spb,tapComp:(ctx.outputLatency||ctx.baseLatency||0)+.01+latency(),choruses:mission?Math.max(prefs.choruses,mission.choruses||1):prefs.choruses,mission,opts:currentOpts,log:[],t0:ctx.currentTime+.4+4*spb,comp:(ctx.outputLatency||ctx.baseLatency||0)+.045+latency(),
   onset:K.onsetDetector(),lastOnset:-99,stable:0,lastMidi:null,scoredMidi:null,scoredAt:-99,heard:null,points:0,notes:0,tones:0,inside:0,combo:0,maxCombo:0,shownBar:-1,shownHeard:null};
  r.total=s.chart.length*4*r.choruses*spb;
+ /* Lick relay: called licks at fixed bars, each note expected at its time (seconds from the first downbeat). */
+ if(currentOpts.relay)r.relay=currentOpts.relay.plan(s.chart.length*r.choruses).map(sl=>({...sl,expect:sl.notes.map(n=>({t:(sl.bar*4+n.beat)*spb,midis:n.midis}))}));
  for(let i=0;i<4;i++)audio.click(r.t0-(4-i)*spb,i===0);
  r.beats=s.chart.length*4*r.choruses;r.nextBeat=0;
  const el=$('#modal-inner');
  el.innerHTML='<div class="jam-play"><div class="stage-hud"><div><small>SCORE</small><strong id="jam-score">'+(mic||air?0:'—')+'</strong></div><div class="stage-title"><small>♩ '+bpm+' ・ <span id="jam-chorus">1</span> / '+r.choruses+'</small><b id="modal-title">'+s.title+'</b></div><div class="stage-combo" id="jam-combo-box"><small>COMBO</small><strong id="jam-combo">'+(mic||air?0:'—')+'</strong></div></div>'
   +'<div class="stage-track"><span id="jam-progress"></span></div>'
   +'<div class="jam-now"><div><small>NOW</small><b id="jam-now">—</b></div><div class="jam-next"><small>NEXT</small><b id="jam-next">—</b></div><div class="jam-beats" id="jam-beats"><i></i><i></i><i></i><i></i></div></div>'
-  +'<div class="jam-board-wrap" id="jam-board"></div><div class="jam-legend"><span><i class="lg tone"></i>コードの音</span><span><i class="lg scale"></i>使える音</span>'+(mic||air?'<span>'+(air?'タップした音':'きこえた音')+' <b id="jam-heard">—</b></span>':'')+'</div>'+(air?'<div class="air-shift"><button type="button" id="air-left" aria-label="低いフレットへ">◀</button><span id="air-range"></span><button type="button" id="air-right" aria-label="高いフレットへ">▶</button></div>':'')
+  +(r.relay?'<div class="relay-box" id="jam-relay"></div>':'')+'<div class="jam-board-wrap" id="jam-board"></div><div class="jam-legend"><span><i class="lg tone"></i>コードの音</span><span><i class="lg scale"></i>使える音</span>'+(mic||air?'<span>'+(air?'タップした音':'きこえた音')+' <b id="jam-heard">—</b></span>':'')+'</div>'+(air?'<div class="air-shift"><button type="button" id="air-left" aria-label="低いフレットへ">◀</button><span id="air-range"></span><button type="button" id="air-right" aria-label="高いフレットへ">▶</button></div>':'')
   +(r.mission?'<div class="mission-box live" id="jam-mission">'+goalsHtml(r.mission,[],true)+'</div>':'')+'<div id="stage-judge" class="stage-judge jam-judge" aria-live="polite"></div>'
   +'<div class="jam-chart" id="jam-chart">'+s.chart.map((bar,i)=>'<span data-bar="'+i+'">'+bar.map(c=>pretty(c.sym)).join(' ')+'</span>').join('')+'</div>'
   +(mic?'<div class="stage-mic"><span>MIC</span><div class="stage-level"><span id="jam-level"></span></div></div>':'')
   +'<button type="button" class="action-button secondary-action" id="jam-stop">終わる</button></div>';
- run=r;F.setCleanup(stop);
+ run=r;F.setCleanup(stop);if(r.relay)relayBox(r,-1);
  r.onHide=()=>{if(document.hidden){stop();lobby(s);}};document.addEventListener('visibilitychange',r.onHide);
  $('#jam-stop').onclick=()=>finish(r);
  if(air)airBoard(r,typeof currentOpts.air==='object'?currentOpts.air:null);
@@ -197,12 +199,13 @@ async function start(){
     if(r.stable===2&&at>=0&&(midi!==r.scoredMidi||r.lastOnset>r.scoredAt))judge(r,midi,ch,BASS&&at-r.lastOnset<.25&&r.lastOnset>=0?r.lastOnset:at);}
    r.heard=midi;
   }
-  if(barIndex!==r.shownBar){r.shownBar=barIndex;
+  if(barIndex!==r.shownBar){r.shownBar=barIndex;if(r.relay)relayBox(r,view<0?-1:barIndex);
    document.querySelectorAll('#jam-chart [data-bar]').forEach(x=>x.classList.toggle('on',Number(x.dataset.bar)===((barIndex%s.chart.length)+s.chart.length)%s.chart.length&&view>=0));
    const cur=$('#jam-chart .on');if(cur){const box=$('#jam-chart');box.scrollTop=cur.offsetTop-box.offsetTop-6;}
    $('#jam-chorus').textContent=Math.min(r.choruses,Math.max(1,Math.floor(barIndex/s.chart.length)+1));}
   const nextBar=s.chart[(((barIndex+1)%s.chart.length)+s.chart.length)%s.chart.length];
-  const key=ch.sym+'|'+r.heard;
+  /* The bar is part of the key: the count-in shows the last bar's chord as NEXT, and the first bar may keep the same chord. */
+  const key=ch.sym+'|'+r.heard+'|'+barIndex;
   if(key!==r.shownHeard){r.shownHeard=key;$('#jam-now').textContent=pretty(ch.sym);$('#jam-next').textContent=pretty(bar.length>1&&ch===bar[0]?bar[1].sym:nextBar[0].sym);if(air){r.ch=ch;colorBoard(r);}else $('#jam-board').innerHTML=fretboard(s,ch,r.heard);if(mic||air)$('#jam-heard').textContent=r.heard!=null?K.noteName(r.heard):'—';}
   document.querySelectorAll('#jam-beats i').forEach((x,i)=>x.classList.toggle('on',view>=-4*spb&&((beatIndex%4)+4)%4===i));
   $('#jam-progress').style.width=Math.max(0,Math.min(100,view/r.total*100))+'%';
@@ -237,7 +240,7 @@ function chordAt(s,beat){const bi=Math.floor(beat),barIndex=Math.floor(bi/4),bar
 function judge(r,midi,ch,at){
  r.scoredMidi=midi;r.scoredAt=at;r.notes++;
  const inBar=(((at/r.spb)%4)+4)%4,rel=(midi%12-ch.root+12)%12;
- r.log.push({midi,rel,tone:ch.tones.includes(rel),down:inBar<.5||inBar>3.8});
+ r.log.push({midi,rel,tone:ch.tones.includes(rel),down:inBar<.5||inBar>3.8,at});
  if(r.mission){const el=$('#jam-mission');if(el)el.innerHTML=goalsHtml(r.mission,r.log,true);}
  const pc=(midi%12-ch.root+12)%12,keyPc=(midi%12-r.s.key+12)%12;let label,cls,pts;
  if(ch.tones.includes(pc)){label='CHORD TONE';cls='perfect';pts=100;r.tones++;r.inside++;r.combo++;}
@@ -247,6 +250,24 @@ function judge(r,midi,ch,at){
  const el=$('#stage-judge');if(el){el.className='stage-judge jam-judge '+cls;el.innerHTML=label+'<small>'+PC[midi%12]+(pts?' ・ '+(DEGREE[pc]||''):'')+'</small>';void el.offsetWidth;el.classList.add('show');}
 }
 
+/* ---------- Lick relay ---------- */
+/* The box over the board: the lick to play now with its positions, or a free stretch and what comes next. */
+function relayBox(r,bar){
+ const el=$('#jam-relay');if(!el)return;
+ const cur=r.relay.find(sl=>bar>=sl.bar&&bar<sl.bar+sl.bars),next=r.relay.find(sl=>sl.bar>bar);
+ el.className='relay-box'+(cur?' on':'');
+ el.innerHTML=cur?'<div class="relay-now"><small>この'+cur.bars+'小節で弾く</small><b>'+cur.title+'</b><span>'+cur.tag+'</span></div>'+cur.html
+  :'<div class="relay-now"><small>フリー</small><b>自由にアドリブ</b>'+(next?'<span>次：'+next.title+'（'+(next.bar-bar)+'小節後）</span>':'<span>最後まで自由に</span>')+'</div>'+(next&&next.bar-bar<=1?next.html:'');
+}
+/* A called note counts when a judged note of the same pitch (or an octave away) lands within 0.3 s of it. */
+function relayResult(r,played){
+ const used=new Set(),rows=[];
+ for(const sl of r.relay){if(sl.bar*4*r.spb>played)break;
+  let hits=0;for(const e of sl.expect){const i=r.log.findIndex((x,k)=>!used.has(k)&&Math.abs(x.at-e.t)<=.3&&e.midis.some(m=>m===x.midi||Math.abs(m-x.midi)===12));if(i>=0){used.add(i);hits++;}}
+  rows.push({title:sl.title,pct:Math.round(hits/sl.expect.length*100)});}
+ const pct=rows.length?Math.round(rows.reduce((a,x)=>a+x.pct,0)/rows.length):0;
+ return {pct,rows,html:'<div class="mission-box relay-result"><div class="mission-title">LICK RELAY '+pct+'%</div>'+rows.map(x=>'<div class="goal '+(x.pct>=60?'ok':'')+'"><i>'+(x.pct>=60?'✓':'・')+'</i><span>'+x.title+'</span><b>'+x.pct+'%</b></div>').join('')+'<p>'+(pct>=60?'リックをセッションの中で使えています。次は別のセッションやテンポで。':'リックの最初の音を、指定の小節の頭に合わせることから始めよう。')+'</p></div>'};
+}
 function finish(r){
  const s=r.s,played=r.ctx.currentTime-r.t0;stop();
  /* A session counts as practice after a full pass or at least 30 seconds of playing. */
@@ -254,11 +275,13 @@ function finish(r){
  const scored=(!!r.mic||r.air)&&r.notes>0,goals=r.mission?r.mission.goals.map(g=>evalGoal(g,r.log)):null,missionPassed=!!goals&&scored&&goals.every(g=>g.ok);
  if(r.mission)r.opts.onDone?.(missionPassed);
  if(scored&&r.points>best(s.id)){prefs.best=prefs.best||{};prefs.best[s.id]=r.points;save();}
+ const relay=r.relay&&scored?relayResult(r,played):null;
+ if(relay){r.opts.onRelay?.(relay.pct);if(relay.pct>(prefs.relayBest?.[s.id]||0)){prefs.relayBest=prefs.relayBest||{};prefs.relayBest[s.id]=relay.pct;save();}}
  renderCards();
  F.show(el=>{
   $('.modal-dialog').classList.add('is-stage');
   el.innerHTML='<div class="stage-result'+(scored?' passed':'')+'"><div class="lesson-progress">'+s.genre+' / SESSION</div><h2 id="modal-title">'+(r.mission?(missionPassed?'ミッション達成！':'ミッション未達成'):scored?'ナイス・セッション！':'おつかれさま！')+'</h2>'
-   +(goals?'<div class="mission-box">'+goals.map(g=>'<div class="goal '+(g.ok?'ok':'')+'"><i>'+(g.ok?'✓':'・')+'</i><span>'+g.label+'</span><b>'+g.shown+'</b></div>').join('')+'</div>':'')
+   +(relay?relay.html:'')+(goals?'<div class="mission-box">'+goals.map(g=>'<div class="goal '+(g.ok?'ok':'')+'"><i>'+(g.ok?'✓':'・')+'</i><span>'+g.label+'</span><b>'+g.shown+'</b></div>').join('')+'</div>':'')
    +(scored?'<div class="result-score"><strong>'+r.points+'</strong><small>PTS</small></div>'
     +'<div class="result-grid"><div><b>'+r.notes+'</b><small>NOTES</small></div><div><b>'+Math.round(r.tones/r.notes*100)+'%</b><small>CHORD TONES</small></div><div><b>'+Math.round(r.inside/r.notes*100)+'%</b><small>IN KEY</small></div><div><b>'+r.maxCombo+'</b><small>MAX COMBO</small></div></div>'
     +'<p>'+(r.tones/r.notes>=.4?'コードの音をしっかり狙えています。次はテンポを上げてみよう。':'まずは大きい丸（コードの音）を、コードが変わった瞬間に1音だけ狙ってみよう。')+'</p>'
@@ -271,6 +294,6 @@ function finish(r){
 }
 
 window.addEventListener('fq:progress',()=>{try{prefs.best=JSON.parse(localStorage.getItem('fretQuestJam'))?.best||prefs.best;}catch{}renderCards();});
-window.FQJam={sessions:SESSIONS,renderCards,lobby,parse};
+window.FQJam={sessions:SESSIONS,renderCards,lobby,parse,relayBest:id=>prefs.relayBest?.[id]||0};
 renderCards();
 })();

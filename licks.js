@@ -746,13 +746,44 @@ function render(){
  $('#dojo-rank').textContent=rank();$('#dojo-count').textContent=mastered()+' / '+LIST.length;
  $('#dojo-tabs').innerHTML=GENRES.map(([g,label])=>'<button type="button" data-genre="'+g+'" aria-pressed="'+(g===genre)+'">'+label+'<small>'+LIST.filter(m=>m.genre===g&&status(m).every(Boolean)).length+' / '+LIST.filter(m=>m.genre===g).length+'</small></button>').join('');
  $('#dojo-tabs').querySelectorAll('[data-genre]').forEach(b=>b.onclick=()=>{genre=b.dataset.genre;try{localStorage.setItem('fretQuestDojoGenre',genre);}catch{}render();});
- el.innerHTML=(groups.length?'<div class="dojo-artists" role="group" aria-label="アーティスト">'+groups.map(([a])=>{const ms=inGenre.filter(m=>m.artist===a);return '<button type="button" data-artist="'+a+'" aria-pressed="'+(a===artist)+'">'+a+'<small>'+ms.filter(m=>status(m).every(Boolean)).length+' / '+ms.length+'</small></button>';}).join('')+'</div><p class="dojo-blurb">'+blurb+(artist==='基礎'||artist==='バッキング'?'':' <span>フレーズは'+(genre==='POPS'?'このスタイルの語法をもとにした':'この人の語法を研究した')+'オリジナルで、実際の曲のソロやメロディではありません。</span>')+'</p>'+refsHtml(genre,artist):'')+[['solo','ソロ・アドリブ'],['comp','伴奏'],['line','ベースライン']].map(([kind,label])=>{const ms=list.filter(m=>m.kind===kind);return ms.length?'<div class="dojo-group"><h3>'+label+'</h3><div class="dojo-grid">'+ms.map(m=>{const st=status(m),done=st.every(Boolean);return '<button type="button" class="dojo-card'+(done?' mastered':'')+'" data-module="'+m.id+'"><span class="jam-genre">'+(done?'MASTERED':kind==='solo'?'SOLO':kind==='line'?'BASS':'COMP')+'</span><strong>'+m.title+'</strong><span class="jam-changes">'+m.tag+'</span><span class="dojo-pips">'+st.map((d,i)=>'<i class="'+(d?'on':'')+'" title="'+STEPS[i][1]+'"></i>').join('')+'</span>'+(window.FQAir&&window.FQAir.status(m).every(Boolean)?'<span class="dojo-air">指板 ✓</span>':'')+'</button>';}).join('')+'</div></div>':'';}).join('');
+ el.innerHTML='<button type="button" class="dojo-relay" id="dojo-relay"><b>リック・リレー</b><span>覚えたリックをセッションでつなぐ</span></button>'+(groups.length?'<div class="dojo-artists" role="group" aria-label="アーティスト">'+groups.map(([a])=>{const ms=inGenre.filter(m=>m.artist===a);return '<button type="button" data-artist="'+a+'" aria-pressed="'+(a===artist)+'">'+a+'<small>'+ms.filter(m=>status(m).every(Boolean)).length+' / '+ms.length+'</small></button>';}).join('')+'</div><p class="dojo-blurb">'+blurb+(artist==='基礎'||artist==='バッキング'?'':' <span>フレーズは'+(genre==='POPS'?'このスタイルの語法をもとにした':'この人の語法を研究した')+'オリジナルで、実際の曲のソロやメロディではありません。</span>')+'</p>'+refsHtml(genre,artist):'')+[['solo','ソロ・アドリブ'],['comp','伴奏'],['line','ベースライン']].map(([kind,label])=>{const ms=list.filter(m=>m.kind===kind);return ms.length?'<div class="dojo-group"><h3>'+label+'</h3><div class="dojo-grid">'+ms.map(m=>{const st=status(m),done=st.every(Boolean);return '<button type="button" class="dojo-card'+(done?' mastered':'')+'" data-module="'+m.id+'"><span class="jam-genre">'+(done?'MASTERED':kind==='solo'?'SOLO':kind==='line'?'BASS':'COMP')+'</span><strong>'+m.title+'</strong><span class="jam-changes">'+m.tag+'</span><span class="dojo-pips">'+st.map((d,i)=>'<i class="'+(d?'on':'')+'" title="'+STEPS[i][1]+'"></i>').join('')+'</span>'+(window.FQAir&&window.FQAir.status(m).every(Boolean)?'<span class="dojo-air">指板 ✓</span>':'')+'</button>';}).join('')+'</div></div>':'';}).join('');
  el.querySelectorAll('[data-module]').forEach(b=>b.onclick=()=>open(LIST.find(m=>m.id===b.dataset.module)));
  /* Keep the chosen artist in view inside the scrolling chip row, without moving the page. */
  {const row=el.querySelector('.dojo-artists'),on=row?.querySelector('[aria-pressed="true"]');if(on)row.scrollLeft=on.offsetLeft-row.offsetLeft-24;}
+ $('#dojo-relay').onclick=()=>relayPicker();
  el.querySelectorAll('[data-artist]').forEach(b=>b.onclick=()=>{artistBy[genre]=b.dataset.artist;try{localStorage.setItem(artistKey(genre),b.dataset.artist);}catch{}render();});
 }
 window.addEventListener('fq:progress',render);window.addEventListener('fq:air',render);
 render();
-window.FQDojo={modules:LIST,guitarModules:MODULES,bassModules:BASS_MODULES,open,status,chartFor};
+/* ---------- Lick relay: play learned licks at called bars of a session, with free bars between ---------- */
+const songLick=m=>(m.learn.type||(m.kind!=='comp'?'song':'strum'))==='song'&&m.use.session;
+/* A lick fits at a bar when the session's chords there match the lick's: every bar for a lick with its own chords, the first bar otherwise. */
+function fitsAt(m,s,bar,len){const ch=chordsOf(m);if(!ch.length)return true;const n=m.over?len:1;
+ for(let i=0;i<n;i++)if(s.chart[(bar+i)%s.chart.length][0].sym!==ch[i%ch.length].split(',')[0])return false;return true;}
+/* Notes of one chart, with notes played together merged into one call that any of their pitches answers. */
+function relayNotes(m){const out=[];for(const n of chartFor(m,1).exercise.notes){const prev=out[out.length-1];if(n.group!==undefined&&prev&&prev.group===n.group)prev.midis.push(n.midi);else out.push({beat:n.beat,group:n.group,midis:[n.midi]});}return out;}
+function relayPlan(s,order,total){
+ const slots=[];let bar=0,k=0,guard=0;
+ while(bar<total&&guard++<200){const m=order[k++%order.length],len=Math.ceil(chartFor(m,1).exercise.beats/4-1e-9);
+  let at=-1;for(let t=bar;t<=Math.min(total-len,bar+s.chart.length-1);t++)if(fitsAt(m,s,t,len)){at=t;break;}
+  if(at<0)at=bar;if(at+len>total)break;
+  slots.push({bar:at,bars:len,id:m.id,title:m.title,tag:m.tag,html:'<div class="jam-board-wrap relay-board">'+board(m)+'</div>',notes:relayNotes(m)});
+  bar=at+len+4;}
+ return slots;
+}
+let lastRelay=null;
+function relay(sessionId){
+ const s=window.FQJam.sessions.find(x=>x.id===sessionId),pool=LIST.filter(m=>songLick(m)&&m.use.session===sessionId),learned=pool.filter(m=>status(m)[0]);
+ const use=learned.length>=2?learned:pool,order=[...use].sort(()=>Math.random()-.5);
+ lastRelay={session:sessionId,order:order.map(m=>m.id),plan:total=>relayPlan(s,order,total)};
+ window.FQJam.lobby(s,{relay:{plan:lastRelay.plan,html:'<div class="mission-box"><div class="mission-title">LICK RELAY</div><p>画面に出たリックを、指定の小節で弾く。あいだの小節は自由にアドリブ。'+(learned.length>=2?'「覚える」をクリアした'+learned.length+'個のリックから出題します。':'まだ覚えたリックが少ないので、このセッションの全'+pool.length+'個から出題します。')+'</p><p class="relay-pool">'+use.slice(0,6).map(m=>m.title).join('・')+(use.length>6?' ほか'+(use.length-6)+'個':'')+'</p></div>'},back:()=>relayPicker()});
+}
+/* Sessions that have at least two licks of the current genre. */
+function relayPicker(){
+ const ss=window.FQJam.sessions.map(s=>({s,pool:LIST.filter(m=>m.genre===genre&&songLick(m)&&m.use.session===s.id)})).filter(x=>x.pool.length>=2);
+ F.show(el=>{el.innerHTML='<div class="dojo-module"><div class="lesson-progress">フレーズ道場 / LICK RELAY</div><h2 id="modal-title">リック・リレー</h2><p>覚えたリックを、セッションの中でつないで使う練習。指定された小節でリックを弾き、あいだは自由にアドリブします。</p><div class="dojo-grid">'
+  +ss.map(({s,pool})=>{const n=pool.filter(m=>status(m)[0]).length,b=window.FQJam.relayBest(s.id);return '<button type="button" class="dojo-card" data-relay="'+s.id+'"><span class="jam-genre">'+s.genre+'</span><strong>'+s.title+'</strong><span class="jam-changes">リック '+pool.length+'個（覚えた '+n+'個）</span><span class="jam-changes">'+(b?'BEST '+b+'%':'NEW')+'</span></button>';}).join('')+'</div></div>';
+  el.querySelectorAll('[data-relay]').forEach(b=>b.onclick=()=>relay(b.dataset.relay));});
+}
+window.FQDojo={relay,relayPicker,lastRelay:()=>lastRelay,modules:LIST,guitarModules:MODULES,bassModules:BASS_MODULES,open,status,chartFor};
 })();
