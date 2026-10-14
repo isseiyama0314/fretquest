@@ -94,6 +94,15 @@
 .tool-link .icon{width:26px;height:26px;color:#c7ef75;flex:none}
 .tool-link b{display:block;font:900 14px "Noto Sans JP",sans-serif}
 .tool-link small{font:600 10px "Noto Sans JP",sans-serif;color:#b9b2d6}
+.mc-gains{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:12px 0}
+.mc-gains button{display:grid;gap:2px;justify-items:center;border:0;border-radius:14px;padding:10px 6px;background:#ffffff0d;color:#f4f1ff;cursor:pointer;box-shadow:inset 0 0 0 1px #ffffff1a}
+.mc-gains button[aria-pressed="true"]{box-shadow:inset 0 0 0 2px #c7ef75}
+.mc-gains b{font:900 18px "DM Sans",sans-serif;color:#c7ef75}
+.mc-gains small{font:700 10px "Noto Sans JP",sans-serif;color:#b9b2d6}
+.mc-gains.busy button{opacity:.5;cursor:default}
+.tool-mic .stage-mic{align-self:stretch;width:100%;box-sizing:border-box}
+.mc-result p{margin:10px 2px 0;font:600 12px/1.6 "Noto Sans JP",sans-serif;color:#ddd7f5}
+.mc-result .mc-ok{color:#c7ef75;font-weight:800}
 .tool-link:focus-visible{outline:3px solid #c7ef75;outline-offset:3px}
 .tuner-face{display:grid;justify-items:center;gap:6px;padding:22px 16px 18px;border-radius:22px;background:radial-gradient(80% 70% at 50% 0%,#3a2f63 0%,#14121f 80%);box-shadow:inset 0 0 0 1px #ffffff1a;transition:box-shadow .2s}
 .tuner-face.in-tune{box-shadow:inset 0 0 0 2px #c7ef75,0 0 40px #c7ef7544}

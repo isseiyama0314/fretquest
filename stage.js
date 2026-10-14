@@ -102,6 +102,7 @@ function setMicGain(g){
  if(!GAINS.includes(g))return;try{localStorage.setItem(GAIN_KEY,String(g));}catch{}
  for(const x of liveGains){if(x.stream.getTracks().every(t=>t.readyState==='ended'))liveGains.delete(x);else x.node.gain.value=g;}
  document.querySelectorAll('[data-mic-gain]').forEach(b=>b.textContent='MIC ×'+g);
+ window.dispatchEvent(new CustomEvent('fq:micgain',{detail:g}));
 }
 /* The MIC label beside each level meter shows the sensitivity; tapping it steps ×1 → ×4 → ×12 while listening. */
 const micBadge=()=>'<button type="button" class="mic-gain" data-mic-gain aria-label="マイク感度（タップで切り替え）">MIC ×'+micGain()+'</button>';
@@ -419,5 +420,5 @@ function preview(cv,l){
  requestAnimationFrame(frame);
 }
 const setLatency=v=>{prefs.latency=v;savePrefs();};
-window.FQStage={lobby,preview,starsFor,starText,stop,setLatency,kit:{synth,openMic,micGain,setMicGain,micBadge,micGainNode,onsetDetector,meterPct,chordMidis,noteName,rhythmBook}};
+window.FQStage={lobby,preview,starsFor,starText,stop,setLatency,kit:{synth,openMic,micGains:GAINS,micGain,setMicGain,micBadge,micGainNode,onsetDetector,meterPct,chordMidis,noteName,rhythmBook}};
 })();

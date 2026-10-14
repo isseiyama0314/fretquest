@@ -128,7 +128,61 @@ function soundCheck(){
   show();
  });
 }
-const bind=()=>{$('#open-tuner')?.addEventListener('click',tuner);$('#open-soundcheck')?.addEventListener('click',soundCheck);$('#open-calibrate')?.addEventListener('click',()=>calibrate(null));};
+/* ---------- Mic check ----------
+   The default microphone sensitivity, plus a short measurement: 2 s of quiet for the room noise, then 6 s of playing.
+   It recommends the smallest gain that lifts normal playing to about -30 dBFS, comfortably above the detectors' fixed minimum
+   levels (the most demanding is the lesson pitch check's .008 RMS), so room noise is boosted no more than needed. */
+const MC_QUIET=2,MC_PLAY=6,MC_TARGET=.03,MC_LABEL={1:'大きい音・アンプ',4:'標準',12:'小さい音・離れて'};
+const dbfs=v=>Math.round(20*Math.log10(Math.max(v,1e-6)));
+function micCheck(){
+ F.show(el=>{
+  $('.modal-dialog').classList.add('is-stage');
+  const gains=K.micGains,cur=K.micGain();
+  el.innerHTML='<div class="tool-mic"><div class="lesson-progress">TOOLS / MIC CHECK</div><h2 id="modal-title">マイクチェック</h2>'
+   +'<p>マイクの音をアプリの中で増幅する倍率（マイク感度）の基本設定です。演奏中にMICボタンで切り替えた値も、ここに保存されます。</p>'
+   +'<div class="mc-gains" role="group" aria-label="マイク感度">'+gains.map(g=>'<button type="button" data-mc-gain="'+g+'" aria-pressed="'+(g===cur)+'"><b>×'+g+'</b><small>'+MC_LABEL[g]+'</small></button>').join('')+'</div>'
+   +'<div class="game-stage cal-stage"><div class="game-phase" id="mc-phase">チェック</div><div class="game-sub" id="mc-sub">静かな状態→弾いた音の順に測って、おすすめの感度を出します</div>'
+   +'<div class="stage-mic"><span>MIC</span><div class="stage-level"><span id="mc-level"></span></div></div></div>'
+   +'<div id="mc-result" class="mc-result" aria-live="polite"></div>'
+   +'<button type="button" class="action-button" id="mc-start">チェックする（8秒）</button>'
+   +'<p class="lesson-caption">増幅すると、部屋の雑音も同じだけ大きくなります。弦の音と雑音の差を広げるには、'+INST.name+'にiPhoneを近づけるのがいちばんです。</p></div>';
+  const sync=()=>{const g=K.micGain();el.querySelectorAll('[data-mc-gain]').forEach(b=>b.setAttribute('aria-pressed',String(Number(b.dataset.mcGain)===g)));};
+  const onGain=()=>{if(!el.isConnected||!el.querySelector('[data-mc-gain]'))return window.removeEventListener('fq:micgain',onGain);sync();};
+  window.addEventListener('fq:micgain',onGain);
+  el.querySelectorAll('[data-mc-gain]').forEach(b=>b.onclick=()=>{if(!b.closest('.mc-gains').classList.contains('busy'))K.setMicGain(Number(b.dataset.mcGain));});
+  $('#mc-start').onclick=async()=>{
+   const generation=F.generation(),btn=$('#mc-start');btn.disabled=true;$('#mc-result').innerHTML='';
+   let opened;try{opened=await openMic();}catch(e){if(generation===F.generation()){btn.disabled=false;F.notify(micError(e));}return;}
+   if(generation!==F.generation()){opened.mic.stream.getTracks().forEach(t=>t.stop());return;}
+   const {ctx,mic}=opened;stop();const me={mic};session=me;F.setCleanup(stop);
+   /* The gain is fixed during the measurement, so the levels can be converted back to the raw input. */
+   const g=mic.gain.gain.value,box=el.querySelector('.mc-gains');box.classList.add('busy');
+   const t0=ctx.currentTime,quiet=[],play=[],onset=K.onsetDetector();let hits=0;
+   const frame=()=>{
+    if(session!==me)return;
+    mic.an.getFloatTimeDomainData(mic.buf);let e=0;for(let i=mic.buf.length-512;i<mic.buf.length;i++)e+=mic.buf[i]*mic.buf[i];
+    const rms=Math.sqrt(e/512),t=ctx.currentTime-t0;$('#mc-level').style.width=K.meterPct(rms)+'%';
+    if(t<MC_QUIET){quiet.push(rms);$('#mc-phase').textContent='静かに';$('#mc-sub').textContent='弾かずに待ってください（部屋の雑音を測ります）';}
+    else if(t<MC_QUIET+MC_PLAY){play.push(rms);if(onset(mic.buf,t))hits++;$('#mc-phase').textContent='弾いて！';$('#mc-sub').textContent='いつもの強さで、何回か弦を鳴らす　'+Math.ceil(MC_QUIET+MC_PLAY-t)+'秒';}
+    else{finish();return;}
+    me.raf=requestAnimationFrame(frame);
+   };
+   const finish=()=>{
+    stop();box.classList.remove('busy');btn.disabled=false;btn.textContent='もう一度チェック';
+    const pct=(a,p)=>{const s=[...a].sort((x,y)=>x-y);return s.length?s[Math.min(s.length-1,Math.floor(s.length*p))]:0;};
+    const noise=Math.max(1e-6,pct(quiet,.5))/g,peak=pct(play,.95)/g,snr=20*Math.log10(Math.max(peak,1e-6)/noise);
+    if(hits<2||snr<6){$('#mc-phase').textContent='弦の音を拾えませんでした';$('#mc-sub').textContent=INST.name+'をマイクに近づけて、もう一度。';$('#mc-result').innerHTML='<p>雑音 '+dbfs(noise)+' dB ／ 弾いた音 '+dbfs(peak)+' dB（入力そのままの大きさ）</p>';return;}
+    const rec=K.micGains.find(x=>peak*x>=MC_TARGET)||K.micGains[K.micGains.length-1],enough=peak*rec>=MC_TARGET;
+    $('#mc-phase').textContent='おすすめ ×'+rec;$('#mc-sub').textContent=enough?'いつもの強さが十分に聞こえる、いちばん小さい倍率です':'最大の×12でも小さめです。iPhoneを近づけると安定します';
+    $('#mc-result').innerHTML='<p>弾いた音 '+dbfs(peak)+' dB ／ 雑音 '+dbfs(noise)+' dB（差 '+Math.round(snr)+' dB'+(snr<15?'：雑音が多めです。近づけるか静かな場所で':'')+'）。数値は増幅前の入力の大きさです。</p>'
+     +(rec===K.micGain()?'<p class="mc-ok">今の設定（×'+rec+'）のままで大丈夫です。</p>':'<button type="button" class="action-button" id="mc-apply">×'+rec+' を基本設定にする</button>');
+    $('#mc-apply')?.addEventListener('click',()=>{K.setMicGain(rec);$('#mc-result').insertAdjacentHTML('beforeend','<p class="mc-ok">×'+rec+' に設定しました。</p>');$('#mc-apply').remove();});
+   };
+   me.raf=requestAnimationFrame(frame);
+  };
+ });
+}
+const bind=()=>{$('#open-miccheck')?.addEventListener('click',micCheck);$('#open-tuner')?.addEventListener('click',tuner);$('#open-soundcheck')?.addEventListener('click',soundCheck);$('#open-calibrate')?.addEventListener('click',()=>calibrate(null));};
 bind();
-window.FQTools={soundCheck,tuner,calibrate};
+window.FQTools={soundCheck,tuner,calibrate,micCheck};
 })();
