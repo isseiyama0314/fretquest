@@ -8,6 +8,14 @@ const KINDS={
  bass:{id:'bass',name:'ベース',player:'ベーシスト',open:[0,43,38,33,28],minHz:35,fft:4096}
 };
 let id='guitar';try{if(KINDS[localStorage.getItem(KEY)])id=localStorage.getItem(KEY);}catch{}
+/* Playback only: keep chart pitches, frets and microphone targets at concert pitch. */
+const VOICE_KEY='fretQuestBassVoice';
+let bassVoice='clear';try{if(localStorage.getItem(VOICE_KEY)==='natural')bassVoice='natural';}catch{}
+const voice=midi=>id==='bass'&&bassVoice==='clear'?midi+24:midi;
+function setVoice(next){if(!['clear','natural'].includes(next))return;bassVoice=next;try{localStorage.setItem(VOICE_KEY,next);}catch{}mountVoice();}
+function mountVoice(){const box=document.getElementById('bass-voice');if(!box)return;box.hidden=id!=='bass';
+ box.innerHTML='<span>ベースのお手本音</span><div role="group" aria-label="ベースのお手本音"><button type="button" data-bass-voice="clear" aria-pressed="'+(bassVoice==='clear')+'">聴きやすい（2オクターブ上）</button><button type="button" data-bass-voice="natural" aria-pressed="'+(bassVoice==='natural')+'">原音</button></div><small>再生するお手本音の設定です。譜面と判定は実音のまま。同じ音名の、表示されたフレットを弾こう。</small>';
+ box.querySelectorAll('[data-bass-voice]').forEach(b=>b.onclick=()=>setVoice(b.dataset.bassVoice));}
 const cur=()=>KINDS[id];
 const NAMES=['C','C♯','D','D♯','E','F','F♯','G','G♯','A','A♯','B'];
 const ROOT={C:0,D:2,E:4,F:5,G:7,A:9,B:11};
@@ -41,6 +49,7 @@ function adapt(lesson){
 function set(next){if(!KINDS[next]||next===id)return;try{localStorage.setItem(KEY,next);}catch{}location.reload();}
 /* The header switch. */
 function mount(){
+ mountVoice();
  const box=document.getElementById('inst-switch');if(!box)return;
  box.innerHTML=Object.values(KINDS).map(k=>'<button type="button" data-inst="'+k.id+'" aria-pressed="'+(k.id===id)+'">'+k.name+'</button>').join('');
  box.querySelectorAll('[data-inst]').forEach(b=>b.onclick=()=>set(b.dataset.inst));
@@ -53,7 +62,7 @@ function mount(){
  text('#dojo-section .section-heading p','ブルース・ジャズ・ポップスの定番ベースラインを、3ステップで実戦投入。');
  text('#jam .section-heading p','ベース抜きのバンドに合わせて、あなたがベースを弾く。コードに合う音を弾くとポイント。');
 }
-window.FQInst={get:cur,isBass:()=>id==='bass',set,adapt,layout,rootPc,kinds:KINDS,mount,
+window.FQInst={get:cur,isBass:()=>id==='bass',set,adapt,layout,rootPc,kinds:KINDS,mount,voice,bassVoice:()=>bassVoice,setVoice,
  /* Strings from the lowest-numbered (thinnest) up: [1,2,...]. */
  strings:()=>cur().open.slice(1).map((_,i)=>i+1),
  noteName:m=>NAMES[((m%12)+12)%12]+(Math.floor(m/12)-1)};

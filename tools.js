@@ -25,9 +25,9 @@ function tuner(){
    +'<div class="tuner-hint" id="tn-hint">&nbsp;</div><div class="stage-mic tuner-mic">'+K.micBadge()+'<div class="stage-level"><span id="tn-level"></span></div></div></div>'
    +'<div class="tuner-strings" role="group" aria-label="弦を選ぶ">'+STRINGS.map(s=>'<button type="button" data-tn="'+s.midi+'"><small>'+s.n+'弦</small><b>'+s.name+'</b><i aria-hidden="true">✓</i></button>').join('')+'</div>'
    +'<button type="button" class="action-button" id="tn-start">マイクをオンにする</button>'
-   +'<p class="lesson-caption">'+(BASS?'4弦ベースの標準チューニング（E A D G、A4=440Hz）。お手本の音は聴きやすいよう1オクターブ上で鳴らします。':'標準チューニング（E A D G B E、A4=440Hz）。')+'±5セント以内が合格の目安です。</p></div>';
+   +'<p class="lesson-caption">'+(BASS?'4弦ベースの標準チューニング（E A D G、A4=440Hz）。お手本の音はホームの「ベースのお手本音」設定に従います。聴きやすい設定では2オクターブ上で鳴ります。':'標準チューニング（E A D G B E、A4=440Hz）。')+'±5セント以内が合格の目安です。</p></div>';
   let locked=null;const done=new Set();
-  document.querySelectorAll('[data-tn]').forEach(b=>b.onclick=()=>{const m=Number(b.dataset.tn);locked=locked===m?null:m;document.querySelectorAll('[data-tn]').forEach(x=>x.classList.toggle('locked',Number(x.dataset.tn)===locked));if(locked)F.playTone(BASS?locked+12:locked,1.4);});
+  document.querySelectorAll('[data-tn]').forEach(b=>b.onclick=()=>{const m=Number(b.dataset.tn);locked=locked===m?null:m;document.querySelectorAll('[data-tn]').forEach(x=>x.classList.toggle('locked',Number(x.dataset.tn)===locked));if(locked)F.playTone(window.FQInst.voice(locked),1.4);});
   $('#tn-start').onclick=async()=>{
    const generation=F.generation(),btn=$('#tn-start');btn.disabled=true;
    let opened;try{opened=await openMic();}catch(e){if(generation===F.generation()){btn.disabled=false;F.notify(micError(e));}return;}

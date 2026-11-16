@@ -88,7 +88,7 @@ function schedule(r){
   c.items.forEach(it=>{if(it.chord!==chord){flush(it.beat);chord=it.chord;start=it.beat;}});flush(c.beats);
  }
  if(r.guide)c.items.forEach(it=>{
-  if(c.song)(it.parts||[it]).forEach((p,k)=>a.pluck(at(it.beat)+k*.012,it.parts?it.midis[k]:it.midi,it.dur,it.parts?.11:.16,p.bend||0));
+  if(c.song)(it.parts||[it]).forEach((p,k)=>a.pluck(at(it.beat)+k*.012,I.voice(it.parts?it.midis[k]:it.midi),it.dur,it.parts?.11:.16,p.bend||0));
   else{const notes=chordMidis(it.chord);(it.up?[...notes].reverse().slice(0,4):notes).forEach((m,k)=>a.pluck(at(it.beat)+k*.014,m,Math.min(it.dur,.9),it.up?.05:.075));}
  });
 }

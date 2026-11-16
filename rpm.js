@@ -1,4 +1,4 @@
-/* Session rehearsal. Venue facts are linked; repertoire and cues are our practice arrangements. */
+/* Session skills pathway. Progressions and cues are our practice arrangements. */
 (()=>{'use strict';
 const F=window.FretQuest,J=window.FQJam,K=window.FQStage.kit,$=s=>document.querySelector(s);
 const KEY='fretQuestRehearsal',PC=['C','D♭','D','E♭','E','F','G♭','G','A♭','A','B♭','B'];
@@ -27,13 +27,13 @@ function track(){return tracks.find(t=>t.id===selected)||tracks[0];}
 function chart(s){return s.chart.map((bar,i)=>'<span data-rpm-bar="'+i+'"><small>'+ (i+1)+'</small>'+bar.map(c=>c.sym).join(' / ')+'</span>').join('');}
 function overview(){const el=$('#rpm-entry');if(!el)return;
  const ready=tracks.filter(t=>records.some(r=>r.id===t.id&&r.mode==='blind'&&!r.assisted&&r.checks.length===4)).length;
- el.innerHTML='<div><span class="rpm-label">SESSION REHEARSAL</span><h2>RPMへ、最初の一歩。</h2><p>弾けるフレーズを、誰かと演奏できる力に。<br>伴奏、ソロ交代、ロストからの復帰、エンディングを通して練習。</p><span class="rpm-record">コード非表示で自己チェック4項目達成：'+ready+' / 3</span></div><button type="button" id="rpm-open" class="action-button">セッションの予行演習へ '+F.icon('arrow')+'</button>';
+ el.innerHTML='<div><span class="rpm-label">SESSION REHEARSAL</span><h2>セッション上達への道</h2><p>弾けるフレーズを、誰かと演奏できる力に。<br>伴奏、ソロ交代、ロストからの復帰、エンディングを通して練習。</p><span class="rpm-record">コード非表示で自己チェック4項目達成：'+ready+' / 3</span></div><button type="button" id="rpm-open" class="action-button">セッション練習を始める '+F.icon('arrow')+'</button>';
  $('#rpm-open').onclick=lobby;
 }
 function lobby(){load();F.show(el=>{
  $('.modal-dialog').classList.add('is-stage');
  const t=track(),s=J.sessions.find(x=>x.id===t.id),last=records.filter(r=>r.id===t.id).at(-1);
- el.innerHTML='<div class="rpm-lobby"><div class="lesson-progress">RPM / SESSION REHEARSAL</div><h2 id="modal-title">まず、1曲を一緒に終える。</h2><p class="rpm-lead">速いソロより、拍を保つこと。迷ったら休んで、合図を見て戻ろう。</p>'
+ el.innerHTML='<div class="rpm-lobby"><div class="lesson-progress">SESSION SKILLS</div><h2 id="modal-title">セッション上達への道</h2><p class="rpm-lead">まず、1曲を一緒に終える。伴奏、ソロ、合図への反応を、一歩ずつ身につけよう。</p>'
  +'<div class="rpm-track-list" role="group" aria-label="練習する進行">'+tracks.map(x=>'<button type="button" data-rpm-track="'+x.id+'" aria-pressed="'+(x.id===selected)+'"><small>'+x.tag+'</small><b>'+x.title+'</b></button>').join('')+'</div>'
  +'<p>'+t.tip+'</p><div class="rpm-chart">'+chart(s)+'</div>'
  +'<details class="rpm-notes"><summary>伴奏の押さえ方と、ソロの入口</summary><p>数字は6弦から1弦のフレット。xは鳴らさない弦。コードは短く切り、まず2拍・4拍だけ。</p><div class="rpm-shapes">'+t.shapes.map(([ch,shape])=>'<div><b>'+ch+'</b><code>'+shape+'</code></div>').join('')+'</div><p>'+t.notes+'</p><p>慣れたら裏拍を1か所加える。鍵盤がいるつもりで、弾かない小節も作ってみよう。</p><button type="button" class="action-button secondary-action" id="rpm-solo-drill">この進行で単音の練習をする</button></details>'
@@ -42,7 +42,7 @@ function lobby(){load();F.show(el=>{
  +'<button type="button" class="action-button" id="rpm-start">バンドと通して練習する</button>'
  +(last?'<p class="rpm-record">前回：'+last.bpm+' BPM、'+modes[last.mode]+'。自己チェック '+last.checks.length+' / 4'+(last.assisted?'。途中でコードを確認。':'。')+'</p>':'')
  +'<details class="rpm-notes"><summary>初参加のための、ひと言と準備</summary><p>「セッション初参加でギターです。まず伴奏から参加したいです。できる進行はEのワンコードかAのブルースです。合いそうな曲はありますか。」</p><p>演奏前に、キー、テンポ、何小節で1周するか、テーマを誰が弾くか、ソロの順番、終わり方をホストに確認。知らない曲は見学や伴奏から相談して大丈夫。演奏中はホストやソリストの目線も見る。</p><p>チューニング、シールド、ピック、控えめな音量を準備。家ではイヤホンと実際のギターで通す。</p></details>'
- +'<p class="lesson-caption rpm-source">下北沢music bar rpmへの初参加を想定した自主練習です。店舗公認・指定曲集ではありません。日程ごとにホストが異なり、実際の曲・キー・合図は当日確認してください。<a href="https://www.rpmshimokita.com/schedule" target="_blank" rel="noopener noreferrer">RPM公式スケジュール</a>。確認日：2026年11月17日。演奏音の録音・自動採点は行わず、終わった後に自分で振り返ります。</p></div>';
+ +'<p class="lesson-caption rpm-source">練習用の進行と合図で、合奏の基本を身につけます。実際のセッションでは、曲・キー・ソロの順番・終わり方をホストと確認しましょう。演奏音の録音・自動採点は行わず、終わった後に自分で振り返ります。</p></div>';
  const duration=()=>{$('#rpm-duration').textContent=((plan(s.chart.length).at(-1).start*4+8)*60/tempo/60).toFixed(1);};duration();
  el.querySelectorAll('[data-rpm-track]').forEach(b=>b.onclick=()=>{selected=b.dataset.rpmTrack;tempo=J.sessions.find(x=>x.id===selected).bpm;lobby();});
  el.querySelectorAll('[data-rpm-mode]').forEach(b=>b.onclick=()=>{mode=b.dataset.rpmMode;el.querySelectorAll('[data-rpm-mode]').forEach(x=>x.setAttribute('aria-pressed',String(x.dataset.rpmMode===mode)));});
@@ -110,7 +110,7 @@ async function start(){const gen=F.generation();$('#rpm-start').disabled=true;
 }
 function finish(r){if(run!==r||r.finished)return;r.finished=true;stop();
  F.show(el=>{ $('.modal-dialog').classList.add('is-stage');
- el.innerHTML='<div class="rpm-result"><div class="lesson-progress">REHEARSAL COMPLETE</div><h2 id="modal-title">最後まで通せた。</h2><p>'+r.bpm+' BPM、'+modes[r.mode]+'。'+(r.assisted?'迷ったところでコードを確認しました。次はその区間をもう一度。':'できたことを、自分で振り返ろう。')+'</p><div class="rpm-checks">'+checks.map(([id,label])=>'<label><input type="checkbox" value="'+id+'">'+label+'</label>').join('')+'</div><p class="lesson-caption">これは自己チェックです。演奏の上手さやRPMへの参加資格を判定するものではありません。</p><p id="rpm-next-step" role="status">できなかった項目は、次の練習の目標に。</p><button type="button" class="action-button" id="rpm-save">振り返りを記録する</button><button type="button" class="action-button secondary-action" id="rpm-again">もう一度練習する</button></div>';
+ el.innerHTML='<div class="rpm-result"><div class="lesson-progress">REHEARSAL COMPLETE</div><h2 id="modal-title">最後まで通せた。</h2><p>'+r.bpm+' BPM、'+modes[r.mode]+'。'+(r.assisted?'迷ったところでコードを確認しました。次はその区間をもう一度。':'できたことを、自分で振り返ろう。')+'</p><div class="rpm-checks">'+checks.map(([id,label])=>'<label><input type="checkbox" value="'+id+'">'+label+'</label>').join('')+'</div><p class="lesson-caption">できたことと次の課題を確認する自己チェックです。</p><p id="rpm-next-step" role="status">できなかった項目は、次の練習の目標に。</p><button type="button" class="action-button" id="rpm-save">振り返りを記録する</button><button type="button" class="action-button secondary-action" id="rpm-again">もう一度練習する</button></div>';
  $('#rpm-save').onclick=()=>{const chosen=[...el.querySelectorAll('.rpm-checks input:checked')].map(x=>x.value);records.push({id:r.s.id,mode:r.mode,bpm:r.bpm,at:Date.now(),checks:chosen,assisted:r.assisted});records=valid(records);if(!persist()){records.pop();return;}
  const earned=F.recordActivity('jam:rpm-'+r.s.id);$('#rpm-save').disabled=true;$('#rpm-save').textContent='記録しました'+(earned?'。＋'+earned+' XP':'。');
  const missing=checks.find(([id])=>!chosen.includes(id));$('#rpm-next-step').textContent=missing?'次は「'+missing[1]+'」を目標に。テンポを10下げてもう一度。':r.mode==='guide'?'次はコードを隠して、同じテンポで通してみよう。':r.assisted?'次は途中でコードを確認せず、同じテンポでもう一度。':'この進行を初参加の相談候補に。実際の曲と終わり方はホストと確認しよう。';el.querySelectorAll('.rpm-checks input').forEach(x=>x.disabled=true);overview();};

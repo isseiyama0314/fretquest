@@ -53,8 +53,8 @@ const flashCell=(b,cls)=>{if(!b)return;b.classList.remove(cls);void b.offsetWidt
 let kit=null;
 async function sound(){await F.ensureAudio();const ctx=F.audioContext();if(!ctx||ctx.state!=='running'){F.notify('音を再生できません。音量を確認してください。');return null;}if(!kit||kit.ctx!==ctx||kit.dead){kit={ctx,a:K.synth(ctx)};}return kit;}
 const stopKit=()=>{if(kit){kit.a.stop();kit.dead=true;kit=null;}};
-/* A tapped note sounds right away. Bass notes play an octave up so a phone speaker can carry them. */
-const voice=m=>BASS?m+12:m;
+/* Shared playback register for bass guide notes, taps, stages and the tuner. */
+const voice=m=>I.voice(m);
 async function tapSound(midi){const k=await sound();k?.a.pluck(k.ctx.currentTime+.005,voice(midi),.45,.15);}
 /* The whole phrase is scheduled ahead, so leaving the screen (close, back, next screen) must cut it. */
 async function playPhrase(notes,bpm){const generation=F.generation(),k=await sound();if(!k||generation!==F.generation())return;const spb=60/bpm,t=k.ctx.currentTime+.1;notes.forEach(n=>k.a.pluck(t+n.beat*spb,voice(n.midi),n.len*spb,.15,n.bend||0));F.setCleanup(stopAll);}

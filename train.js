@@ -34,7 +34,7 @@ let audio=null,current=null;
 /* One synth per audio context: a new sound (a tap, a replay) must not cut off one that is still playing. */
 async function sound(){await F.ensureAudio();const ctx=F.audioContext();if(!ctx||ctx.state!=='running')return null;if(!audio||audio.ctx!==ctx){audio?.stop();audio=K.synth(ctx);audio.ctx=ctx;}return {ctx,a:audio};}
 /* Plays seq ([[offsetSec, midi[], dur]]) and returns its length in seconds, or false when there is no sound. */
-async function playNotes(seq){const s=await sound();if(!s)return false;const t=s.ctx.currentTime+.08;seq.forEach(([o,ms,d])=>ms.forEach(m=>s.a.pluck(t+o,m,d,ms.length>1?.09:.16)));return .08+Math.max(...seq.map(([o,,d])=>o+d));}
+async function playNotes(seq,bassLine=false){const s=await sound();if(!s)return false;const t=s.ctx.currentTime+.08;seq.forEach(([o,ms,d])=>ms.forEach(m=>s.a.pluck(t+o,bassLine?window.FQInst.voice(m):m,d,ms.length>1?.09:.16)));return .08+Math.max(...seq.map(([o,,d])=>o+d));}
 const chordMidis=(root,shape)=>shape.map(i=>root+i);
 
 /* ---------- Interval review: shown after a wrong answer ---------- */
@@ -139,7 +139,7 @@ const MODES_DEF={
     while(notes.length<len){const j=i+(Math.random()<.5?-1:1)*(1+Math.floor(Math.random()*2));if(j<0||j>=pool.length)continue;i=j;notes.push(pool[i]);}}
    if(BASS)notes=notes.map(m=>m-24);
    const step=d=>(INTERVALS.find(x=>x[0]===Math.abs(d))?.[1]||'半音'+Math.abs(d)+'個')+(d>0?'上':'下');
-   return {steps:notes.slice(1).map((m,k)=>step(m-notes[k])),prompt:'聴いた'+notes.length+'音のメロディを指板で再現しよう',play:()=>playNotes(notes.map((m,k)=>[k*.55,[m],.5])),melody:notes,answer:notes,explain:notes.map(m=>SOLFA[m%12]).join(' ')};}},
+   return {steps:notes.slice(1).map((m,k)=>step(m-notes[k])),prompt:'聴いた'+notes.length+'音のメロディを指板で再現しよう',play:()=>playNotes(notes.map((m,k)=>[k*.55,[m],.5]),BASS),melody:notes,answer:notes,explain:notes.map(m=>SOLFA[m%12]).join(' ')};}},
  meter:{title:'拍子当て',tag:'グルーヴから拍子を聴き取る',icon:'rhythm',about:'ドラムのパターンを聴いて、何拍子かを当てます。3拍子と6/8拍子の違い、5拍子や7/8拍子の「あと1つ多い・少ない」感覚が身につきます。',
   levels:['4拍子と3拍子','6/8拍子を追加','5/4拍子も','7/8拍子も','9/8・12/8も'],
   make(lv){const set=METER_LEVELS[lv-1],m=pick(set),d=METERS[m],e=.2;
@@ -302,7 +302,7 @@ function run(id,level){
    el.querySelectorAll('[data-midi]').forEach(b=>b.onclick=async()=>{if(answered)return;const m=Number(b.dataset.midi);
     if(!(entered.length===1&&m===q.melody[0])){entered.push(m);show();}b.classList.add('tapped');setTimeout(()=>b.classList.remove('tapped'),180);
     if(entered.length===q.melody.length){const ok=entered.every((x,k)=>x===q.melody[k]);slots.forEach((x,k)=>x.classList.add(entered[k]===q.melody[k]?'ok':'ng'));done(ok,null,q.steps.map((it,k)=>({it,ok:entered[k+1]===q.melody[k+1],ud:undos[k+1]})));}
-    const s=await sound();s?.a.pluck(s.ctx.currentTime+.02,m,.6,.16);});
+    const s=await sound();s?.a.pluck(s.ctx.currentTime+.02,window.FQInst.voice(m),.6,.16);});
    $('#train-undo').onclick=()=>{if(!answered&&entered.length>1){const k=entered.length-1;undos[k]=(undos[k]||0)+1;entered.pop();show();}};
   }
   const listen=$('#train-listen');if(listen)listen.onclick=()=>{if(!answered)replays++;q.play();};
