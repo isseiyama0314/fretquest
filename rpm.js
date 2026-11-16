@@ -49,7 +49,7 @@ function lobby(){load();F.show(el=>{
  $('#rpm-tempo').oninput=e=>{tempo=Number(e.target.value);$('#rpm-tempo-label').textContent=tempo+' BPM';duration();};
  $('#rpm-guide').onchange=e=>{showGuide=e.target.checked;};
  $('#rpm-solo-drill').onclick=()=>J.lobby(s,{back:lobby});
- $('#rpm-start').onclick=start;$('#rpm-start').focus();
+ $('#rpm-start').onclick=start;$('#modal-title').tabIndex=-1;$('#modal-title').focus({preventScroll:true});$('.modal-dialog').scrollTop=0;
  });}
 function stop(){if(!run)return;const r=run;run=null;cancelAnimationFrame(r.raf);r.audio.stop();document.removeEventListener('visibilitychange',r.onHide);}
 function schedule(r,beat){const p=phaseAt(r.plan,beat);if(!p)return;

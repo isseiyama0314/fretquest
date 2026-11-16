@@ -67,7 +67,7 @@ const BASE=process.env.BASE||'http://localhost:8765/fretquest/';
  await page.waitForSelector('#rpm-start');
  assert.equal(await page.evaluate(()=>window.FQRehearsal.exportData().length),1);
  // Offline bundle has both new assets at the same version as the HTML.
- const sw=await (await page.request.get(BASE+'sw.js')).text();assert.ok(sw.includes('./rpm.js?v=20261117-rehearsal')&&sw.includes('./rpm.css?v=20261117-rehearsal'));
+ const sw=await (await page.request.get(BASE+'sw.js')).text();assert.ok(sw.includes('./rpm.js?v=20261117-rehearsal2')&&sw.includes('./rpm.css?v=20261117-rehearsal2'));
  assert.deepEqual(errors,[]);console.log('PASS: full rehearsal, recovery, audio timeline, 3 viewport widths, cancellation, persistence, deduplicated export/import and cache manifest.');
  }finally{await browser.close();}
 })().catch(e=>{console.error(e);process.exit(1);});
